@@ -1,0 +1,10 @@
+night-call/node_modules/
+night-call/dist/
+night-call/state/
+night-call/.env
+night-call/_python_scrapped/
+night-call-src.tgz
+extracted/
+files.zip
+Claude outputs/
+.DS_Store

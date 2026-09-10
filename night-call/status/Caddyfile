@@ -1,0 +1,9 @@
+:8001 {
+	root * /srv/www
+	file_server
+	handle_path /state/* {
+		root * /srv/state
+		header Cache-Control "no-store"
+		file_server
+	}
+}

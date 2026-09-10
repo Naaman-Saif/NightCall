@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "declaration": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": { "@/*": ["src/*"] },
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "incremental": false
+  },
+  "include": ["src/**/*", "test/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

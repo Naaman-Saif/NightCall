@@ -1,0 +1,34 @@
+groups:
+  - name: night-call
+    interval: 15s
+    rules:
+      - alert: PaymentErrorRateHigh
+        expr: |
+          sum(rate(traces_span_metrics_calls_total{service_name="payment", status_code="STATUS_CODE_ERROR"}[2m]))
+          /
+          sum(rate(traces_span_metrics_calls_total{service_name="payment"}[2m]))
+          > 0.2
+        for: 30s
+        labels:
+          service: payment
+          severity: page
+        annotations:
+          summary: payment error rate above 20 percent
+
+      - alert: AdServiceCpuHigh
+        expr: max(jvm_cpu_recent_utilization_ratio{service_name="ad"}) > 0.25
+        for: 45s
+        labels:
+          service: ad
+          severity: page
+        annotations:
+          summary: ad service jvm cpu utilization above 25 percent of available cores
+
+      - alert: KafkaConsumerLagHigh
+        expr: max(kafka_consumer_group_lag_ratio or kafka_consumer_group_lag) > 500
+        for: 60s
+        labels:
+          service: kafka
+          severity: page
+        annotations:
+          summary: kafka consumer lag above 500 messages

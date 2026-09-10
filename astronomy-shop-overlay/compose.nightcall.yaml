@@ -1,0 +1,60 @@
+services:
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./src/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "127.0.0.1:9093:9093"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+
+  prometheus:
+    volumes:
+      - ./src/prometheus/prometheus-nightcall.yaml:/etc/prometheus/prometheus-config.yaml
+      - ./src/prometheus/rules:/etc/prometheus/rules
+    depends_on:
+      - alertmanager
+
+  night-call:
+    build:
+      context: ${NIGHT_CALL_PATH:-../night-call}
+    container_name: night-call
+    env_file:
+      - ${NIGHT_CALL_PATH:-../night-call}/.env
+    environment:
+      - NIGHT_CALL_HOST=0.0.0.0
+      - NIGHT_CALL_ASTRONOMY_SHOP_PATH=${ASTRONOMY_SHOP_PATH:-/root/code/astronomy-shop}
+      - NIGHT_CALL_FLAGD_CONFIG_PATH=${ASTRONOMY_SHOP_PATH:-/root/code/astronomy-shop}/src/flagd/demo.flagd.json
+      - NIGHT_CALL_STATE_DIR=/state
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${ASTRONOMY_SHOP_PATH:-/root/code/astronomy-shop}:${ASTRONOMY_SHOP_PATH:-/root/code/astronomy-shop}
+      - night-call-state:/state
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - jaeger
+      - alertmanager
+
+  status:
+    image: caddy:2-alpine
+    container_name: night-call-status
+    volumes:
+      - ${NIGHT_CALL_PATH:-../night-call}/status/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${NIGHT_CALL_PATH:-../night-call}/status:/srv/www:ro
+      - night-call-state:/srv/state:ro
+    ports:
+      - "127.0.0.1:8001:8001"
+    restart: unless-stopped
+
+volumes:
+  night-call-state:

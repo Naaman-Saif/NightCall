@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Night Call</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0B0E13; color: #E6EAF0; font: 15px/1.55 Archivo, system-ui, sans-serif; padding: 40px 24px; }
+  main { max-width: 960px; margin: 0 auto; }
+  h1 { font: 400 40px/1.1 "Instrument Serif", Georgia, serif; margin: 0 0 4px; }
+  .sub { color: #97A2B2; margin: 0 0 32px; }
+  h2 { font: 600 11px/1 ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: #E8A33D; margin: 28px 0 12px; }
+  .row { display: grid; grid-template-columns: 150px 1fr 140px 120px; gap: 16px; align-items: center; padding: 14px 16px; background: #131820; border: 1px solid #232C38; border-radius: 10px; margin-bottom: 8px; }
+  .t { font-family: ui-monospace, monospace; font-size: 12px; color: #6B7786; }
+  .k { color: #F4F7FB; font-weight: 600; }
+  .s { color: #97A2B2; font-size: 13px; }
+  .chip { font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 4px; border: 1px solid #2E3A49; color: #97A2B2; text-align: center; }
+  .proven { color: #4FB286; border-color: rgba(79,178,134,.4); }
+  .reproduced_unfixed { color: #E8A33D; border-color: rgba(232,163,61,.4); }
+  .not_reproduced { color: #E5615E; border-color: rgba(229,97,94,.4); }
+  .running, .open { color: #E8A33D; border-color: rgba(232,163,61,.4); }
+  a { color: #E8A33D; text-decoration: none; }
+  .empty { color: #6B7786; padding: 14px 16px; border: 1px dashed #232C38; border-radius: 10px; }
+  @media (max-width: 700px) { .row { grid-template-columns: 1fr; gap: 6px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Night Call</h1>
+  <p class="sub">Every incident, what was proven, and where the receipt is. Production is never touched.</p>
+  <h2>In progress</h2>
+  <div id="incidents"><div class="empty">Nothing in flight.</div></div>
+  <h2>Filed</h2>
+  <div id="runs"><div class="empty">No issues filed yet.</div></div>
+</main>
+<script>
+  const clock = (iso) => new Date(iso).toLocaleString(undefined, { hour12: false });
+  const chip = (text) => `<span class="chip ${text}">${text.replaceAll('_', ' ')}</span>`;
+  async function load(path) { try { const r = await fetch(path, { cache: 'no-store' }); return r.ok ? await r.json() : []; } catch { return []; } }
+  async function render() {
+    const incidents = (await load('/state/incidents.json')).filter((i) => i.status !== 'closed');
+    const runs = await load('/state/runs/index.json');
+    if (incidents.length) document.getElementById('incidents').innerHTML = incidents.map((i) =>
+      `<div class="row"><span class="t">${clock(i.receivedAt)}</span><span><span class="k">${i.alert.name}</span><br><span class="s">${i.alert.service}</span></span>${chip(i.status)}<span></span></div>`).join('');
+    if (runs.length) document.getElementById('runs').innerHTML = runs.map((r) =>
+      `<div class="row"><span class="t">${clock(r.finishedAt)}</span><span><span class="k">${r.alert.name}</span><br><span class="s">${r.alert.service}</span></span>${chip(r.outcome)}<a href="${r.issueUrl}" target="_blank" rel="noopener">open issue</a></div>`).join('');
+  }
+  render(); setInterval(render, 15000);
+</script>
+</body>
+</html>
