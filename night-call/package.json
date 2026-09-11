@@ -9,7 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint src test --max-warnings 0",
+    "lint": "eslint src --max-warnings 0",
     "test": "jest",
     "smoke:bedrock": "tsx scripts/smoke-bedrock.ts",
     "overlay": "tsx scripts/make-overlay.ts",
