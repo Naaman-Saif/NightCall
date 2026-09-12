@@ -113,3 +113,21 @@ Consequences here: Night Call's own published ports in `compose.nightcall.yaml` 
 No word from the box beyond what Saif relayed, and the repository is still not a source for this session, so nothing pushed from here. Added `pipeline.service.spec.ts`: the orchestration is now covered with fake dependencies (skip without a snapshot; diff, sandbox, issue and run record on the happy path). 23 tests.
 
 One thing that surfaced while writing it: `@strands-agents/sdk` is ESM only. The Nest build is CommonJS, which works on Node 22.12+ through `require(esm)`, but it is the first thing to suspect if `npm run smoke:bedrock` or the container fails on import. The fix, if needed, is `module: nodenext` in tsconfig.build.json and `"type": "module"` in package.json.
+
+### Sun Sep 13: build plan for the new product
+
+The product changed with the design brief: three roles, a live incident page, three proof rounds and an automatic mitigation PR, on the recommendation cache incident. PLAN.md is replaced. Each build step now has a plan in `docs/phases/`, a review and Saif's approval before anything is built.
+
+Cache proof timings, read from `result.json` of run `20260912-cache-feasibility-01`: the sandbox stack started once; each round took about 4.0 minutes (baseline 1.34, fault 0.39 to 0.47, mitigated 1.34, plus restart and idle); three rounds took 13.9 minutes from 18:25:52 to 18:39:46 UTC including stack start and teardown. Inside the 30 minute investigation budget, verification has to start by minute 13 to leave room for the PR.
+
+In the fault stage, memory sampled on every request peaked at 47 percent of the 500 MiB limit, then Docker killed the service 23 to 28 seconds in. A memory threshold would never fire. The alarm is three fixed rules instead:
+- crash: `resets(container_uptime_seconds{container_name="recommendation"}[2m]) > 0`. The memory and uptime series carry only `container_name` and `host_name`, and sandbox copies report into the same Prometheus under their own container names, so the match must be exact.
+- failing requests: span metrics `status_code="STATUS_CODE_ERROR"` on `oteldemo.RecommendationService/ListRecommendations` and the frontend `GET /api/recommendations` span. Today only UNSET series exist; ERROR appears on the first failure.
+- canary: the collector's existing httpcheck only probes `http://frontend-proxy:8080`. A second target on `/api/recommendations` goes in through the overlay.
+Prometheus scrapes every 60 s, so expect up to a minute from failure to alarm.
+
+Evidence additions: CPU is recorded next to memory, and an always-on recorder keeps 10 s samples for 30 minutes so agents see the climb before the crash.
+
+Models: provider-agnostic, each role set as `provider:modelId`. Lead and investigator on Featherless `zai-org/GLM-5.3`; verifier on Bedrock `global.anthropic.claude-fable-5-1`. The Strands OpenAI provider needs the `openai` package (peer ^6.45.0); 6.49.0 installed. Fallbacks: Kimi K3 on Featherless, OpenRouter, GPT-6 Astra or Opus 5 on Bedrock.
+
+Demo branch: `nightcall-demo` on `Naaman-Saif/opentelemetry-demo` at `2d1bc92`, the shop version on the box. The fork's main is two dependency bumps ahead.
