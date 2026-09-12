@@ -18,16 +18,22 @@ async function existingRuntimeId(): Promise<string> {
   return found?.agentRuntimeId ?? '';
 }
 
+async function tryCreate(shape: RuntimeShape, attempt: number): Promise<string> {
+  try {
+    const created = await agentCore.send(new CreateAgentRuntimeCommand({ agentRuntimeName: RUNTIME_NAME, ...shape }));
+    return created.agentRuntimeId ?? '';
+  } catch (error) {
+    if (error instanceof ServiceQuotaExceededException) throw error;
+    console.log(`create attempt ${attempt} failed: ${String(error)}`);
+    return '';
+  }
+}
+
 async function createWithRetry(shape: RuntimeShape): Promise<string> {
   for (let attempt = 1; attempt <= 6; attempt += 1) {
-    try {
-      const created = await agentCore.send(new CreateAgentRuntimeCommand({ agentRuntimeName: RUNTIME_NAME, ...shape }));
-      return created.agentRuntimeId ?? '';
-    } catch (error) {
-      if (error instanceof ServiceQuotaExceededException) throw error;
-      console.log(`create attempt ${attempt} failed: ${String(error)}`);
-      await sleep(15_000);
-    }
+    const agentRuntimeId = await tryCreate(shape, attempt);
+    if (agentRuntimeId !== '') return agentRuntimeId;
+    await sleep(15_000);
   }
   throw new Error('could not create the agent runtime');
 }
