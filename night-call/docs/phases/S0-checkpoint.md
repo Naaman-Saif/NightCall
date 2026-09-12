@@ -1,6 +1,13 @@
 # Get everything ready
 
-Status: plan revised after an independent Claude review (grill-me method, 2026-09-13). Waiting for Saif's answers and approval. Nothing below has been run.
+Status: done 2026-09-13 about 02:00 PKT. Reviewed by an independent Claude (grill-me method), approved by Saif, built and checked on the box.
+
+Results:
+- Repo synced and pushed; box clone on the same commit.
+- `nightcall-demo` on the fork at `2d1bc923654bcf6db415c4f1582952cdbf19f872`.
+- Model smoke test on the box: lead and investigator `featherless:zai-org/GLM-5.3`, verifier `featherless:moonshotai/Kimi-K3`; each called `read_number` once and answered 42.
+- Change from plan: Bedrock refuses every model on the AWS account (Error 002, NOT_AUTHORIZED), so Fable 5.1 could not be the verifier. Saif chose Kimi K3 on Featherless, and Featherless for model calls inside AgentCore.
+- Script lint and TypeScript pass; project lint passes; 23 of 23 tests pass; no secrets in committed files.
 
 ## Goal
 

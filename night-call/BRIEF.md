@@ -57,8 +57,8 @@ Experiments and mitigations run only in the sandbox. A mitigation may only move 
 ## Models
 Provider-agnostic. Each role reads its model from settings as `provider:modelId`; switching provider or model is a settings change, not a code change.
 - Investigation lead and experiment investigator: GLM-5.3 (open weights) through Featherless, via the Strands OpenAI-compatible provider.
-- Independent verifier: Claude Fable 5.1 through Amazon Bedrock.
-- Fallbacks: Kimi K3 on Featherless, OpenRouter for the same open models, GPT-6 Astra or Claude Opus 5 on Bedrock.
+- Independent verifier: Kimi K3 (open weights) through Featherless, a different model family from the one it checks.
+- Fallbacks: OpenRouter for the same open models; Claude Fable 5.1 through Amazon Bedrock once the AWS account has model access.
 
 ## Stack
 TypeScript on Node 22. NestJS service with dockerode, undici and zod. Agents in a separate ESM package using `@strands-agents/sdk` and the AgentCore TypeScript SDK. Web app in Vite and React, built from the NightCall design system. GitHub REST over undici.

@@ -17,7 +17,7 @@ Goal: a working product for Devpost "Agents for Humans" (deadline Tue 2026-09-15
 - Mitigation PRs target fork `Naaman-Saif/opentelemetry-demo`, branch `nightcall-demo` (created at shop commit `2d1bc92`, the version running on the box).
 - Web app: Vite React from the NightCall design system; Caddy serves static files; Nest serves the API. Operator routes live under `/op/`, gated by the hosting login; the backend does no auth there.
 - Everything runs on the box; public domains are wired by Saif.
-- Models are provider-agnostic: each role reads `provider:modelId` from settings. Lead and investigator use `featherless:zai-org/GLM-5.3`; verifier uses `bedrock:global.anthropic.claude-fable-5-1`. Fallbacks: Kimi K3 on Featherless, OpenRouter, GPT-6 Astra or Claude Opus 5 on Bedrock. Strands `OpenAIModel` with `api: 'chat'` and a custom `baseURL` covers any OpenAI-compatible host.
+- Models are provider-agnostic: each role reads `provider:modelId` from settings. Lead and investigator use `featherless:zai-org/GLM-5.3`; verifier uses `featherless:moonshotai/Kimi-K3`, a different model family so its checks stay independent. Bedrock models are blocked on the AWS account (every model refused with "Access to Bedrock models is not allowed for this account"), so AgentCore hosts the agents and all model calls go to Featherless. Fallbacks: OpenRouter for the same open models; Claude Fable 5.1 on Bedrock once account access is enabled, by settings only. Strands `OpenAIModel` with `api: 'chat'` and a custom `baseURL` covers any OpenAI-compatible host.
 - Monday: scope AWS credentials on the box down before the repo goes public; confirm the submission period start to size the pre-existing code disclosure.
 
 ## Model research (2026-09-13)
