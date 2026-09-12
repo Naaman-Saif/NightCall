@@ -1,9 +1,13 @@
 :8001 {
 	root * /srv/www
 	file_server
-	handle_path /state/* {
-		root * /srv/state
-		header Cache-Control "no-store"
-		file_server
+}
+
+:8002 {
+	handle /tool/* {
+		reverse_proxy night-call:8000
+	}
+	handle {
+		respond 404
 	}
 }
