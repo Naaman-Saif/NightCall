@@ -1,74 +1,67 @@
 # Night Call, project brief
 
 ## One line
-Every AI SRE tool wakes you up with a theory. Night Call wakes you up with the evidence: the failure reproduced in a sandboxed copy of the whole stack, and the fix proven against it, filed as a GitHub issue before you are awake.
+Every AI SRE tool wakes you up with a theory. Night Call wakes you up with evidence: the failure reproduced in a sealed copy of the application, a mitigation proven across three clean rounds, and a pull request waiting for your review.
 
-## Design
-Product definition, the outcome paths and the ICP live on a Claude Design canvas. Positioning copy in the video, the README and the Devpost description comes from there, not from this file.
+## Where the detail lives
+- Product and interface: `docs/design/NIGHTCALL-DESIGN-BRIEF.md`, with the approved visual direction from the NightCall design system.
+- Build plan and order of work: `PLAN.md`. Each build step has its own plan in `docs/phases/`.
+- Feasibility proof for the flagship incident: `experiments/cache-proof/`.
+- Running log of timings and decisions: `NOTES.md`.
 
 ## Hackathon facts
 - Agents for Humans Hackathon (AWS, Devpost). Track: Professional Agents.
-- Deadline: Sep 14 2026, 5:00pm PDT. That is Sep 15, 05:00 PKT. Internal deadline: Sunday Sep 13, 23:00 PKT.
-- Must use Strands Agents SDK. Deliverables: public repo with OSI license, architecture diagram, demo video under 5 minutes, text description on Devpost, one builder.aws.com post with "Agents for Humans" in the title (bonus points).
-- Judging: Potential Impact, Creativity, Technical Implementation (Strands usage, working non-trivial code), Design (complete product, not a proof of concept), Presentation.
+- Deadline: Sep 14 2026, 5:00pm PDT. That is Sep 15, 05:00 PKT. Product freeze: Sunday Sep 13, 23:00 PKT.
+- Must use Strands Agents SDK. Deliverables: public repo with OSI license, architecture diagram, demo video under 5 minutes, text description on Devpost, AWS Builder ID, one builder.aws.com post with "Agents for Humans" in the title (bonus points). A live demo link strengthens the technical score.
+- Judging, equally weighted: Technical Implementation (Strands usage, AgentCore deployment helps), Design, Potential Impact, Creativity, Presentation.
+
+## Who it is for
+A developer carrying on-call for many services at a very small company, often a one-person engineering team. They want senior engineering discipline from their tooling: find the evidence, reproduce the actual failure, prove a remedy, and never manufacture a reproduction.
 
 ## What it does
-1. Prometheus Alertmanager posts an alert to Night Call.
-2. Triage agent reads logs, traces and the config diff, returns a hypothesis.
-3. Deterministic code brings up a full clone of the stack, replays the diff, and confirms the clone shows the same failure signature as prod. If it does not, the issue says "could not reproduce" and stops.
-4. Remediator agent proposes fix candidates from a fixed action vocabulary.
-5. Deterministic code applies each candidate in the clone and probes before and after.
-6. Reporter agent files a GitHub issue with the evidence: reproduction diff, each candidate with its result.
-7. Clone destroyed.
+1. Prometheus fires on a fixed rule (the service crashed and restarted, its requests are failing, or a scheduled canary request fails). Alertmanager posts the alert to Night Call.
+2. An incident opens and a live incident page starts telling the story.
+3. Three roles share one investigation, running in one Amazon Bedrock AgentCore runtime:
+   - Investigation lead: reads logs, traces, memory, CPU and the deploy history of the flag file; writes the incident brief; forms up to three evidence-backed hypotheses; asks the developer a focused question when the answer changes the next step.
+   - Experiment investigator: records what counts as the same failure before any run, then chooses bounded experiments in a sealed copy of the application.
+   - Independent verifier: reviews every claimed reproduction and the three proof rounds. It can reject; it can never pass a check the code marked failed.
+4. Deterministic code owns everything that must not depend on a model: starting and sealing the sandbox, the pass rules, three clean rounds, the 30 minute budget, cleanup, and checking that production was untouched.
+5. After three of three rounds pass, Night Call opens a pull request with the exact mitigation against a dedicated demo branch of the application fork. A human decides whether to merge and deploy.
+6. If there is no sufficient proof within 30 minutes, the incident page reports what is known and unresolved, and no pull request is opened.
 
 ## What it deliberately does not do
-- It never mutates production. Production is read-only by construction. The sandbox has no network egress.
-- It does not open PRs and does not apply fixes. Implementation is the five-minute part once the fix is proven.
-- The model never invents a reproduction. Replay is code replaying a recorded diff. Zero degrees of freedom.
+- It never changes production. Production is read-only by construction. The sandbox has no network egress, no published ports and no Docker socket.
+- It never deploys. The pull request is the handoff; merging is a human decision.
+- The model never invents a reproduction. Pass and fail are computed by code against checks recorded before the experiment ran.
+- It does not call a mitigation a repair of the underlying defect.
 
-## Why this is different
-Commercial tools (Resolve, Cleric, Traversal, Datadog Bits, incident.io) and open source tools (HolmesGPT, K8sGPT, Aurora) all stop at diagnosis plus a proposal or PR. None run the fix before handing it over. Reading logs tells you why it broke. Only running the fix tells you the fix works.
+## Flagship incident
+Recommendation cache growth in the OpenTelemetry Demo (Astronomy Shop). A bad default for the `recommendationCacheFailure` flag is committed to the demo branch and deployed. Under shopper traffic the recommendation service grows memory until Docker kills it and requests fail. Proven on the box on Sep 12: out of memory after about 100 requests with the flag on, 400 of 400 healthy requests after flag off plus restart, production unchanged, three of three rounds.
 
-Strands ships an LLM risk classifier for its HumanInTheLoop handler and a sandboxed shell tool. Night Call does not claim those as novel. The novelty is verification of a structured action against a clone.
-
-## Scope: "the trigger is in the diff"
-Faults where the cause is visible in a config or flag diff and reproduces in a cold clone. Bad config push, crash loop from a bad env var, flag flip, a wrong image tag pinned in compose. Disk fill is out: it is not visible in a config diff and none of the actions address it. Load-dependent and state-dependent faults are tier two: diagnosed, not reproduced, and the issue says so honestly.
-
-## Target application
-OpenTelemetry Demo (Astronomy Shop), pre-built ghcr images, no source build. It ships Prometheus, Grafana, Jaeger, and flagd fault flags. Alertmanager is added by us.
-
-Faults used:
-- `paymentFailure` set to `100%`: happy path. Framed as a bad config push by a release bot. Fix: revert flag to known-good (`off`). Checkout answers 422 while it is on.
-- `adHighCpu` set to `on`: second fault. Fix candidates: revert flag, restart service. Show one candidate failing. Whether it reproduces in a cold clone is unverified until the box says so.
-- `kafkaQueueProblems`: tier two. Load-shaped, does not reproduce cold. Issue says so. Optional, Sunday only.
-
-## Action vocabulary (the only things the agent can propose)
-- `revert_flag(flag)`: sets the flag to its last value observed while healthy.
-- `restart_service(service)`: restarts one container.
-- `set_flag(flag, value)`: any novel value. Written into the issue as needing a human and never applied, not even in the clone.
-
-Two of these are ever trialled. `scale_replicas` was dropped on Sep 10: the demo pins every container_name, and Docker refuses to scale a service with a fixed container name, so the action could never run against this stack. No shell tool. No free-form commands. Ever.
+## Agent tools
+Agents never run shell commands. Every action is a bounded tool call to Night Call's tool API on the box, validated by schema and guarded by code: read-only evidence readers for production, a symptom checklist recorded before any experiment, experiments with limited flag values, restart choice, request count and pacing, and a mitigation limited to existing flag variants.
 
 ## Autonomy rule
-The agent may only move config to a value previously observed while the service was healthy. Novel values are never applied, even in the clone, without a human. Reverts to known-good are tried automatically.
+Experiments and mitigations run only in the sandbox. A mitigation may only move a flag to a variant that already exists in the flag file. Anything else goes to a human.
 
 ## Infrastructure
-- Hetzner 32 GB box: runs prod stack, clone stack, and the Night Call service. Verify arch with `uname -m`; if aarch64, confirm ghcr images are multi-arch before pulling.
-- Helsinki 6 GB and Falkenstein 12 GB boxes: not used.
-- Cowork works on the Mac. Deploy by `git pull` on the box via a Makefile target that runs over ssh.
+- Hetzner box: runs the production shop, the sandbox copies and the Night Call service. x86_64.
+- AgentCore runtime in eu-central-1 hosts the three agent roles and calls Night Call's tool API over HTTPS with a bearer token.
 - Docker socket is never exposed over TCP. Night Call gets it because it runs on the box.
+- Public hosting of the incident page is handled outside this repo; operator actions sit under a separate path behind that login.
 
 ## Repos
-- `night-call`: the agent and pipeline. Apache 2.0.
-- `astronomy-shop`: fork of opentelemetry-demo carrying our compose overlays and Alertmanager config. Issues are filed here so the artifact lands on the application's repo, like it would in real life.
+- `NightCall`: the service, agents, web app and overlays. Apache 2.0.
+- `Naaman-Saif/opentelemetry-demo`: fork of the demo with branch `nightcall-demo`. Mitigation pull requests target that branch.
 
-## Model
-Bedrock, Claude Sonnet, latest available in the chosen region, via a cross-region inference profile. Region: try eu-central-1 first for latency to Hetzner; fall back to us-east-1 if the model is unavailable there. Pin the exact model id in one config module after checking `aws bedrock list-foundation-models`. Do not hard-code an id from memory.
+## Models
+Provider-agnostic. Each role reads its model from settings as `provider:modelId`; switching provider or model is a settings change, not a code change.
+- Investigation lead and experiment investigator: GLM-5.3 (open weights) through Featherless, via the Strands OpenAI-compatible provider.
+- Independent verifier: Claude Fable 5.1 through Amazon Bedrock.
+- Fallbacks: Kimi K3 on Featherless, OpenRouter for the same open models, GPT-6 Astra or Claude Opus 5 on Bedrock.
 
 ## Stack
-TypeScript on Node 22, NestJS, `@strands-agents/sdk`, dockerode, undici, zod. Issues via the GitHub REST API over undici, no extra client library.
-
-The Strands TypeScript SDK is in preview. It carries the Graph multi-agent pattern and the `BeforeToolCallEvent` hook, which are the two SDK features this design needs. Conditional graph edges with runtime context are Python only and are not used, because routing between agents is deterministic code rather than a graph condition. If the smoke test does not complete one Bedrock round trip on the box, fall back to Python before writing anything else.
+TypeScript on Node 22. NestJS service with dockerode, undici and zod. Agents in a separate ESM package using `@strands-agents/sdk` and the AgentCore TypeScript SDK. Web app in Vite and React, built from the NightCall design system. GitHub REST over undici.
 
 Module boundaries live in ARCHITECTURE.md.
 
@@ -81,4 +74,4 @@ Module boundaries live in ARCHITECTURE.md.
 - No em dashes anywhere, including docs and the issue template.
 
 ## Cut list, hold to it
-No AgentCore. No MCP. No dashboard, the GitHub issue is the UI. No auth. No prod apply path. No rollback. No human interrupt in code. No database beyond a JSON file. No Kubernetes. No pretty UI. Mascot gets 30 minutes on Sunday and no more.
+No Kubernetes. No database beyond JSON files. No production apply path. No shell tool for agents. No general monitoring dashboard. No self-service onboarding, billing or integration marketplace. No arbitrary code repair. Mascot gets 30 minutes and no more.
