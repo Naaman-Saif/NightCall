@@ -14,7 +14,8 @@
     "smoke:bedrock": "tsx scripts/smoke-bedrock.ts",
     "overlay": "tsx scripts/make-overlay.ts",
     "signature": "tsx scripts/signature.ts",
-    "deploy-bot": "tsx scripts/deploy-bot.ts"
+    "deploy-bot": "tsx scripts/deploy-bot.ts",
+    "smoke:models": "tsx scripts/smoke-models.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -26,6 +27,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "dockerode": "^4.0.0",
+    "openai": "^6.49.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "undici": "^7.0.0",
