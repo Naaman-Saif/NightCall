@@ -2,6 +2,7 @@ import {
   CreateAgentRuntimeCommand,
   GetAgentRuntimeCommand,
   ListAgentRuntimesCommand,
+  ServiceQuotaExceededException,
   UpdateAgentRuntimeCommand,
 } from '@aws-sdk/client-bedrock-agentcore-control';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -23,6 +24,7 @@ async function createWithRetry(shape: RuntimeShape): Promise<string> {
       const created = await agentCore.send(new CreateAgentRuntimeCommand({ agentRuntimeName: RUNTIME_NAME, ...shape }));
       return created.agentRuntimeId ?? '';
     } catch (error) {
+      if (error instanceof ServiceQuotaExceededException) throw error;
       console.log(`create attempt ${attempt} failed: ${String(error)}`);
       await sleep(15_000);
     }
