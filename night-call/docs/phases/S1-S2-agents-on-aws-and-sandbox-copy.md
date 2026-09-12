@@ -1,6 +1,8 @@
 # Connect the agents to AWS, and build the sandbox copy of the shop
 
-Status: revised 2026-09-13 about 03:15 PKT after an independent Claude review (grill-me method). Waiting for Saif's answers and approval. Nothing below has been run.
+Status: built and merged to main 2026-09-13 about 03:20 PKT.
+- Part B done: one real round passed on the box (details in NOTES).
+- Part A done except AgentCore hosting, which the account blocks (agent quota 0, increase request pending). Approved fallback live: agent container on the box reaching the tool API through a quick tunnel. All other Part A checks passed.
 
 Part A proves the riskiest link: AWS hosting the agents and calling back to the box. Part B ports the proven Python cache runner to TypeScript so experiments run from the NightCall image. They share one plan, review and walkthrough. Part A owns every restart of the `night-call` container; Part B never runs inside that container, it runs in its own one-off container from the same image, so a Part A restart cannot kill a round mid-way.
 
