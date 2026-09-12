@@ -107,3 +107,9 @@ Cross-session messaging between the box's Claude and this one does not exist. Th
 My suggested fix (rewrite daemon.json, restart docker) was wrong and the box session declined it with evidence. The daemon setting was already in place and only governs the default bridge; the demo runs on a user-defined bridge, `opentelemetry-demo`, which needs `com.docker.network.bridge.host_binding_ipv4: 127.0.0.1` as a driver option on that network. The box put it in `compose.box-override.yaml` and recreated the stack. All 29 docker-proxy processes now bind 127.0.0.1; sshd is the only wildcard listener.
 
 Consequences here: Night Call's own published ports in `compose.nightcall.yaml` are now written as `127.0.0.1:8000`, `127.0.0.1:8001` and `127.0.0.1:9093` explicitly, so they stay on loopback even without the override. The clone network is `internal`, so it publishes nothing regardless. Ephemeral ports shifted on recreate, which does not matter to Night Call because it addresses containers by IP inside the network. Also: 2.28.40.184 is the box's real address after all.
+
+### Overnight check 1 (04:25 PKT)
+
+No word from the box beyond what Saif relayed, and the repository is still not a source for this session, so nothing pushed from here. Added `pipeline.service.spec.ts`: the orchestration is now covered with fake dependencies (skip without a snapshot; diff, sandbox, issue and run record on the happy path). 23 tests.
+
+One thing that surfaced while writing it: `@strands-agents/sdk` is ESM only. The Nest build is CommonJS, which works on Node 22.12+ through `require(esm)`, but it is the first thing to suspect if `npm run smoke:bedrock` or the container fails on import. The fix, if needed, is `module: nodenext` in tsconfig.build.json and `"type": "module"` in package.json.
