@@ -7,6 +7,7 @@ import { restartRecommendation } from './restart-recommendation';
 import { createRunFolder, runFolderFor, writeJson } from './run-files';
 import { setSandboxFlag } from './sandbox-flag';
 import { bringStackUp } from './stack-ready';
+import { requireNotInterrupted } from './stop-request';
 import { sleep } from './time-budget';
 import { runWorkload } from './workload';
 import type { WorkloadSummary } from './workload-summary';
@@ -53,6 +54,7 @@ export function forgetSandbox(): void {
 }
 
 export async function prepareSandbox(runId: string): Promise<string> {
+  requireNotInterrupted();
   const runFolder = runFolderFor(runId);
   await preflight(runFolder);
   createRunFolder(runFolder);

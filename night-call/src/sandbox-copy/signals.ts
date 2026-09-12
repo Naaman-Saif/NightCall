@@ -1,11 +1,11 @@
 import { stopSandbox } from './cleanup';
-import { requestStop } from './stop-request';
+import { requestInterrupt } from './stop-request';
 
 const forcedExitMs = 300_000;
 
 function onSignal(signal: NodeJS.Signals): void {
   console.log(JSON.stringify({ interrupted: signal }));
-  requestStop(signal);
+  requestInterrupt(signal);
   stopSandbox().catch((error: unknown) => console.error(JSON.stringify({ cleanupFailed: String(error) })));
   setTimeout(() => process.exit(130), forcedExitMs).unref();
 }

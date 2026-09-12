@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createObserver, type Observation, type Observer } from './observation';
 import { requestRecommendations } from './recommendations-request';
 import { openJsonLines, writeJson, type JsonLinesWriter } from './run-files';
-import { requireNoStopRequest } from './stop-request';
+import { requireNotInterrupted } from './stop-request';
 import { workloadShouldStop, type WorkloadSample } from './stop-rules';
 import { cappedMs, sleep } from './time-budget';
 import { summarizeWorkload, type WorkloadSummary } from './workload-summary';
@@ -31,7 +31,7 @@ interface WorkloadSession {
 
 async function takeSample(session: WorkloadSession, index: number): Promise<WorkloadSample> {
   cappedMs(1);
-  requireNoStopRequest();
+  requireNotInterrupted();
   const traceId = randomUUID().replace(/-/g, '');
   const started = Date.now();
   const identity = { sessionId: `${session.plan.name}-${index}`, traceId };
