@@ -10,7 +10,7 @@ const CAUSE_STATUS: Partial<Record<Hypothesis['status'], RunCause['status']>> = 
 };
 
 function citedEvidence(snapshot: Snapshot, evidenceIds: string[]): CauseEvidence[] {
-  return evidenceIds.map((evidenceId) => {
+  return [...new Set(evidenceIds)].map((evidenceId) => {
     const recorded = Object.hasOwn(snapshot.evidence, evidenceId);
     return { text: recorded ? snapshot.evidence[evidenceId].summary : 'Cited evidence was not recorded', evidenceId };
   });
