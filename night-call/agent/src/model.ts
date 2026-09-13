@@ -7,9 +7,11 @@ export type RoleSetting = { role: string; provider: string; modelId: string; rea
 export const DEFAULT_REASONING = 'high';
 export const FEATHERLESS_MAX_COMPLETION_TOKENS = 32_768;
 const NO_REASONING = 'none';
+const MEDIUM_BY_DEFAULT = new Set(['VERIFIER', 'LEAD_FALLBACK']);
 
 export function reasoningFor(role: string, env: NodeJS.ProcessEnv = process.env): string {
-  return env[`NIGHT_CALL_${role}_REASONING`]?.trim() || DEFAULT_REASONING;
+  const roleDefault = MEDIUM_BY_DEFAULT.has(role) ? 'medium' : DEFAULT_REASONING;
+  return env[`NIGHT_CALL_${role}_REASONING`]?.trim() || roleDefault;
 }
 
 export function parseRoleSetting(role: string, value: string): RoleSetting {

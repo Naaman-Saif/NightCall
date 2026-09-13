@@ -18,17 +18,18 @@ test('attempts one and two use the lead model and the third switches to the fall
   assert.deepEqual([settingForAttempt(3, env).provider, settingForAttempt(3, env).modelId], ['featherless', 'moonshotai/Kimi-K3']);
 });
 
-test('reasoning is high by default, set per role, and the fallback has its own setting', () => {
+test('reasoning is high for lead and investigator, medium for the verifier and the lead fallback, and set per role', () => {
   assert.equal(settingForAttempt(1, env).reasoning, 'high');
-  assert.equal(settingForAttempt(3, env).reasoning, 'high');
-  const configured = { ...env, NIGHT_CALL_LEAD_REASONING: 'medium', NIGHT_CALL_LEAD_FALLBACK_REASONING: 'low' };
-  assert.deepEqual([settingForAttempt(2, configured).reasoning, settingForAttempt(3, configured).reasoning], ['medium', 'low']);
-  assert.equal(readRoleSetting('VERIFIER', { NIGHT_CALL_VERIFIER_MODEL: 'featherless:moonshotai/Kimi-K3' }).reasoning, 'high');
+  assert.equal(settingForAttempt(3, env).reasoning, 'medium');
+  assert.equal(readRoleSetting('INVESTIGATOR', { NIGHT_CALL_INVESTIGATOR_MODEL: 'featherless:zai-org/GLM-5.3' }).reasoning, 'high');
+  assert.equal(readRoleSetting('VERIFIER', { NIGHT_CALL_VERIFIER_MODEL: 'featherless:moonshotai/Kimi-K3' }).reasoning, 'medium');
+  const configured = { ...env, NIGHT_CALL_LEAD_REASONING: 'medium', NIGHT_CALL_LEAD_FALLBACK_REASONING: 'high' };
+  assert.deepEqual([settingForAttempt(2, configured).reasoning, settingForAttempt(3, configured).reasoning], ['medium', 'high']);
 });
 
 test('every model gets its reasoning setting and room for 32768 completion tokens, and none leaves reasoning out', () => {
   const kimi = readRoleSetting('VERIFIER', { NIGHT_CALL_VERIFIER_MODEL: 'featherless:moonshotai/Kimi-K3' });
-  assert.deepEqual(featherlessParams(kimi), { parallel_tool_calls: false, max_tokens: 32_768, reasoning_effort: 'high' });
+  assert.deepEqual(featherlessParams(kimi), { parallel_tool_calls: false, max_tokens: 32_768, reasoning_effort: 'medium' });
   assert.deepEqual(featherlessParams({ ...kimi, reasoning: 'none' }), { parallel_tool_calls: false, max_tokens: 32_768 });
 });
 
