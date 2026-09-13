@@ -6,6 +6,7 @@ export type HypothesisStatus = 'testing' | 'supported' | 'contradicted' | 'incon
 export type Verdict = 'matches' | 'differs' | 'inconclusive' | 'failed';
 export type CompletionReason = 'completed' | 'insufficient_evidence' | 'infrastructure_failure' | 'interrupted';
 export type KnownFact = { text: string; evidenceIds: string[] };
+export type SourceLink = { label: string; url: string };
 export type CheckResult = { name: string; passed: boolean; observed: number };
 export type ContractCheck = { name: string; comparator: 'gte' | 'lte' | 'eq'; value: number; unit: string };
 export type Recipe = { flagVariant: string; restart: boolean; count: number; pacingMs: number; stopOnFailure: boolean };
@@ -19,6 +20,7 @@ export type EventPayloads = {
   brief_updated: { summary: string; knownFacts: KnownFact[]; unknowns: string[]; nextStep: string };
   evidence_recorded: {
     evidenceId: string; kind: EvidenceKind; source: string; summary: string; observedAt: string; excerpt: string;
+    sourceLinks?: SourceLink[];
   };
   hypothesis_proposed: {
     hypothesisId: string; claim: string; supportingEvidenceIds: string[];

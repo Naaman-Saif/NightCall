@@ -1,13 +1,15 @@
+import type { ReactNode } from 'react';
 import type { Hypothesis, Snapshot } from '../api/contract';
 import { hypothesisClaim } from '../format/claims';
-import { Card, HypothesisCard, RoleTag } from '../kit';
+import { Card, HypothesisCard } from '../kit';
+import { EvidenceLine } from './source-links';
 
 type HypothesisViewProps = { snapshot: Snapshot; hypothesis: Hypothesis; index: number };
 
 export function HypothesesPanel({ snapshot }: { snapshot: Snapshot }) {
   return (
-    <Card eyebrow="Investigation lead" title="Hypotheses" actions={<RoleTag role="lead" />} className="section-hypotheses">
-      {snapshot.hypotheses.length === 0 && <p className="muted">No hypothesis yet. The lead gathers evidence first.</p>}
+    <Card title="Possible causes" className="section-hypotheses">
+      {snapshot.hypotheses.length === 0 && <p className="muted">No possible cause yet. Evidence is gathered first.</p>}
       <div className="card-stack">
         {snapshot.hypotheses.map((hypothesis, index) => (
           <HypothesisView key={hypothesis.id} snapshot={snapshot} hypothesis={hypothesis} index={index + 1} />
@@ -27,13 +29,15 @@ function HypothesisView({ snapshot, hypothesis, index }: HypothesisViewProps) {
       title={hypothesis.claim}
       claim={claim}
       qualifier={qualifier}
-      supporting={evidenceSummaries(snapshot, hypothesis.supportingEvidenceIds)}
-      contradicting={evidenceSummaries(snapshot, hypothesis.contradictingEvidenceIds)}
+      supporting={evidenceLines(snapshot, hypothesis.supportingEvidenceIds)}
+      contradicting={evidenceLines(snapshot, hypothesis.contradictingEvidenceIds)}
       nextStep={isOpen ? `check the prediction. ${hypothesis.predicted}` : undefined}
     />
   );
 }
 
-function evidenceSummaries(snapshot: Snapshot, evidenceIds: string[]): string[] {
-  return evidenceIds.map((evidenceId) => snapshot.evidence[evidenceId]?.summary ?? evidenceId);
+function evidenceLines(snapshot: Snapshot, evidenceIds: string[]): ReactNode[] {
+  return evidenceIds.map((evidenceId) => (
+    <EvidenceLine key={evidenceId} evidence={snapshot.evidence[evidenceId]} fallback={evidenceId} />
+  ));
 }

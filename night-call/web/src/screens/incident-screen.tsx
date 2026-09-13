@@ -1,20 +1,19 @@
 import type { SubmitAnswer } from '../api/client';
-import type { IncidentEvent, Snapshot } from '../api/contract';
+import type { Snapshot } from '../api/contract';
 import type { IncidentView } from '../api/use-incident-stream';
 import { Banner, EmptyState } from '../kit';
 import { BriefBlock } from './brief-block';
-import { ExperimentsPanel } from './experiments-panel';
 import { HypothesesPanel } from './hypotheses-panel';
 import { IncidentHeader } from './incident-header';
-import { QuestionColumn } from './question-column';
+import { MitigationPanel } from './mitigation-panel';
+import { ReproductionPanel } from './reproduction-panel';
 import { ResultPanel } from './result-panel';
-import { RolesStrip } from './roles-strip';
 import { Timeline } from './timeline';
+import { UnresolvedQuestions } from './unresolved-questions';
 import { VerificationPanel } from './verification-panel';
 import { WhatHappenedSection } from './what-happened-section';
 
 type IncidentScreenProps = { view: IncidentView; isOperator: boolean; isSample: boolean; submitAnswer: SubmitAnswer };
-type MainSectionsProps = { snapshot: Snapshot; events: IncidentEvent[] };
 
 export function IncidentScreen(props: IncidentScreenProps) {
   if (props.view.loadFailed) {
@@ -30,27 +29,17 @@ function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: 
       <IncidentHeader incident={snapshot.incident} connection={view.connection} />
       {!isOperator && <PublicBanner />}
       <WhatHappenedSection incident={snapshot.incident} events={view.events} isSample={isSample} />
-      <div className="incident-columns" data-layout={phoneLayoutFor(snapshot)}>
-        <MainSections snapshot={snapshot} events={view.events} />
-        <aside className="incident-aside">
-          <QuestionColumn questions={snapshot.questions} context={snapshot.context} isOperator={isOperator} submitAnswer={submitAnswer} />
-        </aside>
+      <div className="report" data-layout={phoneLayoutFor(snapshot)}>
+        <BriefBlock snapshot={snapshot} />
+        <HypothesesPanel snapshot={snapshot} />
+        <ReproductionPanel snapshot={snapshot} />
+        <MitigationPanel snapshot={snapshot} />
+        <VerificationPanel snapshot={snapshot} />
+        <ResultPanel snapshot={snapshot} />
+        <UnresolvedQuestions snapshot={snapshot} isOperator={isOperator} submitAnswer={submitAnswer} />
+        <Timeline events={view.events} />
       </div>
     </div>
-  );
-}
-
-function MainSections({ snapshot, events }: MainSectionsProps) {
-  return (
-    <section className="incident-main">
-      <BriefBlock brief={snapshot.brief} />
-      <VerificationPanel snapshot={snapshot} />
-      <ResultPanel snapshot={snapshot} />
-      <RolesStrip roles={snapshot.roles} />
-      <Timeline events={events} />
-      <HypothesesPanel snapshot={snapshot} />
-      <ExperimentsPanel experiments={snapshot.experiments} />
-    </section>
   );
 }
 

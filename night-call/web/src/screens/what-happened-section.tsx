@@ -31,7 +31,7 @@ function SampleWhatHappened({ incident, events }: { incident: Incident; events: 
 function WhatHappenedCard({ incident, data }: CardProps) {
   const title = `Memory and CPU for ${incident.service}`;
   return (
-    <Card eyebrow="What happened" title={title} actions={incident.illustrative && <DemoBadge />} className="section-what-happened">
+    <Card eyebrow="Measurements" title={title} actions={incident.illustrative && <DemoBadge />} className="section-what-happened">
       {data.series ? (
         <WhatHappenedChart series={data.series} markers={data.markers} />
       ) : (

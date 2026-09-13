@@ -13,9 +13,9 @@ export function AcceptedAnswer({ questionId, text }: { questionId: string; text:
 
 export function PublicAnswer({ questionId, text }: { questionId: string; text: string }) {
   return (
-    <>
-      {text}
-      <span className="next-step-line">{describeNextStep(questionId, text)}</span>
-    </>
+    <div className="answer-accepted">
+      <p className="answer-text">{text}</p>
+      <p className="next-step-line">{describeNextStep(questionId, text)}</p>
+    </div>
   );
 }

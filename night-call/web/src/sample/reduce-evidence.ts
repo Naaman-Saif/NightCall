@@ -2,8 +2,8 @@ import type { Hypothesis, IncidentEvent, Snapshot } from '../api/contract';
 import { reducerFrom } from './reducer-table';
 
 function recordEvidence(snapshot: Snapshot, event: IncidentEvent<'evidence_recorded'>): Snapshot {
-  const { evidenceId, kind, source, summary, observedAt, excerpt } = event.payload;
-  const evidence = { ...snapshot.evidence, [evidenceId]: { kind, source, summary, observedAt, excerpt } };
+  const { evidenceId, kind, source, summary, observedAt, excerpt, sourceLinks } = event.payload;
+  const evidence = { ...snapshot.evidence, [evidenceId]: { kind, source, summary, observedAt, excerpt, sourceLinks } };
   return { ...snapshot, evidence };
 }
 

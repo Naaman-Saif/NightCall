@@ -10,8 +10,6 @@ export { ClaimLabel } from './design-system/components/incident/ClaimLabel';
 export { DemoBadge } from './design-system/components/incident/DemoBadge';
 export { EvidenceRow } from './design-system/components/incident/EvidenceRow';
 export { HypothesisCard } from './design-system/components/incident/HypothesisCard';
-export { QuestionCard } from './design-system/components/incident/QuestionCard';
-export { RoleTag } from './design-system/components/incident/RoleTag';
 export { VerificationCycles } from './design-system/components/incident/VerificationCycles';
 export type { Claim } from './design-system/components/incident/ClaimLabel';
 export type { Cycle as CycleTile } from './design-system/components/incident/VerificationCycles';
