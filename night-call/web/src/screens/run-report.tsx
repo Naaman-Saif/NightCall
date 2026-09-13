@@ -40,11 +40,11 @@ function NowLine({ report }: { report: RunReport }) {
 }
 
 function StepLine({ step, evidence }: { step: RunStep; evidence: EvidenceById }) {
-  const links = step.evidenceId ? evidence[step.evidenceId]?.sourceLinks : undefined;
+  const exactDataLink = step.evidenceId ? evidence[step.evidenceId]?.sourceLinks?.slice(0, 1) : undefined;
   return (
     <li>
       {step.value ? `${step.text}: ${step.value}` : step.text}
-      <SourceLinks links={links} />
+      <SourceLinks links={exactDataLink} />
     </li>
   );
 }
