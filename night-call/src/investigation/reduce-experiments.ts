@@ -26,9 +26,10 @@ function recordContract(snapshot: Snapshot, event: IncidentEvent): Snapshot {
 }
 
 function startExperiment(snapshot: Snapshot, event: IncidentEvent): Snapshot {
-  const { experimentId, ...started } = plainPayload(payloadOf(event, 'experiment_started'));
+  const { experimentId, trafficSource, ...started } = plainPayload(payloadOf(event, 'experiment_started'));
   const empty = { finishedAt: null, progress: null, verdict: null, checks: [], review: null, seriesRef: null };
-  const experiment: Experiment = { id: experimentId, ...started, startedAt: event.occurredAt, ...empty };
+  const source = { trafficSource: trafficSource ?? null };
+  const experiment: Experiment = { id: experimentId, ...started, ...source, startedAt: event.occurredAt, ...empty };
   const others = snapshot.experiments.filter((existing) => existing.id !== experimentId);
   const reproduction = started.kind === 'reproduction' ? 'testing' : snapshot.reproduction;
   return { ...snapshot, experiments: [...others, experiment], reproduction };

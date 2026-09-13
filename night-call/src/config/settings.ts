@@ -32,6 +32,7 @@ export const settings = Object.freeze({
   invokeAgentsOnAlert: setting('NIGHT_CALL_INVOKE_AGENTS_ON_ALERT', 'false') === 'true',
   sampleIncidentPath: setting('NIGHT_CALL_SAMPLE_INCIDENT_PATH', '/app/web/public/fixtures/sample-incident.json'),
   agentRuntimeArn: setting('NIGHT_CALL_AGENT_RUNTIME_ARN', ''),
+  budgetMinutes: Number(setting('NIGHT_CALL_BUDGET_MINUTES', '30')),
 });
 
 const requiredSettings: Record<string, string> = {

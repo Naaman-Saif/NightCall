@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { SettingsModule } from './config/settings.module';
+import { ExperimentsModule } from './experiments/experiments.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { InvestigationModule } from './investigation/investigation.module';
 import { OperatorApiModule } from './operator-api/operator-api.module';
@@ -17,6 +18,7 @@ import { ToolApiModule } from './tool-api/tool-api.module';
     RecorderModule,
     IncidentsModule,
     ToolApiModule,
+    ExperimentsModule,
     PublicApiModule,
     OperatorApiModule,
   ],

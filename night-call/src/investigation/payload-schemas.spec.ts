@@ -29,8 +29,12 @@ describe('payload schemas', () => {
   });
 
   it('keeps experiment counts and pacing inside the agreed bounds', () => {
-    const recipe = { flagVariant: 'on', restart: true, count: 40, pacingMs: 200, stopOnFailure: true };
-    const experiment = { experimentId: 'e', kind: 'reproduction', hypothesisId: 'h', contractId: 'c', purpose: 'p', recipe };
-    expect(payloadSchemas.experiment_started.safeParse(experiment).success).toBe(false);
+    const recipe = { flagVariant: 'on', restart: true, count: 1040, pacingMs: 0, stopOnFailure: true, speed: 1 };
+    const experiment = { experimentId: 'e', kind: 'reproduction', hypothesisId: 'h', contractId: 'c', purpose: 'p', recipe, trafficSource: 'traces' };
+    expect(payloadSchemas.experiment_started.safeParse(experiment).success).toBe(true);
+    const tooMany = { ...experiment, recipe: { ...recipe, count: 6000 } };
+    expect(payloadSchemas.experiment_started.safeParse(tooMany).success).toBe(false);
+    const tooFast = { ...experiment, recipe: { ...recipe, speed: 8 } };
+    expect(payloadSchemas.experiment_started.safeParse(tooFast).success).toBe(false);
   });
 });
