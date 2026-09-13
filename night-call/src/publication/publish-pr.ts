@@ -6,6 +6,8 @@ import { incidentFolder } from '../investigation/incident-paths';
 import { requireSnapshot } from '../investigation/require-snapshot';
 import { appendAsService } from '../investigation/service-append';
 import type { Snapshot } from '../investigation/snapshot';
+import { CACHE_FLAG } from '../production/flag-release';
+import { defaultVariantIn } from '../production/flag-text';
 import { flagChangeOf } from './flag-diff';
 import { ensureBranch, fileOnBranch, openPull, writeFlagFile, type Github, type PullRequest } from './github-steps';
 import { prBodyOf } from './pr-body';
@@ -17,6 +19,7 @@ export function publicationRefusal(snapshot: Snapshot, nowMs: number): string | 
   if (snapshot.incident.lifecycle !== 'active') return `the incident is ${snapshot.incident.completionReason ?? 'finished'}`;
   if (Date.parse(snapshot.incident.deadlineAt) <= nowMs) return 'the time budget is used up';
   if (!runIsVerified(snapshot)) return 'no approved 3 of 3 verification run';
+  if (!snapshot.mitigation?.variant) return 'the mitigation has no flag variant';
   return ['publishing', 'published'].includes(snapshot.publication.state) ? `publication is already ${snapshot.publication.state}` : null;
 }
 
@@ -31,7 +34,9 @@ async function pushPull(deps: PublishDeps, snapshot: Snapshot): Promise<PullRequ
   const mitigation = snapshot.mitigation!;
   const variant = String(mitigation.variant);
   const branch = `nightcall/${label.toLowerCase()}-${mitigation.id}`;
-  const change = flagChangeOf((await fileOnBranch(deps.github, settings.demoBranch)).text, variant);
+  const baseText = (await fileOnBranch(deps.github, settings.demoBranch)).text;
+  if (defaultVariantIn(baseText, CACHE_FLAG) === variant) throw new Error(`${settings.demoBranch} already has ${CACHE_FLAG} ${variant}, nothing to publish`);
+  const change = flagChangeOf(baseText, variant);
   await ensureBranch(deps.github, branch);
   await writeFlagFile(deps.github, { branch, text: change.text, message: `fix: set recommendationCacheFailure to ${variant} (NightCall ${label})` });
   const body = prBodyOf(readLog(incidentFolder(deps.writer.stateDir, snapshot.incident.id)).events);

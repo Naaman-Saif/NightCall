@@ -12,9 +12,11 @@ const encoded = Buffer.from(flagText).toString('base64');
 
 function fakeGithub(options: { branchExists: boolean; failPull: boolean }) {
   const calls: string[] = [];
+  const bodies: unknown[] = [];
   const answer = (call: GithubCall): unknown => {
     const method = call.method ?? 'GET';
     calls.push(`${method} ${call.path.split('?')[0]}`);
+    bodies.push(call.body);
     if (call.path.includes('/git/ref/heads/')) return { object: { sha: 'base-sha' } };
     if (method === 'POST' && call.path.endsWith('/git/refs') && options.branchExists) throw new Error('github POST /git/refs answered 422');
     if (method === 'GET' && call.path.includes('/contents/')) return { sha: 'file-sha', content: encoded };
@@ -23,7 +25,7 @@ function fakeGithub(options: { branchExists: boolean; failPull: boolean }) {
     return { commit: { sha: 'commit-sha' } };
   };
   const github = (<Result>(call: GithubCall) => Promise.resolve().then(() => answer(call) as Result)) as Github;
-  return { github, calls };
+  return { github, calls, bodies };
 }
 
 async function verifiedIncident(approved = true): Promise<{ writer: EventWriter; incidentId: string }> {
@@ -44,9 +46,14 @@ async function verifiedIncident(approved = true): Promise<{ writer: EventWriter;
 describe('publication', () => {
   it('opens one pull request after an approved 3 of 3 run and finishes the incident honestly', async () => {
     const { writer, incidentId } = await verifiedIncident();
-    const { github, calls } = fakeGithub({ branchExists: false, failPull: false });
+    const { github, calls, bodies } = fakeGithub({ branchExists: false, failPull: false });
     expect(await publishPullRequest({ writer, github }, incidentId)).toBeNull();
     expect(calls.filter((call) => call.startsWith('PUT') || call.startsWith('POST'))).toHaveLength(3);
+    const pull = bodies[calls.indexOf('POST /repos/Naaman-Saif/opentelemetry-demo/pulls')] as { body: string; base: string; head: string };
+    expect(pull).toMatchObject({ base: 'nightcall-demo', head: 'nightcall/inc-001-mit-1' });
+    expect(pull.body).toContain('+      "defaultVariant": "off",');
+    expect(pull.body).toContain('3/3 verification cycles passed under the recorded conditions.');
+    expect(pull.body).toContain('Round 3 (replayed at 2x speed): passed');
     const snapshot = readSnapshot(writer.stateDir, incidentId);
     expect(snapshot?.publication).toMatchObject({ state: 'published', number: 7, baseBranch: 'nightcall-demo' });
     expect(snapshot?.publication.diff).toContain('+      "defaultVariant": "off",');
