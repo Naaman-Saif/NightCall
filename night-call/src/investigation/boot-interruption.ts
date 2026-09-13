@@ -3,7 +3,8 @@ import type { EventWriter } from './event-writer';
 import { incidentIds } from './incident-catalog';
 import { incidentFolder } from './incident-paths';
 import { incidentIsActive } from './reduce-events';
-import { readSnapshotFile, snapshotMatchesLog, writeSnapshot } from './snapshot-file';
+import { readSnapshotFile, writeSnapshot } from './snapshot-file';
+import { snapshotIsCurrent } from './snapshot-version';
 import { recoverLog } from './tail-recovery';
 
 const interruption: EventDraft = {
@@ -16,7 +17,7 @@ const interruption: EventDraft = {
 
 function recoverFolder(folder: string): void {
   const events = recoverLog(folder);
-  if (!snapshotMatchesLog(readSnapshotFile(folder), events)) writeSnapshot(folder, events);
+  if (!snapshotIsCurrent(readSnapshotFile(folder), events)) writeSnapshot(folder, events);
 }
 
 async function interruptIfActive(writer: EventWriter, incidentId: string): Promise<IncidentEvent | null> {

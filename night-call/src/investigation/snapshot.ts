@@ -58,6 +58,7 @@ export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' |
 };
 
 export type Snapshot = {
+  snapshotVersion: number;
   incident: IncidentFacts;
   headline: string;
   investigation: InvestigationState;
