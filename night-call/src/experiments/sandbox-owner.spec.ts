@@ -29,8 +29,9 @@ describe('sandbox owner', () => {
     const fake = fakeWorker();
     const owner = new SandboxOwner(stream, () => fake.worker);
     await owner.workerFor('inc-1');
+    expect(owner.stackStartMinutes('inc-1')).toBeCloseTo(50 / 60);
     const warming = owner.warmUp('inc-1');
-    expect(owner.isWarmFor('inc-1')).toBe(true);
+    expect(owner.stackStartMinutes('inc-1')).toBe(0);
     expect(await owner.workerFor('inc-1')).toBe(fake.worker);
     const [first, second] = await Promise.all([warming, owner.warmUp('inc-1')]);
     expect(first).toBe(second);
@@ -38,7 +39,7 @@ describe('sandbox owner', () => {
     stream.publish({ incidentId: 'inc-1', type: 'investigation_stopped' } as IncidentEvent);
     await new Promise((resolve) => setImmediate(resolve));
     expect(fake.stops()).toBe(1);
-    expect(owner.isWarmFor('inc-1')).toBe(false);
+    expect(owner.stackStartMinutes('inc-1')).toBeGreaterThan(0);
   });
 
   it('loops the recipe offsets until the mitigation request count is reached', () => {

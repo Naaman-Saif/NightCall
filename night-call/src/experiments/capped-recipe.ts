@@ -2,7 +2,7 @@ import type { RecipeRequest, TrafficRecipe } from '../production/traffic-recipe-
 
 export type ReplayShape = { speed: number; capMs: number | null; requestCount: number | null };
 
-export const REPLAY_CAP_MS = 5 * 60_000;
+export const REPLAY_CAP_MS = 4 * 60_000;
 export const MIN_MITIGATION_REQUESTS = 200;
 
 export function cappedRecipe(recipe: TrafficRecipe, window: { speed: number; capMs: number }): TrafficRecipe {

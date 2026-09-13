@@ -14,8 +14,7 @@ export type RecipeSummary = { present: boolean; source: TrafficSource | null; re
 
 const FIXED_COUNT = 400;
 const FIXED_PACING_MS = 200;
-const COLD_START_MINUTES = 3;
-const COLLECTION_MINUTES = 1;
+const RESTART_AND_COLLECTION_MINUTES = 0.5;
 
 function storedRecipe(folder: string): TrafficRecipe | null {
   const path = join(folder, RECIPE_FILE);
@@ -50,6 +49,6 @@ export function trafficPlanOf(folder: string, request: TrafficRequest): TrafficP
   return { source: recipe.source, recipePath, count: shaped.requests.length, pacingMs: 0, replayMinutes: replayMinutes(shaped, request.speed), shape };
 }
 
-export function estimatedMinutesOf(plan: TrafficPlan, warm: boolean): number {
-  return Math.ceil((warm ? 0 : COLD_START_MINUTES) + plan.replayMinutes + COLLECTION_MINUTES);
+export function estimatedMinutesOf(plan: TrafficPlan, stackStartMinutes: number): number {
+  return Math.ceil(stackStartMinutes + RESTART_AND_COLLECTION_MINUTES + plan.replayMinutes);
 }

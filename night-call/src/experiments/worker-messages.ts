@@ -3,7 +3,7 @@ import type { WorkloadSummary } from '../sandbox-copy/workload-summary';
 
 export type RoundRequest = {
   name: string;
-  flagVariant: 'on' | 'off';
+  flagVariant: string;
   restart: boolean;
   stopOnFailure: boolean;
   count: number;

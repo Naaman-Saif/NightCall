@@ -17,6 +17,10 @@ export function verificationStartMinutesLeft(reading: ClockReading): number {
   return minutesUntil(reading, VERIFICATION_START_END_MINUTE);
 }
 
+export function verificationStartsInTime(reading: ClockReading): boolean {
+  return reading.nowMs <= Date.parse(reading.startedAt) + VERIFICATION_START_END_MINUTE * MINUTE_MS;
+}
+
 export function experimentEndsInTime(reading: ClockReading, estimatedMinutes: number): boolean {
   const endMs = Date.parse(reading.startedAt) + EXPLORATION_END_MINUTE * MINUTE_MS;
   return reading.nowMs + estimatedMinutes * MINUTE_MS <= endMs;

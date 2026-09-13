@@ -21,7 +21,7 @@ function proposeMitigation(snapshot: Snapshot, event: IncidentEvent): Snapshot {
 }
 
 function pendingCycles(verificationRunId: string): Cycle[] {
-  return [1, 2, 3].map((number) => ({ number, state: 'pending', checks: [], verificationRunId }));
+  return [1, 2, 3].map((number) => ({ number, state: 'pending', checks: [], verificationRunId, speed: null }));
 }
 
 function startVerification(snapshot: Snapshot, event: IncidentEvent): Snapshot {
