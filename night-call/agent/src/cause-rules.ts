@@ -1,11 +1,12 @@
 import { claimsFailingRequests, failuresMeasured } from './brief-check.js';
+import { settleCitations, type DroppedCitation } from './citation-rules.js';
 import { settleIntervals, unmatchedNumbers } from './claim-numbers.js';
 import { effectFailure, supportFailure, type CheckFailure } from './claim-support.js';
 import { unknownEvidenceIds, type EvidenceLedger, type RecordedReading } from './evidence-ledger.js';
 import type { ReaderName } from './incident-api.js';
 import { wordingProblem } from './plain-words.js';
 
-export type Cause = { claim: string; supportingEvidenceIds: string[]; contradictingEvidenceIds: string[]; confirmWith: string };
+export type Cause = { claim: string; supportingEvidenceIds: string[]; contradictingEvidenceIds: string[]; contradicts?: Record<string, string>; confirmWith: string };
 export type CheckedCause = Cause & { hypothesisId: string };
 export type DroppedCause = CheckFailure & { claim: string; supportingEvidenceIds: string[] };
 export type RephrasedCause = { claim: string; removed: string[] };
@@ -64,9 +65,11 @@ function settledCause(cause: Cause, ledger: EvidenceLedger): ClaimUnderCheck & {
 }
 
 export function checkCauses(causes: Cause[], ledger: EvidenceLedger) {
-  const result = { accepted: [] as CheckedCause[], dropped: [] as DroppedCause[], rephrased: [] as RephrasedCause[] };
+  const result = { accepted: [] as CheckedCause[], dropped: [] as DroppedCause[], rephrased: [] as RephrasedCause[], droppedCitations: [] as DroppedCitation[] };
   for (const proposed of causes.slice(0, MAX_CAUSES).map(tidied)) {
-    const settled = settledCause(proposed, ledger);
+    const cited = settleCitations(proposed, ledger);
+    result.droppedCitations.push(...cited.dropped);
+    const settled = settledCause(cited.cause, ledger);
     if (settled.removed.length > 0) result.rephrased.push({ claim: settled.cause.claim, removed: settled.removed });
     const failure = causeFailure(settled, ledger);
     if (failure) result.dropped.push({ claim: settled.cause.claim, supportingEvidenceIds: settled.cause.supportingEvidenceIds, ...failure });

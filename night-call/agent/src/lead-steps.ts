@@ -13,13 +13,20 @@ const TURN_LIMIT = 6;
 
 const classificationShape = z.object({ urgency: z.enum(['rush', 'tolerable']), reason: z.string().min(1).max(400) });
 const evidenceIds = z.array(z.string().min(1).max(200)).max(10);
+const contradictionShape = z.object({ evidenceId: z.string().min(1).max(200), contradicts: z.string().min(1).max(600) });
 const causeShape = z.object({
   claim: z.string().min(1).max(600),
   supportingEvidenceIds: evidenceIds,
-  contradictingEvidenceIds: evidenceIds.default([]),
+  contradicting: z.array(contradictionShape).max(10).default([]),
   confirmWith: z.string().min(1).max(600),
 });
 const causesShape = z.object({ causes: z.array(causeShape).max(3) });
+
+export function causeFromModel(proposed: z.infer<typeof causeShape>): Cause {
+  const { claim, supportingEvidenceIds, contradicting, confirmWith } = proposed;
+  const contradicts = Object.fromEntries(contradicting.map((item) => [item.evidenceId, item.contradicts]));
+  return { claim, supportingEvidenceIds, contradictingEvidenceIds: contradicting.map((item) => item.evidenceId), contradicts, confirmWith };
+}
 
 export type CauseRequest = { readings: string; signal: AbortSignal; onFallback: () => void };
 export type ClassifyRequest = { answer: string; signal: AbortSignal; onFallback: () => void };
@@ -59,7 +66,7 @@ export function leadFor(facts: IncidentFacts): Lead {
     proposeCauses: async (request) => {
       const plan = { schema: causesShape, signal: request.signal, onFallback: request.onFallback, settingFor: (attempt: number) => causeSettingForAttempt(attempt) };
       const result = await runAgent(plan, causesTask(facts, request.readings));
-      return causesShape.parse(result.structuredOutput).causes;
+      return causesShape.parse(result.structuredOutput).causes.map(causeFromModel);
     },
     classify: async (request) => {
       const plan = { schema: classificationShape, signal: request.signal, onFallback: request.onFallback, settingFor: (attempt: number) => settingForAttempt(attempt) };

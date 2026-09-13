@@ -10,6 +10,7 @@ const NO_CRASHES = /^0 out-of-memory events, 0 exits and 0 starts/;
 const SHARE = /(\d+(?:\.\d+)?)%/g;
 const EFFECT = /\d+(?:\.\d+)?%|\b(errors?|fail\w*|crash\w*|restart\w*|oom|killed|out[- ]of[- ]memory)\b/i;
 const MECHANISM = /\b(because|due to|caused by|leak\w*|grows|growth|growing|fills|filling|climbs?|climbing|ramps?|accumulat\w*|cache\w*|flag\w*|config\w*|setting\w*|change\w*|deploy\w*|release\w*|allocat\w*|unbounded|lock\w*|contention|load|traffic|bug|regression|exhaust\w*|saturat\w*|limit\w*)\b/i;
+export const MECHANISM_WORDS = new RegExp(MECHANISM.source, 'gi');
 
 export function effectFailure(claim: string): CheckFailure | null {
   if (!EFFECT.test(claim) || MECHANISM.test(claim)) return null;
