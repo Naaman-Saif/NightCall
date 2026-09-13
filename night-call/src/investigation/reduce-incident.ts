@@ -13,22 +13,13 @@ function seedIncident(snapshot: Snapshot, event: IncidentEvent): Snapshot {
 function finish(reason: CompletionReason): Reducer {
   return (snapshot) => {
     if (snapshot.incident.lifecycle === 'finished') return snapshot;
-    const incident = { ...snapshot.incident, lifecycle: 'finished' as const, phase: 'handoff', completionReason: reason };
+    const incident = { ...snapshot.incident, lifecycle: 'finished' as const, completionReason: reason };
     return { ...snapshot, incident };
-  };
-}
-
-function movePhase(phase: string): Reducer {
-  return (snapshot) => {
-    if (snapshot.incident.lifecycle === 'finished') return snapshot;
-    return { ...snapshot, incident: { ...snapshot.incident, phase } };
   };
 }
 
 const handleEvent = reducerFrom({
   alert_received: seedIncident,
-  hypothesis_proposed: movePhase('investigating'),
-  mitigation_proposed: movePhase('mitigating'),
   budget_exhausted: finish('budget_exhausted'),
   investigation_finished: (snapshot, event) => finish(payloadOf(event, 'investigation_finished').reason)(snapshot, event),
 });

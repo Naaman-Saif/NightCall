@@ -1,8 +1,20 @@
-import type { PayloadOf } from './payload-schemas';
 import type { Role } from './event-types';
+import type { PayloadOf } from './payload-schemas';
+import type {
+  Contract,
+  Cycle,
+  Experiment,
+  Mitigation,
+  Publication,
+  Reproduction,
+  SupersededMitigation,
+  Verification,
+  VerificationRun,
+} from './proof-snapshot';
 
 export type Lifecycle = 'active' | 'finished';
 export type Attention = 'none' | 'context_requested' | 'blocked';
+export type Phase = 'briefing' | 'investigating' | 'reproducing' | 'mitigating' | 'verifying' | 'publishing' | 'handoff';
 export type CompletionReason = PayloadOf<'investigation_finished'>['reason'] | 'budget_exhausted';
 
 export type IncidentFacts = {
@@ -16,7 +28,7 @@ export type IncidentFacts = {
   deadlineAt: string;
   illustrative: boolean;
   lifecycle: Lifecycle;
-  phase: string;
+  phase: Phase;
   attention: Attention;
   completionReason: CompletionReason | null;
 };
@@ -45,14 +57,14 @@ export type Snapshot = {
   hypotheses: Hypothesis[];
   questions: Question[];
   context: ContextItem[];
-  contract: Record<string, unknown> | null;
-  experiments: Record<string, unknown>[];
-  reproduction: 'untested' | 'testing' | 'confirmed' | 'not_reproduced' | 'inconclusive';
-  mitigation: Record<string, unknown> | null;
-  supersededMitigations: Record<string, unknown>[];
-  currentVerificationRun: Record<string, unknown> | null;
-  cycles: Record<string, unknown>[];
-  verification: Record<string, unknown> | null;
-  publication: Record<string, unknown> & { state: 'not_eligible' | 'publishing' | 'published' | 'failed' };
+  contract: Contract | null;
+  experiments: Experiment[];
+  reproduction: Reproduction;
+  mitigation: Mitigation | null;
+  supersededMitigations: SupersededMitigation[];
+  currentVerificationRun: VerificationRun | null;
+  cycles: Cycle[];
+  verification: Verification | null;
+  publication: Publication;
   lastSequence: number;
 };

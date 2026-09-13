@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { z } from 'zod';
 
+import { admit } from './admission';
 import { roleMayWrite } from './allow-list';
 import { EVENT_TYPES, type IncidentEvent, type Role } from './event-types';
 import type { EventWriter } from './event-writer';
@@ -27,6 +28,6 @@ export async function appendAsRole(writer: EventWriter, request: RoleAppend): Pr
   if (!roleMayWrite(request.role, body.type)) throw new ForbiddenException(`${request.role} may not write ${body.type}`);
   return writer.update(request.incidentId, (events) => {
     if (!incidentIsActive(events)) throw new ConflictException('incident is not active');
-    return { ...body, actor: request.role, payload: parsePayload(body.type, body.payload) };
+    return admit(events, { ...body, actor: request.role, payload: parsePayload(body.type, body.payload) });
   });
 }
