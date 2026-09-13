@@ -1,4 +1,4 @@
-import type { Experiment, Publication, Snapshot, Verdict } from '../api/contract';
+import type { Experiment, Snapshot, TrafficSource, Verdict } from '../api/contract';
 import { bytesToMib } from './series-points';
 import { describeTraffic } from './traffic-text';
 
@@ -25,7 +25,18 @@ export function describeTrafficSource(experiment: Experiment): string {
   return traffic ?? 'Traffic source not recorded';
 }
 
-export function describePublication(publication: Publication): string | null {
+export function latestTrafficSourceOf(snapshot: Snapshot): TrafficSource | null {
+  return snapshot.experiments.map((experiment) => experiment.trafficSource ?? null).filter(Boolean).at(-1) ?? null;
+}
+
+function isTestIncidentWithoutPullRequest(snapshot: Snapshot): boolean {
+  const isDone = snapshot.mitigation?.status === 'verified' || snapshot.incident.lifecycle === 'finished';
+  return snapshot.incident.illustrative && snapshot.publication.state === 'not_eligible' && isDone;
+}
+
+export function describePublication(snapshot: Snapshot): string | null {
+  const { publication } = snapshot;
+  if (isTestIncidentWithoutPullRequest(snapshot)) return 'Test incident: no pull request';
   if (publication.state === 'publishing') return 'Opening the pull request';
   if (publication.state === 'failed') {
     return `The pull request could not be opened: ${publication.failureReason ?? 'no reason was recorded'}`;

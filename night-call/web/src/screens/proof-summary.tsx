@@ -6,9 +6,9 @@ export function ProofSummary({ snapshot }: { snapshot: Snapshot }) {
   return (
     <>
       <ReproductionSummary snapshot={snapshot} />
-      <FixSummary mitigation={snapshot.mitigation} />
+      <FixSummary snapshot={snapshot} />
       <VerificationSummary snapshot={snapshot} />
-      <PullRequestSummary publication={snapshot.publication} />
+      <PullRequestSummary snapshot={snapshot} />
     </>
   );
 }
