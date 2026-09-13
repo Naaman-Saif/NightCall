@@ -6,7 +6,7 @@ function toolAddress(path: string): string {
 
 function authorizedRequest(init: RequestInit): RequestInit {
   const headers = {
-    authorization: `Bearer ${process.env.NIGHT_CALL_TOOL_TOKEN ?? ''}`,
+    authorization: `Bearer ${process.env.NIGHT_CALL_TOOL_TOKEN_LEAD ?? ''}`,
     'content-type': 'application/json',
   };
   return { ...init, headers, signal: AbortSignal.timeout(TOOL_TIMEOUT_MS) };
