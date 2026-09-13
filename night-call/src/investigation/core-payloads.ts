@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { ROLES } from './event-types';
 import { moment, name, names, payload, text, texts } from './payload-parts';
 
+const count = z.number().int().min(0);
+
 export const ROLE_STATUSES = ['ready', 'working', 'waiting_for_evidence', 'waiting_for_context', 'reviewing', 'finished'] as const;
 
 export const corePayloads = {
@@ -29,9 +31,10 @@ export const corePayloads = {
     observedAt: moment,
     excerpt: text,
     sourceLinks: z
-      .array(z.strictObject({ label: name, url: z.string().max(4000).regex(/^https?:\/\//) }))
+      .array(z.strictObject({ label: name, url: z.string().max(4000).regex(/^(https?:\/\/|\/api\/incidents\/)/) }))
       .max(20)
       .optional(),
+    crashCounts: z.strictObject({ oom: count, die: count, start: count, since: moment }).optional(),
   }),
   question_asked: payload({
     questionId: name,

@@ -13,5 +13,6 @@ export async function readProductionLogs(query: LogsQuery): Promise<Reading> {
   const raw = await withTimeout(docker.getContainer(query.service).logs(options), LOGS_TIMEOUT_MS);
   const lines = demuxDockerLog(raw).split('\n').filter((line) => line.trim() !== '');
   const summary = `${lines.length} log lines from ${query.service} in the last ${query.minutes} minutes`;
-  return { kind: 'logs', source: `docker logs: ${query.service}`, summary, excerpt: excerptOf(lines), data: { lines } };
+  const exactSource = { kind: 'stored_excerpt' as const };
+  return { kind: 'logs', source: `docker logs: ${query.service}`, summary, excerpt: excerptOf(lines), data: { lines }, exactSource };
 }

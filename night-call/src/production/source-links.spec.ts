@@ -33,7 +33,9 @@ describe('source links', () => {
     const reading = deployHistoryReading([deployChangeOf(release)]);
     expect(reading).toMatchObject({ kind: 'deploy_history', observedAt: '2026-09-13T15:40:00Z' });
     expect(reading.summary).toBe('Flag file changed in a1b2c3d: release: enable recommendation cache');
-    expect(reading.sourceLinks).toEqual([{ label: 'GitHub: commit a1b2c3d', url: release.html_url }]);
+    const historyUrl = 'https://github.com/Naaman-Saif/opentelemetry-demo/commits/nightcall-demo/src/flagd/demo.flagd.json';
+    expect(reading.sourceLinks?.[0].url).toBe(historyUrl);
+    expect(reading.sourceLinks?.[1]).toEqual({ label: 'GitHub: commit a1b2c3d', url: release.html_url });
     expect(reading.excerpt).toContain('+      "defaultVariant": "on"');
   });
 
@@ -52,6 +54,6 @@ describe('source links', () => {
     const answer = await answerReaderCall(writer, { incidentId, read: async () => deployHistoryReading([deployChangeOf(release)]) });
     const stored = readSnapshot(writer.stateDir, incidentId)?.evidence[String(answer.evidence.payload.evidenceId)];
     expect(stored).toMatchObject({ kind: 'deploy_history', observedAt: '2026-09-13T15:40:00Z' });
-    expect(stored?.sourceLinks).toHaveLength(1);
+    expect(stored?.sourceLinks).toHaveLength(2);
   });
 });
