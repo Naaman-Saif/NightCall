@@ -7,7 +7,7 @@ import { ToolAnswerError } from './tool-client.js';
 
 export const RUN_LIMIT_MS = 12 * 60_000;
 
-export type RunState = { skipped: string[]; deadline: number; now: () => number };
+export type RunState = { skipped: string[]; fallbacks: string[]; deadline: number; now: () => number };
 export type StepPlan<Result> = { nowDoing: string; skipLabel: string; work: () => Promise<Result> };
 
 export type RunContext = {
@@ -19,7 +19,7 @@ export type RunContext = {
 };
 
 export function newRun(now: () => number = Date.now): RunState {
-  return { skipped: [], deadline: now() + RUN_LIMIT_MS, now };
+  return { skipped: [], fallbacks: [], deadline: now() + RUN_LIMIT_MS, now };
 }
 
 export function timeLeftMs(run: RunState): number {

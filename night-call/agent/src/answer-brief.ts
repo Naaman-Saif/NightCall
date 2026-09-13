@@ -1,5 +1,5 @@
 import type { CheckedCause } from './cause-rules.js';
-import { readingFacts, type Brief, type EvidenceLedger } from './evidence-ledger.js';
+import { readingFacts, type Brief, type EvidenceLedger, type KnownFact } from './evidence-ledger.js';
 import { capitalized, crashStatement, failureStatement } from './impact-facts.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import type { ProgressEvent } from './progress.js';
@@ -7,7 +7,7 @@ import { causesLine, NOT_REPRODUCED, withoutEndMark } from './report-lines.js';
 import { pathSentence, UNCONFIRMED_IMPACT, type UrgencyDecision } from './urgency.js';
 import { cleanBrief } from './write-tools.js';
 
-export type ReportFacts = { answer: Answer | null; decision: UrgencyDecision; causes: CheckedCause[]; mostLikely: CheckedCause | null };
+export type ReportFacts = { answer: Answer | null; decision: UrgencyDecision; causes: CheckedCause[]; mostLikely: CheckedCause | null; findings: KnownFact[] };
 
 export const EVIDENCE_BRIEF_SUMMARY = 'Summary from the evidence readings; analysis still running.';
 
@@ -36,7 +36,7 @@ export function causeBriefOf(ledger: EvidenceLedger, facts: ReportFacts): Brief 
   const summary = [whatHappened(ledger), answer, causes, NOT_REPRODUCED].join(' ');
   const unconfirmed = facts.decision.impactConfirmed ? [] : [UNCONFIRMED_IMPACT];
   const unknowns = [...unconfirmed, ...facts.causes.map((cause) => causeUnknown(cause, facts.mostLikely))];
-  return { summary, knownFacts: readingFacts(ledger), unknowns, nextStep: pathSentence(facts.decision) };
+  return { summary, knownFacts: [...readingFacts(ledger), ...facts.findings], unknowns, nextStep: pathSentence(facts.decision) };
 }
 
 export async function postCauseBrief(context: { api: IncidentApi; ledger: EvidenceLedger }, facts: ReportFacts): Promise<void> {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { causeProblem, checkCauses, mostLikelyCause, type Cause } from './cause-rules.js';
+import { causeFailure, checkCauses, mostLikelyCause, type Cause } from './cause-rules.js';
 import { newLedger, noteReading, type EvidenceLedger } from './evidence-ledger.js';
 import type { ReaderName } from './incident-api.js';
 
@@ -25,39 +25,34 @@ const cause = (overrides: Partial<Cause>): Cause => ({
   ...overrides,
 });
 
-test('a cause citing evidence that does not exist, or no support, is dropped', () => {
+const failureOf = (proposed: Cause, ledger: EvidenceLedger) => causeFailure({ cause: proposed, checkedText: proposed.claim }, ledger);
+
+test('evidence that does not exist, no support, or evidence cited both ways fails with the exact value', () => {
   const ledger = ledgerWithReadings();
-  assert.match(causeProblem(cause({ supportingEvidenceIds: ['ev-made-up'] }), ledger) ?? '', /does not exist: ev-made-up/);
-  assert.match(causeProblem(cause({ contradictingEvidenceIds: ['ev-other'] }), ledger) ?? '', /does not exist: ev-other/);
-  assert.equal(causeProblem(cause({ supportingEvidenceIds: [] }), ledger), 'cites no supporting evidence');
+  assert.deepEqual(failureOf(cause({ supportingEvidenceIds: ['ev-made-up'] }), ledger), { check: 'evidence_not_found', value: 'ev-made-up' });
+  assert.deepEqual(failureOf(cause({ supportingEvidenceIds: [] }), ledger), { check: 'no_supporting_evidence', value: 'none cited' });
+  assert.deepEqual(failureOf(cause({ contradictingEvidenceIds: ['ev-memory'] }), ledger), { check: 'cited_as_supporting_and_contradicting', value: 'ev-memory' });
 });
 
-test('every number in a claim must appear in a reading the cause cites', () => {
+test('claims or confirm steps the server would refuse fail with their length', () => {
   const ledger = ledgerWithReadings();
-  assert.equal(causeProblem(cause({}), ledger), null);
-  assert.match(causeProblem(cause({ claim: 'Memory reaches 900 MiB.' }), ledger) ?? '', /no cited reading contains: 900/);
-  assert.match(causeProblem(cause({ claim: 'CPU sits at 20.1%.', supportingEvidenceIds: ['ev-memory'] }), ledger) ?? '', /contains: 20\.1/);
+  assert.deepEqual(failureOf(cause({ claim: `Memory grows ${'a'.repeat(160)}` }), ledger), { check: 'claim_too_long', value: '173 characters' });
+  assert.deepEqual(failureOf(cause({ confirmWith: 'b'.repeat(201) }), ledger), { check: 'confirm_step_too_long', value: '201 characters' });
 });
 
-test('failing requests against a 0% reading, or a claim of proof, are dropped', () => {
+test('numbers, failing requests against a 0% rate, and proof wording fail with the offending value', () => {
   const ledger = ledgerWithReadings();
-  assert.match(causeProblem(cause({ claim: 'Recommendation requests fail when memory runs out.' }), ledger) ?? '', /failure-rate reading shows none/);
-  assert.match(causeProblem(cause({ claim: 'Memory growth is proven to cause the restarts.' }), ledger) ?? '', /proven/);
+  assert.equal(failureOf(cause({}), ledger), null);
+  assert.deepEqual(failureOf(cause({ claim: 'Memory reaches 900 MiB.' }), ledger), { check: 'number_not_in_cited_readings', value: '900' });
+  assert.equal(failureOf(cause({ claim: 'Recommendation requests fail when memory runs out.' }), ledger)?.check, 'failing_requests_against_zero_rate');
+  assert.match(failureOf(cause({ claim: 'Memory growth is proven to cause the restarts.' }), ledger)?.value ?? '', /proven/);
 });
 
-test('causes the server would refuse are dropped, and repeated ids are merged', () => {
-  const ledger = ledgerWithReadings();
-  assert.match(causeProblem(cause({ claim: `Memory grows ${'a'.repeat(160)}` }), ledger) ?? '', /claim is longer than 160 characters/);
-  assert.match(causeProblem(cause({ confirmWith: 'b'.repeat(201) }), ledger) ?? '', /confirm step is longer than 200 characters/);
-  assert.match(causeProblem(cause({ contradictingEvidenceIds: ['ev-memory'] }), ledger) ?? '', /supporting and contradicting: ev-memory/);
-  const { accepted } = checkCauses([cause({ supportingEvidenceIds: ['ev-memory', 'ev-memory', 'ev-oom-events'] })], ledger);
-  assert.deepEqual(accepted[0].supportingEvidenceIds, ['ev-memory', 'ev-oom-events']);
-});
-
-test('checkCauses numbers the valid causes and says why the others were dropped', () => {
-  const { accepted, dropped } = checkCauses([cause({ claim: 'Memory reaches 900 MiB.' }), cause({}), cause({ claim: 'Logs show an OutOfMemoryError.', supportingEvidenceIds: ['ev-logs'] })], ledgerWithReadings());
-  assert.deepEqual(accepted.map((item) => item.hypothesisId), ['h-1', 'h-2']);
-  assert.deepEqual(dropped.map((item) => item.problem), ['quotes numbers that no cited reading contains: 900']);
+test('checkCauses merges repeated ids, numbers the kept causes and records every drop', () => {
+  const proposed = [cause({ claim: 'Memory reaches 900 MiB.' }), cause({ supportingEvidenceIds: ['ev-memory', 'ev-memory', 'ev-oom-events'] })];
+  const { accepted, dropped } = checkCauses(proposed, ledgerWithReadings());
+  assert.deepEqual(accepted.map((item) => [item.hypothesisId, item.supportingEvidenceIds]), [['h-1', ['ev-memory', 'ev-oom-events']]]);
+  assert.deepEqual(dropped, [{ claim: 'Memory reaches 900 MiB.', supportingEvidenceIds: ['ev-memory', 'ev-oom-events'], check: 'number_not_in_cited_readings', value: '900' }]);
 });
 
 test('supported needs two independent readings and no contradicting reading', () => {

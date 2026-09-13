@@ -11,7 +11,7 @@ export function claimsFailingRequests(sentence: string): boolean {
 }
 
 export function failuresMeasured(impact: ImpactReadings | null): boolean {
-  return (impact?.failure?.errorShare ?? 0) > 0;
+  return (impact?.failure?.errorShare ?? 0) > 0 || (impact?.failure?.frontendShare ?? 0) > 0;
 }
 
 export function honestText(text: string, impact: ImpactReadings | null): string {

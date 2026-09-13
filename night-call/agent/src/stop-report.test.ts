@@ -14,24 +14,24 @@ function ledgerWith(impact: ImpactReadings, readers: ReaderName[] = ['failure-ra
 }
 
 const impact = (errorShare: number | null, crashes: [number, number] | null): ImpactReadings => ({
-  failure: { evidenceId: 'ev-failure-rate', errorShare, windowMinutes: 10 },
+  failure: { evidenceId: 'ev-failure-rate', errorShare, frontendShare: errorShare, windowMinutes: 10 },
   crashes: crashes && { evidenceId: 'ev-oom-events', outOfMemory: crashes[0], restarts: crashes[1], windowMinutes: 10 },
 });
 
 const answer = (text: string) => ({ questionId: 'q-impact', text, suppliedAt: '2026-09-13T17:07:10Z' });
 
 const facts = (overrides: Partial<StopFacts>): StopFacts => ({
-  ledger: ledgerWith(impact(0, [2, 2])), answer: answer('Tolerable'), reason: 'answer_recorded', asked: true, causes: 0, mostLikely: null, skipped: [], ...overrides,
+  ledger: ledgerWith(impact(0, [2, 2])), answer: answer('Tolerable'), reason: 'answer_recorded', asked: true, causes: 0, mostLikely: null, skipped: [], fallbacks: [], ...overrides,
 });
 
 test('with no causes the summary says what was read, the answer, and that no cause stands out', () => {
-  assert.equal(stopSummary(facts({})), 'Read failure rate (0.00% over 10 min) and crashes (2 out-of-memory restarts in 10 min). Asked about customer impact; answer: Tolerable. No cause stands out yet.');
+  assert.equal(stopSummary(facts({})), 'Read failure rate (frontend 0.00%, service 0.00% over 10 min) and crashes (2 out-of-memory restarts in 10 min). Asked about customer impact; answer: Tolerable. No cause stands out yet.');
 });
 
 test('with causes the summary names the most likely one, other readings and skipped steps', () => {
   const ledger = ledgerWith(impact(0.123, [2, 2]), ['failure-rate', 'oom-events', 'memory', 'deploy-history']);
   const summary = stopSummary(facts({ ledger, answer: null, reason: 'no_answer', causes: 2, mostLikely: 'Memory reaches the limit.', skipped: ['reading logs (NightCall refused the call)'] }));
-  const expected = 'Read failure rate (12.30% over 10 min) and crashes (2 out-of-memory restarts in 10 min). Also read memory, deploy history. Asked about customer impact; no answer arrived in time. Possible causes: 2. Most likely: Memory reaches the limit (not yet reproduced). Skipped: reading logs (NightCall refused the call).';
+  const expected = 'Read failure rate (frontend 12.30%, service 12.30% over 10 min) and crashes (2 out-of-memory restarts in 10 min). Also read memory, deploy history. Asked about customer impact; no answer arrived in time. Possible causes: 2. Most likely: Memory reaches the limit (not yet reproduced). Skipped: reading logs (NightCall refused the call).';
   assert.equal(summary, expected);
   assert.match(stopSummary(facts({ causes: 2 })), /Possible causes: 2\. No cause stands out yet\.$/);
 });
@@ -53,4 +53,6 @@ test('unmeasured and unread values are said plainly, and numbers in an answer ar
 test('a run that never asked, or stopped on an error, says so', () => {
   assert.match(stopSummary(facts({ asked: false, answer: null, reason: 'no_answer' })), /Did not ask about customer impact\./);
   assert.match(stopSummary(facts({ reason: 'error' })), /Stopped after an error\. No cause stands out yet\.$/);
+  const record = facts({ fallbacks: ['reading the answer', 'reading the answer'], skipped: ['reading logs (it failed)'] });
+  assert.match(stopSummary(record), /No cause stands out yet\. Used the fallback model for: reading the answer\. Skipped: reading logs \(it failed\)\.$/);
 });

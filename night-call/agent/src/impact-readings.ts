@@ -6,13 +6,23 @@ import { describeError } from './retry.js';
 
 export const IMPACT_WINDOW_MINUTES = 10;
 
-type SpanData = { spans?: { errorShare?: unknown }[] };
+type SpanData = { spans?: { errorShare?: unknown; callsPerSecond?: unknown }[] };
 type EventsData = { events?: { action?: unknown }[] };
 type ImpactSession = { api: IncidentApi; ledger: EvidenceLedger };
 
+function numberOrNull(value: unknown): number | null {
+  return typeof value === 'number' ? value : null;
+}
+
 export function failureReadingOf(reply: ReaderReply): FailureReading {
-  const share = (reply.data as SpanData | undefined)?.spans?.[0]?.errorShare;
-  return { evidenceId: reply.evidence.evidenceId, errorShare: typeof share === 'number' ? share : null, windowMinutes: IMPACT_WINDOW_MINUTES };
+  const [service, frontend] = (reply.data as SpanData | undefined)?.spans ?? [];
+  return {
+    evidenceId: reply.evidence.evidenceId,
+    errorShare: numberOrNull(service?.errorShare),
+    frontendShare: numberOrNull(frontend?.errorShare),
+    frontendCallsPerSecond: numberOrNull(frontend?.callsPerSecond),
+    windowMinutes: IMPACT_WINDOW_MINUTES,
+  };
 }
 
 export function crashReadingOf(reply: ReaderReply): CrashReading {

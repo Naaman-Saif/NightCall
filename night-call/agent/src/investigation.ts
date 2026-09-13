@@ -32,7 +32,8 @@ async function awaitAnswer(context: RunContext, pending: Promise<Answer | null> 
 
 function classifyWithSkip(context: RunContext) {
   return async (answer: string): Promise<Classification> => {
-    const work = () => context.lead.classify({ answer, signal: stepSignal(context.run, CLASSIFY_CAP_MS) });
+    const onFallback = () => context.run.fallbacks.push('reading the answer');
+    const work = () => context.lead.classify({ answer, signal: stepSignal(context.run, CLASSIFY_CAP_MS), onFallback });
     return (await runStep(context, { nowDoing: 'Reading the answer about customer impact', skipLabel: 'reading the answer', work })) ?? UNREADABLE_ANSWER;
   };
 }
@@ -53,7 +54,8 @@ async function investigationSteps(context: RunContext): Promise<RunOutcome> {
 function stopFacts(context: RunContext, outcome: RunOutcome | null): StopFacts {
   const reason = outcome === null ? 'error' : outcome.answer ? 'answer_recorded' : 'no_answer';
   const counts = { causes: outcome?.causes.length ?? 0, mostLikely: outcome?.mostLikely?.claim ?? null };
-  return { ledger: context.ledger, reason, answer: outcome?.answer ?? null, asked: outcome?.asked ?? false, ...counts, skipped: context.run.skipped };
+  const record = { skipped: context.run.skipped, fallbacks: context.run.fallbacks };
+  return { ledger: context.ledger, reason, answer: outcome?.answer ?? null, asked: outcome?.asked ?? false, ...counts, ...record };
 }
 
 export async function investigate(parts: InvestigationParts): Promise<UrgencyDecision> {

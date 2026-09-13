@@ -54,7 +54,7 @@ test('a failed reader and a failed cause step are skipped and recorded, and the 
 
 test('when the run time limit is reached the remaining steps are skipped and the stop is still posted', async () => {
   const run = stubInvestigation('Rush it');
-  run.parts.run = { skipped: [], deadline: 0, now: () => 1 };
+  run.parts.run = { skipped: [], fallbacks: [], deadline: 0, now: () => 1 };
   await investigate(run.parts);
   const stop = String(lastPayload(run, 'investigation_stopped').summary);
   assert.match(stop, /Did not ask about customer impact\./);
@@ -66,7 +66,8 @@ test("the question quotes measured values, and I don't know leaves impact unconf
   const run = stubInvestigation("I don't know");
   const decision = await investigate(run.parts);
   const question = eventsOf(run, 'question_asked')[0];
-  assert.ok(String(question.payload.text).startsWith('12.3% of recommendation requests failed in the last 10 minutes, and the service ran out of memory and restarted 4 times in the last 10 minutes.'));
+  const measured = "Shoppers' recommendation requests failed 2.71% of the time (frontend, 1.77 per second) while the recommendation service itself logged 12.30% errors, and the service ran out of memory and restarted 4 times in the last 10 minutes.";
+  assert.ok(String(question.payload.text).startsWith(measured));
   assert.deepEqual(question.refs, ['q-impact', 'ev-failure-rate-1', 'ev-oom-events-1']);
   assert.equal(decision.urgency, 'rush');
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;

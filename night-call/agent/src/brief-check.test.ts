@@ -5,7 +5,7 @@ import { claimsFailingRequests, honestText } from './brief-check.js';
 import { investigate } from './investigation.js';
 import { stubInvestigation } from './investigation-stubs.test.js';
 
-const impact = (errorShare: number | null) => ({ failure: { evidenceId: 'ev-fr', errorShare, windowMinutes: 10 }, crashes: null });
+const impact = (errorShare: number | null) => ({ failure: { evidenceId: 'ev-fr', errorShare, frontendShare: errorShare, windowMinutes: 10 }, crashes: null });
 
 test('spots sentences that claim failing requests, not ones that deny them', () => {
   assert.equal(claimsFailingRequests('Logs show failing requests around each kill.'), true);
