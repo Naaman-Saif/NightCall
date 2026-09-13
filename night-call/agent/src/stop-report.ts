@@ -2,17 +2,23 @@ import type { EvidenceLedger } from './evidence-ledger.js';
 import { precisePercent, requireMeasured, type CrashReading, type FailureReading, type ImpactReadings } from './impact-facts.js';
 import type { Answer, IncidentApi, ReaderName } from './incident-api.js';
 import { logProgress, type ProgressEvent } from './progress.js';
+import { causesLine, READER_WORDS, withoutEndMark } from './report-lines.js';
 import { describeError } from './retry.js';
 
 export type StopReason = 'answer_recorded' | 'no_answer' | 'error';
-export type StopFacts = { ledger: EvidenceLedger; answer: Answer | null; reason: StopReason };
 
-export const CAUSE_NOT_BUILT = 'Did not look for the cause: that step is not built yet.';
+export type StopFacts = {
+  ledger: EvidenceLedger;
+  answer: Answer | null;
+  reason: StopReason;
+  asked: boolean;
+  causes: number;
+  mostLikely: string | null;
+  skipped: string[];
+};
 
 const IMPACT_READERS: ReaderName[] = ['failure-rate', 'oom-events'];
-const READER_WORDS: Record<ReaderName, string> = {
-  'failure-rate': 'failure rate', memory: 'memory', cpu: 'CPU', 'oom-events': 'crashes', logs: 'logs', traces: 'traces', 'deploy-history': 'deploy history',
-};
+const SUMMARY_CHARACTERS = 2000;
 
 function failurePart(reading: FailureReading | null): string {
   if (reading === null) return 'could not be read';
@@ -44,12 +50,19 @@ function otherReadingsSentence(ledger: EvidenceLedger): string {
 
 function answerSentence(facts: StopFacts): string {
   if (facts.reason === 'error') return 'Stopped after an error.';
+  if (!facts.asked) return 'Did not ask about customer impact.';
   if (facts.answer === null) return 'Asked about customer impact; no answer arrived in time.';
-  return `Asked about customer impact; answer: ${facts.answer.text.trim().replace(/[.!?]+$/, '').slice(0, 300)}.`;
+  return `Asked about customer impact; answer: ${withoutEndMark(facts.answer.text).slice(0, 300)}.`;
+}
+
+function skippedSentence(skipped: string[]): string {
+  return skipped.length > 0 ? `Skipped: ${skipped.join('; ')}.` : '';
 }
 
 export function stopSummary(facts: StopFacts): string {
-  return [readingsSentence(facts.ledger.impact), otherReadingsSentence(facts.ledger), answerSentence(facts), CAUSE_NOT_BUILT].filter(Boolean).join(' ');
+  const causes = causesLine({ count: facts.causes, mostLikely: facts.mostLikely });
+  const sentences = [readingsSentence(facts.ledger.impact), otherReadingsSentence(facts.ledger), answerSentence(facts), causes, skippedSentence(facts.skipped)];
+  return sentences.filter(Boolean).join(' ').slice(0, SUMMARY_CHARACTERS);
 }
 
 export function stoppedEvent(facts: StopFacts): ProgressEvent {

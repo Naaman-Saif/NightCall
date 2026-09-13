@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { claimsFailingRequests, honestText } from './brief-check.js';
 import { investigate } from './investigation.js';
-import { GOOD_DRAFT, stubInvestigation } from './investigation-stubs.test.js';
+import { stubInvestigation } from './investigation-stubs.test.js';
 
 const impact = (errorShare: number | null) => ({ failure: { evidenceId: 'ev-fr', errorShare, windowMinutes: 10 }, crashes: null });
 
@@ -31,16 +31,5 @@ test('no posted text promises a next step that no code performs', async () => {
   const run = stubInvestigation('We can live with it for an hour');
   await investigate(run.parts);
   const texts = run.events.map((event) => JSON.stringify(event));
-  assert.equal(texts.some((text) => /next I|I go straight|I finish checking|verify the safest|verify it/i.test(text)), false);
-});
-
-test('a model-written brief is corrected against a 0% reading before it is posted', async () => {
-  const draft = { ...GOOD_DRAFT, summary: 'Recommendations fail while memory climbs. Memory hits the limit.' };
-  const run = stubInvestigation('Rush it', { errorShare: 0, draft });
-  await investigate(run.parts);
-  const brief = run.events.filter((event) => event.type === 'brief_updated').at(-1)?.payload as { summary: string; knownFacts: { text: string }[] };
-  assert.equal(brief.summary, 'Requests are not failing right now. Memory hits the limit.');
-  assert.equal(brief.knownFacts[0].text, 'Requests are not failing right now.');
-  const question = run.events.find((event) => event.type === 'question_asked');
-  assert.match(String(question?.payload.text), /^Requests are not failing right now, and the service ran out of memory and restarted 4 times/);
+  assert.equal(texts.some((text) => /next I|I go straight|I finish checking|verify the safest|verify it|still being analysed/i.test(text)), false);
 });

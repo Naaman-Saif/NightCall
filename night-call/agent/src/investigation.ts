@@ -1,85 +1,69 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { evidenceBrief, postAnswerBrief, type BriefParts } from './answer-brief.js';
+import { postCauseBrief } from './answer-brief.js';
+import { findCauses, type CauseOutcome } from './causes.js';
 import { waitForImpactAnswer } from './context-wait.js';
-import { readingFacts } from './evidence-ledger.js';
-import { readImpact } from './impact-readings.js';
-import type { Answer, IncidentApi } from './incident-api.js';
-import { logProgress } from './progress.js';
-import { describeError } from './retry.js';
-import { postStopped } from './stop-report.js';
-import { decideUrgency, impactQuestionEvent, pathSentence, type Classification, type UrgencyDecision } from './urgency.js';
+import { askImpact, readEvidence } from './evidence-steps.js';
+import type { Answer } from './incident-api.js';
+import { newRun, postStatus, runStep, stepSignal, timeLeftMs, type RunContext, type RunState } from './run-steps.js';
+import { postStopped, type StopFacts } from './stop-report.js';
+import { decideUrgency, pathSentence, type Classification, type UrgencyDecision } from './urgency.js';
 
-export type InvestigationParts = BriefParts & { waitForAnswer?: (api: IncidentApi) => Promise<Answer | null> };
+export type InvestigationParts = Omit<RunContext, 'run'> & { run?: RunState };
+
+type RunOutcome = CauseOutcome & { answer: Answer | null; decision: UrgencyDecision; asked: boolean };
 
 const UNREADABLE_ANSWER: Classification = { urgency: 'rush', reason: 'The answer could not be read, so this is treated as urgent.' };
-const STOP_GRACE_MS = 30_000;
-const IMPACT_SERVICE = 'recommendation';
+const CLASSIFY_CAP_MS = 60_000;
+const NOT_YET = Symbol('not yet');
 
-function announce(parts: InvestigationParts, status: { status: string; assignment: string }): Promise<unknown> {
-  const payload = { role: 'lead', ...status };
-  return parts.api.postEvent({ type: 'role_status_changed', summary: status.assignment, payload });
+function pendingAnswer(context: RunContext, asked: boolean): Promise<Answer | null> | null {
+  if (!asked) return null;
+  return (context.waitForAnswer ?? waitForImpactAnswer)(context.api).catch(() => null);
 }
 
-async function askImpact(parts: InvestigationParts): Promise<void> {
-  const readings = await readImpact(parts, IMPACT_SERVICE);
-  await parts.api.postEvent(impactQuestionEvent(readings));
+async function awaitAnswer(context: RunContext, pending: Promise<Answer | null> | null): Promise<Answer | null> {
+  if (pending === null) return null;
+  const early = await Promise.race([pending, Promise.resolve(NOT_YET)]);
+  if (early !== NOT_YET) return early;
+  const work = () => Promise.race([pending, sleep(timeLeftMs(context.run), null, { ref: false })]);
+  return (await runStep(context, { nowDoing: 'Waiting for the answer about customer impact', skipLabel: 'waiting for the answer', work })) ?? null;
 }
 
-function alreadyReadText(parts: InvestigationParts): string {
-  const facts = readingFacts(parts.ledger).map((fact) => `${fact.evidenceIds[0]}: ${fact.text}`);
-  return facts.length > 0 ? facts.join('; ') : 'nothing yet';
+function classifyWithSkip(context: RunContext) {
+  return async (answer: string): Promise<Classification> => {
+    const work = () => context.lead.classify({ answer, signal: stepSignal(context.run, CLASSIFY_CAP_MS) });
+    return (await runStep(context, { nowDoing: 'Reading the answer about customer impact', skipLabel: 'reading the answer', work })) ?? UNREADABLE_ANSWER;
+  };
 }
 
-async function writeFirstBrief(parts: InvestigationParts, signal: AbortSignal): Promise<void> {
-  try {
-    await parts.lead.writeFirstBrief({ signal, alreadyRead: alreadyReadText(parts) });
-  } catch (error) {
-    logProgress({ firstBriefFailed: describeError(error) });
-  }
-  if (parts.ledger.lastBrief || signal.aborted) return;
-  logProgress({ evidenceBriefPosted: true });
-  await parts.api.postEvent(evidenceBrief(parts.ledger));
+async function investigationSteps(context: RunContext): Promise<RunOutcome> {
+  const asked = await askImpact(context);
+  const pending = pendingAnswer(context, asked);
+  await readEvidence(context);
+  const causes = await findCauses(context);
+  const answer = await awaitAnswer(context, pending);
+  const decision = await decideUrgency(answer, classifyWithSkip(context));
+  const facts = { answer, decision, ...causes };
+  await runStep(context, { nowDoing: 'Writing the report', skipLabel: 'writing the report', work: () => postCauseBrief(context, facts) });
+  await postStatus(context, { status: 'finished', assignment: pathSentence(decision) });
+  return { ...facts, asked };
 }
 
-async function briefThenRead(parts: InvestigationParts, signal: AbortSignal): Promise<void> {
-  await writeFirstBrief(parts, signal);
-  if (!signal.aborted) await parts.lead.keepReading(signal);
-}
-
-async function readUntilAnswered(parts: InvestigationParts): Promise<Answer | null> {
-  const reading = new AbortController();
-  const work = briefThenRead(parts, reading.signal).catch((error) => logProgress({ readingStopped: describeError(error) }));
-  try {
-    return await (parts.waitForAnswer ?? waitForImpactAnswer)(parts.api);
-  } finally {
-    reading.abort();
-    await Promise.race([work, sleep(STOP_GRACE_MS, undefined, { ref: false })]);
-  }
-}
-
-function classifyOrRush(parts: InvestigationParts) {
-  return (answer: string) => parts.lead.classify(answer).catch(() => UNREADABLE_ANSWER);
-}
-
-async function investigationSteps(parts: InvestigationParts): Promise<{ answer: Answer | null; decision: UrgencyDecision }> {
-  await announce(parts, { status: 'working', assignment: 'Reading the failure rate and crashes before asking about customer impact' });
-  await askImpact(parts);
-  await announce(parts, { status: 'waiting_for_context', assignment: 'Asked about customer impact; writing the first brief meanwhile' });
-  const answer = await readUntilAnswered(parts);
-  const decision = await decideUrgency(answer, classifyOrRush(parts));
-  await postAnswerBrief(parts, { answer, decision });
-  await announce(parts, { status: 'finished', assignment: pathSentence(decision) });
-  return { answer, decision };
+function stopFacts(context: RunContext, outcome: RunOutcome | null): StopFacts {
+  const reason = outcome === null ? 'error' : outcome.answer ? 'answer_recorded' : 'no_answer';
+  const counts = { causes: outcome?.causes.length ?? 0, mostLikely: outcome?.mostLikely?.claim ?? null };
+  return { ledger: context.ledger, reason, answer: outcome?.answer ?? null, asked: outcome?.asked ?? false, ...counts, skipped: context.run.skipped };
 }
 
 export async function investigate(parts: InvestigationParts): Promise<UrgencyDecision> {
+  const context: RunContext = { ...parts, run: parts.run ?? newRun() };
   try {
-    const { answer, decision } = await investigationSteps(parts);
-    await postStopped(parts.api, { ledger: parts.ledger, answer, reason: answer ? 'answer_recorded' : 'no_answer' });
-    return decision;
+    const outcome = await investigationSteps(context);
+    await postStopped(context.api, stopFacts(context, outcome));
+    return outcome.decision;
   } catch (error) {
-    await postStopped(parts.api, { ledger: parts.ledger, answer: null, reason: 'error' });
+    await postStopped(context.api, stopFacts(context, null));
     throw error;
   }
 }

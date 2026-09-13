@@ -1,70 +1,54 @@
-import { Agent, type AgentResult, type ToolList } from '@strands-agents/sdk';
+import { Agent, type AgentResult } from '@strands-agents/sdk';
 import { z } from 'zod';
 
 import { FALLBACK_ATTEMPT, promptForAttempt, settingForAttempt } from './attempt-plan.js';
-import type { ToolContext, LeadSession } from './evidence-view.js';
-import { classifyTask, draftBriefTask, firstBriefTask, keepReadingTask, LEAD_SYSTEM_PROMPT, type DraftRequest, type IncidentFacts } from './lead-prompts.js';
+import type { Cause } from './cause-rules.js';
+import { causesTask, classifyTask, LEAD_SYSTEM_PROMPT, type IncidentFacts } from './lead-prompts.js';
 import { buildModel } from './model.js';
 import { logProgress } from './progress.js';
-import { readTools } from './read-tools.js';
 import { withRetries } from './retry.js';
-import { budgetOf } from './tool-budget.js';
 import type { Classification } from './urgency.js';
-import { briefTool, hypothesisTool, statusTool } from './write-tools.js';
 
-export const LEAD_TOOL_LIMIT = 12;
-const FIRST_BRIEF_TIMEOUT_MS = 6 * 60_000;
-const TURN_LIMIT = 30;
+const TURN_LIMIT = 6;
 
 const classificationShape = z.object({ urgency: z.enum(['rush', 'tolerable']), reason: z.string().min(1).max(400) });
-const draftShape = z.object({
-  summary: z.string().min(1).max(2000),
-  knownFacts: z.array(z.object({ text: z.string().min(1).max(2000), evidenceIds: z.array(z.string()).min(1).max(20) })).max(20),
-  unknowns: z.array(z.string().min(1).max(2000)).max(20),
-  nextDetail: z.string().min(1).max(600),
+const evidenceIds = z.array(z.string().min(1).max(200)).max(10);
+const causeShape = z.object({
+  claim: z.string().min(1).max(600),
+  supportingEvidenceIds: evidenceIds,
+  contradictingEvidenceIds: evidenceIds.default([]),
+  confirmWith: z.string().min(1).max(600),
 });
+const causesShape = z.object({ causes: z.array(causeShape).max(3) });
 
-export type BriefDraft = z.infer<typeof draftShape>;
-export type FirstBriefRequest = { signal: AbortSignal; alreadyRead: string };
+export type CauseRequest = { readings: string; signal: AbortSignal };
+export type ClassifyRequest = { answer: string; signal: AbortSignal };
 
 export type Lead = {
-  writeFirstBrief(request: FirstBriefRequest): Promise<void>;
-  keepReading(signal: AbortSignal): Promise<void>;
-  classify(answer: string): Promise<Classification>;
-  draftBrief(request: DraftRequest): Promise<BriefDraft>;
+  proposeCauses(request: CauseRequest): Promise<Cause[]>;
+  classify(request: ClassifyRequest): Promise<Classification>;
 };
 
-type AgentPlan = { tools: (context: ToolContext) => ToolList; signal?: AbortSignal; schema?: z.ZodType };
+type AgentPlan = { schema: z.ZodType; signal: AbortSignal };
 
-function investigationTools(context: ToolContext) {
-  return [...readTools(context), briefTool(context), hypothesisTool(context), statusTool(context)];
+function runAgent(plan: AgentPlan, prompt: string): Promise<AgentResult> {
+  return withRetries(async (attempt) => {
+    if (attempt === FALLBACK_ATTEMPT) logProgress({ fallbackModelAttempt: attempt });
+    const model = await buildModel(settingForAttempt(attempt));
+    const agent = new Agent({ model, tools: [], printer: false, systemPrompt: LEAD_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: plan.schema });
+    return agent.invoke(promptForAttempt({ prompt, attempt }), { cancelSignal: plan.signal, limits: { turns: TURN_LIMIT } });
+  }, { signal: plan.signal });
 }
 
-function readingTools(context: ToolContext) {
-  return [...readTools(context), hypothesisTool(context)];
-}
-
-function agentRunner(session: LeadSession) {
-  return (plan: AgentPlan, prompt: string): Promise<AgentResult> =>
-    withRetries(async (attempt) => {
-      if (attempt === FALLBACK_ATTEMPT) logProgress({ fallbackModelAttempt: attempt });
-      const tools = plan.tools({ session, budget: budgetOf(LEAD_TOOL_LIMIT) });
-      const model = await buildModel(settingForAttempt(attempt));
-      const agent = new Agent({ model, tools, printer: false, systemPrompt: LEAD_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: plan.schema });
-      return agent.invoke(promptForAttempt({ prompt, attempt }), { cancelSignal: plan.signal, limits: { turns: TURN_LIMIT } });
-    }, { signal: plan.signal });
-}
-
-export function leadFor(session: LeadSession, facts: IncidentFacts): Lead {
-  const run = agentRunner(session);
-  const noTools = () => [];
+export function leadFor(facts: IncidentFacts): Lead {
   return {
-    writeFirstBrief: async (request) => {
-      const signal = AbortSignal.any([request.signal, AbortSignal.timeout(FIRST_BRIEF_TIMEOUT_MS)]);
-      await run({ tools: investigationTools, signal }, firstBriefTask(facts, request.alreadyRead));
+    proposeCauses: async (request) => {
+      const result = await runAgent({ schema: causesShape, signal: request.signal }, causesTask(facts, request.readings));
+      return causesShape.parse(result.structuredOutput).causes;
     },
-    keepReading: async (signal) => void (await run({ tools: readingTools, signal }, keepReadingTask(facts))),
-    classify: async (answer) => classificationShape.parse((await run({ tools: noTools, schema: classificationShape }, classifyTask(answer))).structuredOutput),
-    draftBrief: async (request) => draftShape.parse((await run({ tools: noTools, schema: draftShape }, draftBriefTask(request))).structuredOutput),
+    classify: async (request) => {
+      const result = await runAgent({ schema: classificationShape, signal: request.signal }, classifyTask(request.answer));
+      return classificationShape.parse(result.structuredOutput);
+    },
   };
 }
