@@ -74,5 +74,5 @@ test("the question quotes measured values, and I don't know leaves impact unconf
   assert.equal(decision.urgency, 'rush');
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;
   assert.equal(brief.unknowns[0], UNCONFIRMED_IMPACT);
-  assert.equal(brief.nextStep, 'Treated as urgent. The mitigation is verified; no pull request is open yet.');
+  assert.equal(brief.nextStep, 'Treated as urgent. The verified mitigation waits in a pull request for a person to review and merge.');
 });

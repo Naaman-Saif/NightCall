@@ -4,9 +4,6 @@ import type { CauseOutcome } from './causes.js';
 import { EXTRA_EXPERIMENT, recordContract, REPRODUCTION, testCause } from './experiment-steps.js';
 import type { Answer } from './incident-api.js';
 import { proposeMitigation } from './mitigation-steps.js';
-import { logProgress } from './progress.js';
-import { publicationOf } from './proof-record.js';
-import { describeError } from './retry.js';
 import { minutesElapsed, type RunContext } from './run-steps.js';
 import { decideUrgency, type UrgencyDecision } from './urgency.js';
 import { verifyMitigation } from './verification-steps.js';
@@ -44,13 +41,4 @@ export async function proveAndDecide(context: RunContext, plan: ProofPlan): Prom
   if (context.record.contractId) await proposeMitigation(context, plan.causes.causes);
   await verifyMitigation(context);
   return { answer, decision };
-}
-
-export async function readPublication(context: RunContext): Promise<void> {
-  if (!context.record.verification?.approved) return;
-  try {
-    context.record.publication = publicationOf(await context.api.readCase());
-  } catch (error) {
-    logProgress({ publicationUnread: describeError(error) });
-  }
 }
