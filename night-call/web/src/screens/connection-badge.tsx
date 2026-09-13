@@ -1,20 +1,29 @@
 import type { ConnectionState } from '../api/use-connection-state';
-import { Badge } from '../kit';
+import { formatAgo } from '../format/time';
+import { useNow } from '../format/use-now';
 
-type ConnectionLook = { icon: string; text: string; tone: 'neutral' | 'critical' };
+export type ConnectionBadgeProps = { connection: ConnectionState; latestSequence: number; lastUpdateAt: string };
 
-const CONNECTION_LOOK: Record<ConnectionState, ConnectionLook> = {
-  connecting: { icon: 'loader-circle', text: 'Connecting', tone: 'neutral' },
-  live: { icon: 'radio', text: 'Live', tone: 'neutral' },
-  reconnecting: { icon: 'refresh-cw', text: 'Reconnecting', tone: 'neutral' },
-  stale: { icon: 'wifi-off', text: 'Stale, showing last data', tone: 'critical' },
+const CONNECTION_TEXT: Record<Exclude<ConnectionState, 'stale'>, string> = {
+  connecting: 'Connecting',
+  live: 'Live',
+  reconnecting: 'Reconnecting',
 };
 
-export function ConnectionBadge({ connection }: { connection: ConnectionState }) {
-  const look = CONNECTION_LOOK[connection];
+function useConnectionText({ connection, lastUpdateAt }: ConnectionBadgeProps): string {
+  const now = useNow();
+  if (connection === 'stale') return `Stale, last update ${formatAgo(lastUpdateAt, now)}`;
+  return CONNECTION_TEXT[connection];
+}
+
+export function ConnectionBadge(props: ConnectionBadgeProps) {
+  const text = useConnectionText(props);
   return (
-    <Badge className="connection-badge" role="status" data-connection={connection} tone={look.tone} icon={look.icon}>
-      {look.text}
-    </Badge>
+    <span className="connection-badge" role="status" data-connection={props.connection}>
+      <span className="connection-dot-ring" aria-hidden>
+        <span key={props.latestSequence} className="connection-dot" data-sequence={props.latestSequence} />
+      </span>
+      {text}
+    </span>
   );
 }
