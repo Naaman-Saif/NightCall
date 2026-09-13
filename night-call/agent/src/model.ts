@@ -14,6 +14,7 @@ async function buildFeatherlessModel(modelId: string): Promise<Model> {
     api: 'chat',
     modelId,
     apiKey: process.env.FEATHERLESS_API_KEY,
+    params: { parallel_tool_calls: false, max_tokens: 12_000 },
     clientConfig: { baseURL: process.env.FEATHERLESS_BASE_URL, maxRetries: 0 },
   });
 }

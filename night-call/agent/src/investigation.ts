@@ -3,6 +3,7 @@ import { waitForImpactAnswer } from './context-wait.js';
 import { failureShareOf, hasFailureRate, noteReading } from './evidence-ledger.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import { logProgress } from './progress.js';
+import { describeError } from './retry.js';
 import { decideUrgency, failuresPer100, impactQuestionEvent, pathSentence, type Classification, type UrgencyDecision } from './urgency.js';
 
 export type InvestigationParts = BriefParts & { waitForAnswer?: (api: IncidentApi) => Promise<Answer | null> };
@@ -18,7 +19,7 @@ async function writeFirstBrief(parts: InvestigationParts): Promise<void> {
   try {
     await parts.lead.writeFirstBrief();
   } catch (error) {
-    logProgress({ firstBriefFailed: String(error).slice(0, 300) });
+    logProgress({ firstBriefFailed: describeError(error) });
   }
 }
 
