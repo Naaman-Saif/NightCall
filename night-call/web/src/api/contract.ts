@@ -50,12 +50,12 @@ export type ExperimentProgress = { requests: number; errors: number; peakMemoryB
 
 export type Mitigation = {
   id: string; explanation: string; diff: string; caveats: string[]; notFixed: string;
-  status: 'proposed' | 'testing' | 'verified' | 'failed';
+  variant?: string; restart?: boolean; status: 'proposed' | 'testing' | 'verified' | 'failed';
 };
 
 export type Cycle = {
   number: number; state: 'pending' | 'running' | 'passed' | 'failed'; checks: CheckResult[]; verificationRunId: string;
-  trafficSource?: TrafficSource | null; speed?: number | null;
+  speed?: number | null;
 };
 
 export type Publication = {
