@@ -5,6 +5,7 @@ import { formatAbsolute, formatClock } from '../format/time';
 import { useNow } from '../format/use-now';
 import { Badge, DemoBadge } from '../kit';
 import { ConnectionBadge } from './connection-badge';
+import { ManualTag } from './manual-tag';
 
 export function IncidentHeader({ incident, connection }: { incident: Incident; connection: ConnectionState }) {
   return (
@@ -13,6 +14,7 @@ export function IncidentHeader({ incident, connection }: { incident: Incident; c
         <span className="meta">{incident.label}</span>
         <Badge tone={incident.severity === 'critical' ? 'critical' : 'neutral'} dot>{incident.severity}</Badge>
         <Badge numeric uppercase>{incident.service}</Badge>
+        <ManualTag alertName={incident.alertName} />
         {incident.illustrative && <DemoBadge />}
         <ConnectionBadge connection={connection} />
       </div>
