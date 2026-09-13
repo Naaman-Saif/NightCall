@@ -1,6 +1,6 @@
 # Incident data and API, and the incident web page
 
-Status: revised 2026-09-13 about 04:45 PKT after an independent Claude review (grill-me method; 4 blocking issues fixed). Waiting for Saif's approval. Nothing below has been run.
+Status: approved by Saif 2026-09-13 17:25 PKT after a Claude review and two Codex review passes. Codex's final note folded in (partial-write test order). Build starts after the sample incident file is written; Codex asks to review actual evidence at the integration checkpoint before charts and proof panels are finished.
 
 Part A turns alerts and agent events into a stored, typed incident the page can read live. Part B builds the incident page from the approved NightCall design system. They share one contract written in this file and one sample incident file.
 
@@ -176,7 +176,7 @@ lastSequence
 | Stage traces | a new one-round run keeps traces whose ids match at least one failed fault-stage request, stored in the fault stage's evidence folder |
 | Memory limits | the same run's post-start check shows every sandbox container's memory limit equals production |
 | Roles from tokens | lead token posting `verification_reviewed` with body `actor: verifier` gets 403 |
-| Partial write | with a half-written last line planted and `night-call` restarted, an operator answer is appended; after a second restart the answer is in the log exactly once, the broken tail is in `events.broken-*.jsonl`, and the snapshot matches the log |
+| Partial write | an operator answer is saved first; then a half-written line is planted after it and `night-call` restarted (the restart also marks the incident interrupted); after recovery the answer is in the log exactly once, the broken tail is in `events.broken-*.jsonl`, the next sequence follows the last valid event, and the snapshot matches the log |
 | Pre-alert evidence | an incident opened after 10 minutes of recording, then interrupted by a restart, still returns series samples from before its alert time |
 | Integration checkpoint | the flow in the checkpoint section passes on the box before charts and proof panels are finished |
 | Quality | lint, tests, build pass |
