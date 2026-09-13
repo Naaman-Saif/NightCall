@@ -7,13 +7,17 @@ import { EventWriter } from '../investigation/event-writer';
 import { LiveStream } from '../investigation/live-stream';
 import { openInvestigation, type AlertFacts } from '../investigation/open-investigation';
 import { parsePayload, type PayloadOf } from '../investigation/payload-schemas';
+import { retimedDrafts } from '../investigation/sample-times';
 import { appendAsService } from '../investigation/service-append';
 
 type SampleEvent = EventDraft & { delayMs: number };
 
+function alertPayloadOf(alert: SampleEvent): PayloadOf<'alert_received'> {
+  return parsePayload('alert_received', alert.payload) as PayloadOf<'alert_received'>;
+}
+
 function factsFrom(alert: SampleEvent): AlertFacts {
-  const payload = parsePayload('alert_received', alert.payload) as PayloadOf<'alert_received'>;
-  const { alertName, service, severity, labels } = payload;
+  const { alertName, service, severity, labels } = alertPayloadOf(alert);
   return { alertName, service, severity, labels, summary: alert.summary, illustrative: true };
 }
 
@@ -23,7 +27,8 @@ async function replaySample(): Promise<void> {
   const writer = new EventWriter(settings.stateDir, new LiveStream());
   const opened = await openInvestigation(writer, { facts: factsFrom(alert), blockDuplicates: false });
   if (!opened) throw new Error('sample incident did not open');
-  for (const { delayMs, ...draft } of rest) {
+  const clock = { fixtureAlertAt: alertPayloadOf(alert).startedAt, replayAlertAt: String(opened.payload.startedAt) };
+  for (const { delayMs, ...draft } of retimedDrafts(rest, clock)) {
     await sleep(delayMs);
     await appendAsService(writer, { incidentId: opened.incidentId, draft });
   }
