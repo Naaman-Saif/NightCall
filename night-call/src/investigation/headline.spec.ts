@@ -69,7 +69,7 @@ describe('fact headline', () => {
   it('establishes the cause only when a supported hypothesis has an accepted matching reproduction', async () => {
     const finished = system('investigation_finished', { reason: 'completed' });
     const accepted = await incidentWith([started, ...reproduction(true), finished]);
-    expect(accepted.headline).toMatch(/The cause is established by an accepted reproduction\. Investigation finished\.$/);
+    expect(accepted.headline).toMatch(/Reproduced in a test copy with test traffic: cache grows\. Investigation finished\.$/);
     const rejected = await incidentWith([started, ...reproduction(false)]);
     expect(rejected.headline).toMatch(/Most likely cause: cache grows, not yet reproduced\. Investigation is running\.$/);
   });

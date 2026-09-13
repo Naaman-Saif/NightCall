@@ -4,6 +4,8 @@ import type { IncidentEvent } from './event-types';
 
 export type EventListener = (event: IncidentEvent) => void;
 
+const EVERY_INCIDENT = '*';
+
 @Injectable()
 export class LiveStream {
   private readonly listeners = new Map<string, Set<EventListener>>();
@@ -18,7 +20,12 @@ export class LiveStream {
     };
   }
 
+  subscribeAll(listener: EventListener): () => void {
+    return this.subscribe(EVERY_INCIDENT, listener);
+  }
+
   publish(event: IncidentEvent): void {
-    for (const listener of this.listeners.get(event.incidentId) ?? []) listener(event);
+    const targeted = [...(this.listeners.get(event.incidentId) ?? []), ...(this.listeners.get(EVERY_INCIDENT) ?? [])];
+    for (const listener of targeted) listener(event);
   }
 }

@@ -1,5 +1,6 @@
 import type { IncidentEvent } from './event-types';
 import { payloadOf } from './payload-schemas';
+import { publicationStep, reproductionStep, verificationStep } from './proof-steps';
 import { reducerFrom } from './reducer';
 import type { RunStep } from './run-report-types';
 import type { Snapshot } from './snapshot';
@@ -46,8 +47,16 @@ function recordAnswer(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   return withSteps(snapshot, did.map((step) => (step.questionId === questionId ? { ...step, value } : step)));
 }
 
+function withStep(snapshot: Snapshot, found: RunStep | null): Snapshot {
+  return found ? withSteps(snapshot, [...snapshot.runReport.did, found]) : snapshot;
+}
+
 export const reduceRunSteps = reducerFrom({
   evidence_recorded: recordSignal,
   question_asked: recordQuestion,
   context_supplied: recordAnswer,
+  experiment_reviewed: (snapshot, event) => withStep(snapshot, reproductionStep(snapshot, event)),
+  verification_reviewed: (snapshot, event) => withStep(snapshot, verificationStep(snapshot, event)),
+  publication_changed: (snapshot, event) => withStep(snapshot, publicationStep(event)),
+  budget_exhausted: (snapshot) => withStep(snapshot, { text: 'Time budget used up', value: 'Tools closed, test copy removed, no pull request opened', evidenceId: null, questionId: null }),
 });
