@@ -37,7 +37,7 @@ function recordQuestion(snapshot: Snapshot, event: IncidentEvent): Snapshot {
 
 function recordAnswer(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   const { questionId, text } = payloadOf(event, 'context_supplied');
-  const value = `Answer: ${text.slice(0, 200)}`;
+  const value = text.slice(0, 200);
   const did = snapshot.runReport.did;
   const asked = questionId !== null && did.some((step) => step.questionId === questionId);
   if (!asked) return withSteps(snapshot, [...did, { text: 'Operator added context', value, evidenceId: null, questionId }]);
