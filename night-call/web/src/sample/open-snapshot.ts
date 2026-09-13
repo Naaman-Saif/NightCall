@@ -43,6 +43,7 @@ export function openSnapshot(event: AlertEvent): Snapshot {
   return {
     ...untouchedAreas,
     incident: incidentFromAlert(event),
+    investigation: 'running',
     roles: { lead: ready, investigator: ready, verifier: ready },
     lastSequence: event.sequence,
   };

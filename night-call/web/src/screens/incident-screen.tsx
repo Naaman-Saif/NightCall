@@ -27,6 +27,7 @@ function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: 
   return (
     <div className="page">
       <IncidentHeader incident={snapshot.incident} connection={view.connection} latestSequence={view.events.at(-1)?.sequence ?? 0} />
+      {snapshot.headline && <p className="incident-headline">{snapshot.headline}</p>}
       {!isOperator && <PublicBanner />}
       <WhatHappenedSection incident={snapshot.incident} events={view.events} isSample={isSample} />
       <div className="report" data-layout={phoneLayoutFor(snapshot)}>

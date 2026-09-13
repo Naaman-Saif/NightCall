@@ -47,6 +47,9 @@
 .report { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
 .source-links { display: inline-flex; flex-wrap: wrap; gap: var(--sp-2); margin-left: var(--sp-2); }
 .source-link { font: var(--type-meta-sm); color: var(--text-link); }
+.source-link[data-rank='secondary'] { color: var(--text-muted); }
+.incident-headline { margin: 0; max-width: 80ch; font: var(--type-body); color: var(--text-title); }
+.investigation-progress { margin-bottom: var(--sp-3); }
 .evidence-line { overflow-wrap: anywhere; }
 .section-head { display: flex; align-items: center; gap: var(--sp-2); }
 
