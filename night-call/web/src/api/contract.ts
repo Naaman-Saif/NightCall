@@ -60,8 +60,12 @@ export type Publication = {
   number: number | null; url: string | null; diff: string | null; failureReason: string | null;
 };
 
+export type InvestigationProgress = 'not_started' | 'running' | 'interrupted' | 'finished';
+
 export type Snapshot = {
   incident: Incident;
+  headline?: string | null;
+  investigation?: InvestigationProgress;
   brief: Brief | null;
   roles: Record<RoleName, RoleState>;
   evidence: Record<string, Evidence>;

@@ -1,4 +1,5 @@
 import type { Brief, Evidence, KnownFact, Snapshot } from '../api/contract';
+import { describeMissingBrief, describeUnfinishedInvestigation, investigationOf } from '../format/investigation-text';
 import { formatAgo } from '../format/time';
 import { useNow } from '../format/use-now';
 import { Card, Icon } from '../kit';
@@ -7,12 +8,14 @@ import { SourceLinks } from './source-links';
 type EvidenceById = Record<string, Evidence>;
 
 export function BriefBlock({ snapshot }: { snapshot: Snapshot }) {
+  const progressText = describeUnfinishedInvestigation(snapshot);
   return (
-    <Card title="What happened" className="section-brief">
+    <Card title="What happened" className="section-brief" data-investigation={investigationOf(snapshot)}>
+      {snapshot.brief && progressText && <p className="status-line investigation-progress">{progressText}</p>}
       {snapshot.brief ? (
         <BriefContent brief={snapshot.brief} evidence={snapshot.evidence} />
       ) : (
-        <p className="muted">No summary yet. Evidence is still being gathered.</p>
+        <p className="muted">{describeMissingBrief(snapshot)}</p>
       )}
     </Card>
   );

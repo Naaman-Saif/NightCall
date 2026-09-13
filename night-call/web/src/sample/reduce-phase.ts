@@ -1,4 +1,4 @@
-import type { Incident, IncidentEvent, Phase, Snapshot } from '../api/contract';
+import type { Incident, IncidentEvent, InvestigationProgress, Phase, Snapshot } from '../api/contract';
 
 export function withPhase(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   const completionReason = completionReasonOf(event);
@@ -7,7 +7,12 @@ export function withPhase(snapshot: Snapshot, event: IncidentEvent): Snapshot {
     return { ...snapshot, incident };
   }
   const incident: Incident = { ...snapshot.incident, phase: 'handoff', lifecycle: 'finished', completionReason };
-  return { ...snapshot, incident };
+  return { ...snapshot, incident, investigation: investigationAfter(completionReason) };
+}
+
+function investigationAfter(completionReason: Incident['completionReason']): InvestigationProgress {
+  const isInterrupted = completionReason === 'interrupted' || completionReason === 'budget_exhausted';
+  return isInterrupted ? 'interrupted' : 'finished';
 }
 
 function phaseAfter(current: Phase, event: IncidentEvent): Phase {

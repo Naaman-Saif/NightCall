@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Hypothesis, Snapshot } from '../api/contract';
 import { hypothesisClaim } from '../format/claims';
+import { describeMissingCauses } from '../format/investigation-text';
 import { Card, HypothesisCard } from '../kit';
 import { EvidenceLine } from './source-links';
 
@@ -9,7 +10,7 @@ type HypothesisViewProps = { snapshot: Snapshot; hypothesis: Hypothesis; index: 
 export function HypothesesPanel({ snapshot }: { snapshot: Snapshot }) {
   return (
     <Card title="Possible causes" className="section-hypotheses">
-      {snapshot.hypotheses.length === 0 && <p className="muted">No possible cause yet. Evidence is gathered first.</p>}
+      {snapshot.hypotheses.length === 0 && <p className="muted">{describeMissingCauses(snapshot)}</p>}
       <div className="card-stack">
         {snapshot.hypotheses.map((hypothesis, index) => (
           <HypothesisView key={hypothesis.id} snapshot={snapshot} hypothesis={hypothesis} index={index + 1} />
