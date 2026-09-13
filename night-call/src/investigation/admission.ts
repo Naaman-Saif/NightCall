@@ -44,9 +44,15 @@ function requireUncontradictedSupport(snapshot: Snapshot, draft: EventDraft): vo
   throw new ConflictException('a cause cannot be marked supported while recorded evidence it cites contradicts it');
 }
 
+function isLatePublicationRecord(draft: EventDraft): boolean {
+  const outcome = draft.payload.state === 'published' || draft.payload.state === 'failed';
+  return draft.actor === 'system' && draft.type === 'publication_changed' && outcome;
+}
+
 export function admit(events: IncidentEvent[], draft: EventDraft): EventDraft {
   const snapshot = reduceEvents(events);
-  if (snapshot?.incident.lifecycle !== 'active') throw new ConflictException('incident is not active');
+  if (!snapshot) throw new ConflictException('incident is not active');
+  if (snapshot.incident.lifecycle !== 'active' && !isLatePublicationRecord(draft)) throw new ConflictException('incident is not active');
   requireSingleStop(snapshot, draft);
   requireUncontradictedSupport(snapshot, draft);
   requireExperimentRules(snapshot, draft);
