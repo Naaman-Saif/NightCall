@@ -1,0 +1,70 @@
+:root{
+  /* --- base: night scale (green-leaning charcoal, a step lighter than before, never pure black) --- */
+  --night-1000:#0C1210; --night-950:#101714; --night-900:#141C19; --night-850:#19221E;
+  --night-800:#1F2924; --night-750:#25302A; --night-700:#2D3A33; --night-650:#35443C;
+  --night-600:#43554B; --night-500:#586B61; --night-400:#778C81; --night-300:#9EB0A6;
+  --night-200:#C4D1CA; --night-100:#E0E8E3; --night-050:#F2F6F3;
+
+  /* --- brand signal: beacon amber. The pager light. Used sparingly. --- */
+  --beacon-700:#7A4A00; --beacon-600:#A36400; --beacon-500:#E08C00;
+  --beacon-400:#FFB020; --beacon-300:#FFC65C; --beacon-200:#FFDDA1;
+
+  /* --- claim hues: one hue per evidence label, never reused decoratively --- */
+  --observed-400:#5CC8D8; --observed-700:#0E3A44;   /* Observed */
+  --hypothesis-400:#A98BF5; --hypothesis-700:#2E2452; /* Hypothesis */
+  --inconclusive-400:#93A1B1; --inconclusive-700:#242D39; /* Inconclusive */
+  --reproduced-400:#FFB020; --reproduced-700:#3D2A06; /* Reproduced */
+  --verified-400:#49C98A; --verified-700:#0E3A28;   /* Mitigation verified */
+  --critical-300:#F58085; --critical-400:#F2646A; --critical-500:#DE4A50; --critical-700:#431A1E; /* Failing / breached */
+
+  /* --- solid fills: every badge, chip, label and alert sits on an OPAQUE ground.
+         No alpha washes, no tinted backgrounds. Light hues carry --on-solid ink. --- */
+  --fill-observed:#5CC8D8;
+  --fill-hypothesis:#A98BF5;
+  --fill-inconclusive:#35443C;
+  --fill-reproduced:#FFB020;
+  --fill-verified:#49C98A;
+  --fill-critical:#F2646A;
+  --fill-neutral:#2D3A33;
+  --fill-accent:#FFB020;
+  --on-solid:#0C1210;
+  --on-solid-neutral:#EEF3EF;
+
+  /* --- semantic surfaces --- */
+  --surface-page:var(--night-950);
+  --surface-panel:var(--night-900);
+  --surface-card:var(--night-850);
+  --surface-raised:var(--night-800);
+  --surface-inset:var(--night-1000);
+  --surface-hover:rgba(255,255,255,.04);
+  --surface-active:rgba(255,255,255,.07);
+  --surface-selected:rgba(255,176,32,.10);
+  --scrim:rgba(12,18,16,.72);
+
+  /* --- semantic text --- */
+  --text-title:#EEF3EF;
+  --text-body:#C8D2CC;
+  /* Both clear 4.5:1 on --surface-page. --night-400/-500 stay available for non-text use
+     (icon strokes, chart gridlines, disabled glyphs) — never for running text. */
+  --text-muted:var(--night-300);
+  --text-faint:#84978C;
+  --text-invert:var(--night-1000);
+  --text-accent:var(--beacon-400);
+  --text-link:var(--observed-400);
+  --text-link-hover:#8FE0ED;
+
+  /* --- semantic lines --- */
+  --line-hairline:rgba(255,255,255,.06);
+  --line-soft:var(--night-750);
+  --line:var(--night-700);
+  --line-strong:var(--night-600);
+  --line-accent:var(--beacon-500);
+
+  /* --- controls --- */
+  --accent:var(--beacon-400);
+  --accent-ink:var(--night-1000);
+  --accent-hover:var(--beacon-300);
+  --accent-press:var(--beacon-500);
+  --focus-ring:rgba(255,176,32,.55);
+  --danger:var(--critical-400);
+}

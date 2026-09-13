@@ -1,0 +1,11 @@
+/* NightCall ships no licensed font binaries. IBM Plex Sans / IBM Plex Mono are loaded from
+   Google Fonts as the system's real faces. If a licensed brand face arrives later, drop the
+   binaries in assets/fonts/ and replace this @import with local @font-face rules. */
+:root{
+  --font-core: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Retired: NightCall sets no monospace text. Measurements use the core face with
+     tabular figures (--numeric). The alias stays so older usage resolves to the core face. */
+  --font-mono: var(--font-core);
+  --font-display: var(--font-core);
+  --numeric: tabular-nums; /* @kind other */
+}
