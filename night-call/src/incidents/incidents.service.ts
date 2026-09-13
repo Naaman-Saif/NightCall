@@ -1,35 +1,30 @@
-import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { alertIsFiring, type AlertPayload } from './alert-payload';
-import { openIncidentFor, type Incident, type IncidentStatus } from './incident';
-import { IncidentStore } from './incident-store';
-
-export const INCIDENT_STORE = 'INCIDENT_STORE';
+import { settings } from '../config/settings';
+import { EventWriter } from '../investigation/event-writer';
+import { openInvestigation } from '../investigation/open-investigation';
+import { invokeAgents } from '../runtime/runtime-invoker';
+import { alertIsFiring, factsOf, type AlertPayload } from './alert-payload';
 
 @Injectable()
-export class IncidentsService implements OnModuleInit {
-  constructor(@Inject(INCIDENT_STORE) private readonly store: IncidentStore) {}
+export class IncidentsService {
+  private readonly log = new Logger('Incidents');
 
-  onModuleInit(): void {
-    for (const incident of this.store.all().filter((i) => i.status === 'running')) this.store.setStatus(incident.id, 'open');
-  }
+  constructor(@Inject(EventWriter) private readonly writer: EventWriter) {}
 
-  receive(payload: AlertPayload): Incident[] {
-    const opened: Incident[] = [];
+  async receive(payload: AlertPayload): Promise<string[]> {
+    const opened: string[] = [];
     for (const alert of payload.alerts.filter(alertIsFiring)) {
-      const incident = openIncidentFor(alert, [...this.store.all(), ...opened]);
-      if (!incident) continue;
-      this.store.add(incident);
-      opened.push(incident);
+      const event = await openInvestigation(this.writer, { facts: factsOf(alert), blockDuplicates: true });
+      if (event) opened.push(event.incidentId);
     }
+    if (settings.invokeAgentsOnAlert) opened.forEach((incidentId) => this.invoke(incidentId));
     return opened;
   }
 
-  nextOpen(): Incident | undefined {
-    return this.store.all().find((incident) => incident.status === 'open');
-  }
-
-  setStatus(id: string, status: IncidentStatus): void {
-    this.store.setStatus(id, status);
+  private invoke(incidentId: string): void {
+    invokeAgents({ incidentId, mode: 'hello' })
+      .then((outcome) => this.log.log(`agents invoked for ${incidentId}: ${outcome.statusCode}`))
+      .catch((error: unknown) => this.log.error(`agent invoke failed for ${incidentId}: ${String(error)}`));
   }
 }

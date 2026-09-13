@@ -1,17 +1,16 @@
-import { BadRequestException, Body, Controller, Get, Inject, Logger, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Logger, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 
-import { BearerGuard } from './bearer.guard';
-import { eventBodyShape, incidentIdShape } from './event-body';
-import type { EventLog } from './event-log';
-
-export const EVENT_LOG = 'EVENT_LOG';
+import { EventWriter } from '../investigation/event-writer';
+import { validIncidentId } from '../investigation/incident-paths';
+import { appendAsRole } from '../investigation/role-append';
+import { RoleGuard, type ToolRequest } from './role.guard';
 
 @Controller('tool')
-@UseGuards(BearerGuard)
+@UseGuards(RoleGuard)
 export class ToolController {
   private readonly log = new Logger('ToolApi');
 
-  constructor(@Inject(EVENT_LOG) private readonly events: EventLog) {}
+  constructor(@Inject(EventWriter) private readonly writer: EventWriter) {}
 
   @Get('ping')
   ping() {
@@ -19,12 +18,11 @@ export class ToolController {
   }
 
   @Post('incidents/:id/events')
-  appendEvent(@Param('id') id: string, @Body() body: unknown) {
-    const incidentId = incidentIdShape.safeParse(id);
-    const eventBody = eventBodyShape.safeParse(body);
-    if (!incidentId.success || !eventBody.success) throw new BadRequestException('invalid incident id or event');
-    const event = this.events.append(incidentId.data, eventBody.data);
-    this.log.log(`event ${event.type} sequence ${event.sequence} for ${event.incidentId}`);
+  async appendEvent(@Req() request: ToolRequest) {
+    if (!request.toolRole) throw new UnauthorizedException();
+    const incidentId = validIncidentId(request.params.id);
+    const event = await appendAsRole(this.writer, { role: request.toolRole, incidentId, body: request.body });
+    this.log.log(`event ${event.type} sequence ${event.sequence} for ${event.incidentId} by ${event.actor}`);
     return event;
   }
 }

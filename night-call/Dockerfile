@@ -19,6 +19,7 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
+COPY web/public/fixtures ./web/public/fixtures
 ENV NODE_ENV=production
 ENV NIGHT_CALL_HOST=0.0.0.0
 EXPOSE 8000

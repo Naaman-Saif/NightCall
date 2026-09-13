@@ -13,6 +13,6 @@ export async function runLong(incidentId: string): Promise<void> {
   }
   const waitedMinutes = Math.round((Date.now() - startedAt) / STEP_MS);
   const summary = `Long run finished after ${waitedMinutes} minutes`;
-  const event = { actor: 'lead', type: 'role_status_changed', summary, payload: { waitedMinutes } };
+  const event = { actor: 'lead', type: 'role_status_changed', summary, payload: { role: 'lead', status: 'ready', assignment: summary } };
   logProgress({ incidentId, posted: await postEvent(incidentId, event) });
 }

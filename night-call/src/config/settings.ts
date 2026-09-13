@@ -21,13 +21,22 @@ export const settings = Object.freeze({
   githubRepository: setting('NIGHT_CALL_GITHUB_REPOSITORY', ''),
   githubToken: setting('GITHUB_TOKEN', ''),
   toolToken: setting('NIGHT_CALL_TOOL_TOKEN', ''),
+  toolTokenLead: setting('NIGHT_CALL_TOOL_TOKEN_LEAD', ''),
+  toolTokenInvestigator: setting('NIGHT_CALL_TOOL_TOKEN_INVESTIGATOR', ''),
+  toolTokenVerifier: setting('NIGHT_CALL_TOOL_TOKEN_VERIFIER', ''),
+  operatorSecret: setting('NIGHT_CALL_OPERATOR_SECRET', ''),
+  invokeAgentsOnAlert: setting('NIGHT_CALL_INVOKE_AGENTS_ON_ALERT', 'false') === 'true',
+  sampleIncidentPath: setting('NIGHT_CALL_SAMPLE_INCIDENT_PATH', '/app/web/public/fixtures/sample-incident.json'),
   agentRuntimeArn: setting('NIGHT_CALL_AGENT_RUNTIME_ARN', ''),
 });
 
 const requiredSettings: Record<string, string> = {
   NIGHT_CALL_FLAGD_CONFIG_PATH: settings.flagdConfigPath,
   NIGHT_CALL_ASTRONOMY_SHOP_PATH: settings.astronomyShopPath,
-  NIGHT_CALL_TOOL_TOKEN: settings.toolToken,
+  NIGHT_CALL_TOOL_TOKEN_LEAD: settings.toolTokenLead,
+  NIGHT_CALL_TOOL_TOKEN_INVESTIGATOR: settings.toolTokenInvestigator,
+  NIGHT_CALL_TOOL_TOKEN_VERIFIER: settings.toolTokenVerifier,
+  NIGHT_CALL_OPERATOR_SECRET: settings.operatorSecret,
   NIGHT_CALL_AGENT_RUNTIME_ARN: settings.agentRuntimeArn,
   NIGHT_CALL_RUNS_PATH: settings.runsPath,
 };

@@ -31,6 +31,7 @@ export async function runHello(incidentId: string): Promise<void> {
   const answer = await askLead();
   logProgress({ incidentId, mode: 'hello', ...answer });
   const summary = `Hello run: ${answer.reply}`.slice(0, REPLY_LIMIT);
-  const event = { actor: 'lead', type: 'role_status_changed', summary, payload: answer };
+  const payload = { role: 'lead', status: 'working', assignment: summary };
+  const event = { actor: 'lead', type: 'role_status_changed', summary, payload };
   logProgress({ incidentId, posted: await postEvent(incidentId, event) });
 }
