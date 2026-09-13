@@ -17,7 +17,9 @@ export type AlertFacts = {
 export type OpenRequest = { facts: AlertFacts; blockDuplicates: boolean };
 
 function activeDuplicateExists(stateDir: string, facts: AlertFacts): boolean {
-  return allSnapshots(stateDir).some(({ incident }) => incident.lifecycle === 'active' && incident.service === facts.service);
+  return allSnapshots(stateDir).some(
+    ({ incident }) => incident.lifecycle === 'active' && incident.service === facts.service && !incident.illustrative,
+  );
 }
 
 function alertDraft(facts: AlertFacts, label: string): EventDraft {
