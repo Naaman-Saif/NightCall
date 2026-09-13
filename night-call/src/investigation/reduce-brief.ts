@@ -9,8 +9,8 @@ function updateBrief(snapshot: Snapshot, event: IncidentEvent): Snapshot {
 }
 
 function recordEvidence(snapshot: Snapshot, event: IncidentEvent): Snapshot {
-  const { evidenceId, kind, source, summary, observedAt, excerpt, sourceLinks } = payloadOf(event, 'evidence_recorded');
-  const item = { kind, source, summary, observedAt, excerpt, sourceLinks: sourceLinks ?? [] };
+  const { evidenceId, kind, source, summary, observedAt, excerpt, sourceLinks, crashCounts } = payloadOf(event, 'evidence_recorded');
+  const item = { kind, source, summary, observedAt, excerpt, sourceLinks: sourceLinks ?? [], crashCounts: crashCounts ?? null };
   const evidence = { ...snapshot.evidence, [evidenceId]: item };
   return { ...snapshot, evidence };
 }

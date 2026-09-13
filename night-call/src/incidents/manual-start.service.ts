@@ -29,11 +29,12 @@ export class ManualStartService {
     const parsed = manualStartShape.safeParse(body);
     if (!parsed.success) throw new BadRequestException(`service must be one of: ${STARTABLE_SERVICES.join(', ')}`);
     const facts = manualFacts(parsed.data.service);
-    const opened = await openInvestigation(this.keeper.writer, { facts, blockDuplicates: true });
+    const writer = this.keeper.writer;
+    const opened = await openInvestigation(writer, { facts, blockDuplicates: true });
     if (!opened) throw new ConflictException(`a real incident is already active for ${facts.service}`);
     this.log.log(`manual investigation ${opened.incidentId} opened for ${facts.service}`);
     this.keeper.keep();
-    investigateInBackground(this.log, opened.incidentId);
+    investigateInBackground(this.log, { writer, incidentId: opened.incidentId, trigger: 'manual' });
     return { incidentId: opened.incidentId, label: String(opened.payload.label) };
   }
 }

@@ -22,7 +22,9 @@ export class IncidentsService {
     const names = firing.map(alertNameOf).join(', ');
     this.log.log(`alerts received ${payload.alerts.length}, firing [${names}], opened [${opened.join(', ')}]`);
     if (opened.length > 0) this.keeper.keep();
-    if (settings.invokeAgentsOnAlert) opened.forEach((incidentId) => investigateInBackground(this.log, incidentId));
+    if (!settings.invokeAgentsOnAlert) return opened;
+    const writer = this.keeper.writer;
+    opened.forEach((incidentId) => investigateInBackground(this.log, { writer, incidentId, trigger: 'alert' }));
     return opened;
   }
 }

@@ -20,6 +20,8 @@ export const EVENT_TYPES = [
   'role_status_changed',
   'budget_exhausted',
   'investigation_finished',
+  'investigation_started',
+  'investigation_invoke_failed',
 ] as const;
 
 export const ROLES = ['lead', 'investigator', 'verifier'] as const;

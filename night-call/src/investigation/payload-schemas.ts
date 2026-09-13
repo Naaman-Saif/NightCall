@@ -4,9 +4,10 @@ import type { z } from 'zod';
 import { analysisPayloads } from './analysis-payloads';
 import { corePayloads } from './core-payloads';
 import type { EventType, IncidentEvent } from './event-types';
+import { investigationPayloads } from './investigation-payloads';
 import { proofPayloads } from './proof-payloads';
 
-export const payloadSchemas = { ...corePayloads, ...analysisPayloads, ...proofPayloads };
+export const payloadSchemas = { ...corePayloads, ...analysisPayloads, ...proofPayloads, ...investigationPayloads };
 
 export type PayloadOf<Type extends EventType> = z.infer<(typeof payloadSchemas)[Type]>;
 

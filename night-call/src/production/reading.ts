@@ -1,4 +1,6 @@
 import type { PayloadOf } from '../investigation/payload-schemas';
+import type { CrashCounts } from '../investigation/snapshot';
+import type { ExactSource } from './exact-source';
 import type { SourceLink } from './source-links';
 
 export type Reading = {
@@ -8,6 +10,8 @@ export type Reading = {
   excerpt: string;
   data: unknown;
   sourceLinks?: SourceLink[];
+  exactSource?: ExactSource;
+  crashCounts?: CrashCounts;
   observedAt?: string;
 };
 

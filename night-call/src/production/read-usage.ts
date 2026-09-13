@@ -1,7 +1,8 @@
 import type { SeriesSample } from '../recorder/series-sample';
 import type { ServiceTracks } from '../recorder/service-tracks';
-import { excerptOf, momentMinutesAgo, type Reading } from './reading';
-import { grafanaExploreLink, rangeOfMinutes, type SourceLink } from './source-links';
+import { COMPARE_LINK_LABEL } from './exact-source';
+import { excerptOf, type Reading } from './reading';
+import { grafanaExploreLink, rangeOfMinutes, type SourceLink, type TimeRange } from './source-links';
 
 export type UsageQuery = { service: string; minutes: number; measure: 'memory' | 'cpu' };
 
@@ -26,18 +27,19 @@ function summaryOf(query: UsageQuery, samples: SeriesSample[]): string {
   return `${query.service} ${query.measure} latest ${latest}, peak ${formatted(peak, query.measure)}${limitText} (${counted})`;
 }
 
-function dockerStatsLink(query: UsageQuery): SourceLink {
+function compareLink(query: UsageQuery, range: TimeRange): SourceLink {
   const metric = query.measure === 'memory' ? 'container_memory_usage_total_bytes' : 'container_cpu_utilization_ratio';
-  const label = `Grafana: docker stats ${query.measure} for ${query.service}, same window`;
-  return grafanaExploreLink({ label, expr: `${metric}{container_name="${query.service}"}` }, rangeOfMinutes(query.minutes));
+  return grafanaExploreLink({ label: COMPARE_LINK_LABEL, expr: `${metric}{container_name="${query.service}"}` }, range);
 }
 
 export function readUsage(tracks: ServiceTracks, query: UsageQuery): Reading {
-  const cutoff = new Date(momentMinutesAgo(query.minutes)).toISOString();
+  const range = rangeOfMinutes(query.minutes);
+  const cutoff = new Date(range.fromMs).toISOString();
   const samples = tracks.windowOf(query.service).filter((sample) => sample.at >= cutoff);
   const lines = samples.map((sample) => `${sample.at} ${formatted(valueOf(sample, query.measure), query.measure)}`);
   const kind = query.measure === 'memory' ? 'memory' : 'cpu';
   const data = { limitBytes: samples.at(-1)?.limitBytes ?? null, samples };
-  const summary = summaryOf(query, samples);
-  return { kind, source: `recorder: ${query.service}`, summary, excerpt: excerptOf(lines), data, sourceLinks: [dockerStatsLink(query)] };
+  const exactSource = { kind: 'recorder' as const, service: query.service, range };
+  const reading = { kind, source: `recorder: ${query.service}`, summary: summaryOf(query, samples), excerpt: excerptOf(lines), data } as const;
+  return { ...reading, exactSource, sourceLinks: [compareLink(query, range)] };
 }

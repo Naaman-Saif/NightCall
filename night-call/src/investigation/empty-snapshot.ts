@@ -13,6 +13,8 @@ const emptyPublication: Snapshot['publication'] = {
 };
 
 const emptyAreas: Omit<Snapshot, 'incident'> = {
+  headline: '',
+  investigation: 'not_started',
   brief: null,
   roles: { lead: readyRole, investigator: readyRole, verifier: readyRole },
   evidence: {},

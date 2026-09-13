@@ -43,9 +43,12 @@ export type Question = Omit<PayloadOf<'question_asked'>, 'questionId' | 'illustr
 };
 export type ContextItem = { questionId: string | null; text: string; suppliedAt: string };
 type EvidencePayload = PayloadOf<'evidence_recorded'>;
-export type EvidenceItem = Omit<EvidencePayload, 'evidenceId' | 'illustrative' | 'sourceLinks'> & {
+export type CrashCounts = NonNullable<EvidencePayload['crashCounts']>;
+export type EvidenceItem = Omit<EvidencePayload, 'evidenceId' | 'illustrative' | 'sourceLinks' | 'crashCounts'> & {
   sourceLinks: NonNullable<EvidencePayload['sourceLinks']>;
+  crashCounts: CrashCounts | null;
 };
+export type InvestigationState = 'not_started' | 'running' | 'interrupted' | 'finished';
 export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' | 'illustrative'> & {
   id: string;
   status: PayloadOf<'hypothesis_status_changed'>['status'] | 'proposed';
@@ -54,6 +57,8 @@ export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' |
 
 export type Snapshot = {
   incident: IncidentFacts;
+  headline: string;
+  investigation: InvestigationState;
   brief: Brief | null;
   roles: Record<Role, RoleState>;
   evidence: Record<string, EvidenceItem>;
