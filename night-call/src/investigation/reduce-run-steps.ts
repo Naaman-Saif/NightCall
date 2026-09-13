@@ -11,6 +11,8 @@ const SIGNAL_NAMES: Record<string, string> = {
   oom_events: 'Read crashes',
   deploy_history: 'Read deploy history',
   sandbox: 'Read sandbox result',
+  flag_state: 'Read flag state',
+  traffic_recipe: 'Captured traffic before the crash',
 };
 
 function signalName(kind: string, source: string): string {

@@ -11,7 +11,7 @@ export type FlagOutcome = { sha: string; text: string };
 type ContentFile = { sha: string; content: string };
 type ContentWrite = { commit: { sha: string } };
 
-async function flagFileAt(ref: string): Promise<{ sha: string; text: string }> {
+export async function flagFileAt(ref: string): Promise<{ sha: string; text: string }> {
   const file = await githubJson<ContentFile>({ path: repositoryPath(`/contents/${FLAG_FILE}?ref=${ref}`) });
   return { sha: file.sha, text: Buffer.from(file.content, 'base64').toString('utf8') };
 }
