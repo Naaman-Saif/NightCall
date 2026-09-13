@@ -21,6 +21,9 @@ jest.mock('./stack-ready', () => ({ bringStackUp: jest.fn().mockResolvedValue('h
 jest.mock('./docker-events', () => ({ startEvents: jest.fn().mockReturnValue({}), stopEvents: jest.fn() }));
 jest.mock('./sandbox-network', () => ({ leaveSandboxNetwork: jest.fn() }));
 jest.mock('./sandbox-compose', () => ({ sandboxCompose: jest.fn().mockResolvedValue('') }));
+jest.mock('./late-containers', () => ({
+  sweepLateSandboxResources: jest.fn().mockResolvedValue({ containersRemoved: [], networkRemoved: false }),
+}));
 
 function writesCompose(): void {
   jest.mocked(buildSandboxCompose).mockImplementationOnce(async (runFolder) => {

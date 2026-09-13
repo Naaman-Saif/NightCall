@@ -13,7 +13,7 @@ function supplyContext(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   const { questionId, text } = payloadOf(event, 'context_supplied');
   const answer = { text, suppliedAt: event.occurredAt };
   const questions = snapshot.questions.map((question) =>
-    question.id === questionId && question.answer === null ? { ...question, answer } : question,
+    question.id === questionId ? { ...question, answer } : question,
   );
   const context = [...snapshot.context, { questionId, text, suppliedAt: event.occurredAt }];
   return { ...snapshot, questions, context };

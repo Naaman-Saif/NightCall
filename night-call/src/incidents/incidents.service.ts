@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { settings } from '../config/settings';
-import { EventWriter } from '../investigation/event-writer';
 import { openInvestigation } from '../investigation/open-investigation';
+import { SeriesKeeper } from '../recorder/series-keeper';
 import { invokeAgents } from '../runtime/runtime-invoker';
 import { alertIsFiring, factsOf, type AlertPayload } from './alert-payload';
 
@@ -10,14 +10,15 @@ import { alertIsFiring, factsOf, type AlertPayload } from './alert-payload';
 export class IncidentsService {
   private readonly log = new Logger('Incidents');
 
-  constructor(@Inject(EventWriter) private readonly writer: EventWriter) {}
+  constructor(@Inject(SeriesKeeper) private readonly keeper: SeriesKeeper) {}
 
   async receive(payload: AlertPayload): Promise<string[]> {
     const opened: string[] = [];
     for (const alert of payload.alerts.filter(alertIsFiring)) {
-      const event = await openInvestigation(this.writer, { facts: factsOf(alert), blockDuplicates: true });
+      const event = await openInvestigation(this.keeper.writer, { facts: factsOf(alert), blockDuplicates: true });
       if (event) opened.push(event.incidentId);
     }
+    if (opened.length > 0) this.keeper.keep();
     if (settings.invokeAgentsOnAlert) opened.forEach((incidentId) => this.invoke(incidentId));
     return opened;
   }

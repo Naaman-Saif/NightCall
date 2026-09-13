@@ -6,7 +6,9 @@ import { productionIdentity, sourceChecksum, type ProductionIdentity } from './p
 import { checkProductionAfter, newResult, timed, writeResult, type OneRoundResult } from './round-result';
 import { writeJson } from './run-files';
 import { currentSandbox, prepareSandbox, preparedRunFolder, sandboxIsStarted, startSandbox } from './sandbox';
+import { requireProductionMemoryLimits } from './memory-limits';
 import { collectEvidence } from './stage-evidence';
+import { interruptRequested } from './stop-request';
 import { baselineStage, mitigateStage, reproduceStage } from './stages';
 import { installSignalHandlers } from './signals';
 import { startBudget } from './time-budget';
@@ -14,6 +16,7 @@ import { startBudget } from './time-budget';
 async function runStages(result: OneRoundResult, before: ProductionIdentity): Promise<void> {
   const { runFolder } = await timed({ result, name: 'start' }, () => startSandbox(result.runId));
   writeJson(join(runFolder, 'production-before.json'), before);
+  await requireProductionMemoryLimits(runFolder);
   await snapshotContainers(join(runFolder, 'initial-containers.json'));
   const source = await sourceChecksum('nc-sandbox-recommendation');
   if (source !== before.source) throw new Error(`sandbox source ${source} differs from production ${before.source}`);
@@ -29,7 +32,7 @@ async function runStages(result: OneRoundResult, before: ProductionIdentity): Pr
 async function recordFailure(result: OneRoundResult, error: unknown): Promise<void> {
   result.errors.push(String(error));
   console.log(JSON.stringify({ failed: String(error) }));
-  if (!sandboxIsStarted()) return;
+  if (!sandboxIsStarted() || interruptRequested()) return;
   const { runFolder, startedAt } = currentSandbox();
   await collectEvidence({ runFolder, name: 'failure-evidence', since: startedAt }).catch((failure: unknown) => {
     result.errors.push(`failure evidence: ${String(failure)}`);

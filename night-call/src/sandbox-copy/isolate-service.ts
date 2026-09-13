@@ -1,6 +1,7 @@
 import { copyMount, type ComposeMount } from './copy-mount';
 import { sandboxContainerName } from './constants';
 import { inspectContainer } from './docker-api';
+import { withProductionMemoryLimit } from './memory-limit-compose';
 import type { ComposeService } from './production-compose';
 
 export interface ServiceToIsolate {
@@ -26,5 +27,8 @@ export async function isolateService(input: ServiceToIsolate): Promise<ServiceId
   service.networks = { default: null };
   service.volumes = mounts.map((mount) => copyMount({ mount, runFolder: input.runFolder }));
   for (const key of droppedKeys) delete service[key];
-  return { image: production.Image, memoryLimit: production.HostConfig.Memory ?? 0 };
+  const memoryLimit = production.HostConfig.Memory ?? 0;
+  service.deploy = withProductionMemoryLimit(service, memoryLimit).deploy;
+  delete service.mem_limit;
+  return { image: production.Image, memoryLimit };
 }

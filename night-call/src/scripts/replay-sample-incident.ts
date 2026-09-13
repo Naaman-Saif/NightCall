@@ -7,6 +7,7 @@ import { EventWriter } from '../investigation/event-writer';
 import { LiveStream } from '../investigation/live-stream';
 import { openInvestigation, type AlertFacts } from '../investigation/open-investigation';
 import { parsePayload, type PayloadOf } from '../investigation/payload-schemas';
+import { appendAsService } from '../investigation/service-append';
 
 type SampleEvent = EventDraft & { delayMs: number };
 
@@ -24,7 +25,7 @@ async function replaySample(): Promise<void> {
   if (!opened) throw new Error('sample incident did not open');
   for (const { delayMs, ...draft } of rest) {
     await sleep(delayMs);
-    await writer.update(opened.incidentId, () => ({ ...draft, payload: parsePayload(draft.type, draft.payload) }));
+    await appendAsService(writer, { incidentId: opened.incidentId, draft });
   }
   console.log(JSON.stringify({ incidentId: opened.incidentId, label: opened.payload.label, events: events.length }));
 }

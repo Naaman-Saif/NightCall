@@ -6,6 +6,7 @@ import { IncidentsModule } from './incidents/incidents.module';
 import { InvestigationModule } from './investigation/investigation.module';
 import { OperatorApiModule } from './operator-api/operator-api.module';
 import { PublicApiModule } from './public-api/public-api.module';
+import { RecorderModule } from './recorder/recorder.module';
 import { ToolApiModule } from './tool-api/tool-api.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { ToolApiModule } from './tool-api/tool-api.module';
     SettingsModule,
     ScheduleModule.forRoot(),
     InvestigationModule,
+    RecorderModule,
     IncidentsModule,
     ToolApiModule,
     PublicApiModule,

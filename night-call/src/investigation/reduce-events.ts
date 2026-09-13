@@ -1,17 +1,32 @@
+import { withPhase } from './derive-phase';
 import { emptySnapshot } from './empty-snapshot';
 import type { IncidentEvent } from './event-types';
 import { reduceBrief } from './reduce-brief';
+import { reduceExperiments } from './reduce-experiments';
 import { reduceHypotheses } from './reduce-hypotheses';
 import { reduceIncident } from './reduce-incident';
+import { reduceMitigation } from './reduce-mitigation';
+import { reducePublication } from './reduce-publication';
 import { reduceQuestions } from './reduce-questions';
 import { reduceRoles } from './reduce-roles';
+import { reduceVerification } from './reduce-verification';
 import type { Reducer } from './reducer';
 import type { Snapshot } from './snapshot';
 
-const areaReducers: Reducer[] = [reduceIncident, reduceRoles, reduceBrief, reduceHypotheses, reduceQuestions];
+const areaReducers: Reducer[] = [
+  reduceIncident,
+  reduceRoles,
+  reduceBrief,
+  reduceHypotheses,
+  reduceQuestions,
+  reduceExperiments,
+  reduceMitigation,
+  reduceVerification,
+  reducePublication,
+];
 
 function applyEvent(snapshot: Snapshot, event: IncidentEvent): Snapshot {
-  return areaReducers.reduce((current, reduceArea) => reduceArea(current, event), snapshot);
+  return withPhase(areaReducers.reduce((current, reduceArea) => reduceArea(current, event), snapshot));
 }
 
 export function reduceEvents(events: IncidentEvent[]): Snapshot | null {
