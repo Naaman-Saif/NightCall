@@ -1,9 +1,11 @@
-type StreamChunk = { choices?: Array<{ delta?: Record<string, unknown> }> };
+import { endAdder } from './message-end-stream.js';
+
+export type StreamChunk = { choices?: Array<{ delta?: Record<string, unknown>; finish_reason?: string | null }> };
 type RoleState = { settled: boolean };
 
 const DROPPED_HEADERS = ['content-length', 'content-encoding'];
 
-function chunkOf(line: string): StreamChunk | null {
+export function chunkOf(line: string): StreamChunk | null {
   try {
     return JSON.parse(line.slice('data:'.length).trim()) as StreamChunk;
   } catch {
@@ -49,6 +51,7 @@ export function streamWithMessageRole(body: ReadableStream<Uint8Array>): Readabl
     .pipeThrough(new TextDecoderStream() as unknown as TransformStream<Uint8Array, string>)
     .pipeThrough(lineSplitter())
     .pipeThrough(roleAdder())
+    .pipeThrough(endAdder())
     .pipeThrough(new TextEncoderStream() as unknown as TransformStream<string, Uint8Array>);
 }
 
