@@ -15,7 +15,7 @@ export function ReproductionSummary({ snapshot }: { snapshot: Snapshot }) {
     <div className="proof-block" data-proof="reproduction" data-experiment={experiment.id}>
       <div className="eyebrow">Reproduction</div>
       <p className="proof-state">{describeExperimentState(experiment)}</p>
-      <p className="muted">{describeTrafficSource(snapshot, experiment)}</p>
+      <p className="muted">{describeTrafficSource(experiment)}</p>
       <ExperimentChart incidentId={snapshot.incident.id} experiment={experiment} />
       <CheckList checks={experiment.checks} />
       {experiment.review && <ReviewLine review={experiment.review} />}

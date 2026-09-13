@@ -37,11 +37,13 @@ export type Question = {
 
 export type SuppliedContext = { questionId: string | null; text: string; suppliedAt: string };
 
+export type TrafficSource = 'traces' | 'prometheus_rate_fallback' | 'fixed_fallback';
+
 export type Experiment = {
   id: string; kind: 'reproduction' | 'mitigation'; hypothesisId: string; contractId: string; purpose: string;
   recipe: Recipe; startedAt: string; finishedAt: string | null; progress: ExperimentProgress | null;
   verdict: Verdict | null; checks: CheckResult[]; review: { accepted: boolean; reasons: string[] } | null;
-  seriesRef: string | null; trafficSource?: 'captured' | 'fixed_load' | null;
+  seriesRef: string | null; trafficSource?: TrafficSource | null;
 };
 
 export type ExperimentProgress = { requests: number; errors: number; peakMemoryBytes: number; peakCpuPercent: number };
