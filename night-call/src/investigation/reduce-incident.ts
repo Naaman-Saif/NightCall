@@ -1,5 +1,5 @@
 import type { IncidentEvent } from './event-types';
-import { payloadOf } from './payload-schemas';
+import { payloadOf, type PayloadOf } from './payload-schemas';
 import { reducerFrom, type Reducer } from './reducer';
 import type { CompletionReason, Snapshot } from './snapshot';
 
@@ -18,10 +18,17 @@ function finish(reason: CompletionReason): Reducer {
   };
 }
 
+const COMPLETION_BY_STOP: Record<PayloadOf<'investigation_stopped'>['reason'], CompletionReason> = {
+  answer_recorded: 'completed',
+  no_answer: 'completed',
+  error: 'infrastructure_failure',
+};
+
 const handleEvent = reducerFrom({
   alert_received: seedIncident,
   budget_exhausted: finish('budget_exhausted'),
   investigation_finished: (snapshot, event) => finish(payloadOf(event, 'investigation_finished').reason)(snapshot, event),
+  investigation_stopped: (snapshot, event) => finish(COMPLETION_BY_STOP[payloadOf(event, 'investigation_stopped').reason])(snapshot, event),
 });
 
 export function reduceIncident(snapshot: Snapshot, event: IncidentEvent): Snapshot {

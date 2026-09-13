@@ -17,8 +17,10 @@ export type AlertFacts = {
 export type OpenRequest = { facts: AlertFacts; blockDuplicates: boolean };
 
 function activeDuplicateExists(stateDir: string, facts: AlertFacts): boolean {
+  const nowMs = Date.now();
   return allSnapshots(stateDir).some(
-    ({ incident }) => incident.lifecycle === 'active' && incident.service === facts.service && !incident.illustrative,
+    ({ incident }) =>
+      incident.lifecycle === 'active' && incident.service === facts.service && !incident.illustrative && Date.parse(incident.deadlineAt) > nowMs,
   );
 }
 
