@@ -39,8 +39,7 @@ async function draftedBrief(parts: BriefParts, outcome: Outcome): Promise<Brief 
   try {
     const request = { ...outcome, lastBrief: parts.ledger.lastBrief, evidenceIds: [...parts.ledger.ids] };
     const draft = await parts.lead.draftBrief(request);
-    const nextStep = `${pathSentence(outcome.decision)} ${draft.nextDetail}`;
-    return { summary: draft.summary, knownFacts: draft.knownFacts, unknowns: draft.unknowns, nextStep };
+    return { summary: draft.summary, knownFacts: draft.knownFacts, unknowns: draft.unknowns, nextStep: pathSentence(outcome.decision) };
   } catch (error) {
     logProgress({ draftBriefFailed: String(error).slice(0, 300) });
     return null;

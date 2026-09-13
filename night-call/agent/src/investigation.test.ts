@@ -18,11 +18,12 @@ test("reads, asks, then briefs while waiting, and treats I don't know as urgent"
   assert.deepEqual(run.steps, [
     'post role_status_changed', 'read failure-rate', 'read oom-events', 'post question_asked', 'post role_status_changed', 'first brief',
     'wait for answer', 'post brief_updated', 'keep reading', 'reading stopped', 'draft brief', 'post brief_updated', 'post role_status_changed',
+    'post investigation_stopped',
   ]);
   assert.equal(decision.urgency, 'rush');
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;
   assert.equal(brief.unknowns[0], UNCONFIRMED_IMPACT);
-  assert.match(brief.nextStep, /^This is treated as urgent, so next I go straight to the safest mitigation/);
+  assert.equal(brief.nextStep, 'Treated as urgent. This run stops here: no further checks, mitigation or verification run in this version.');
   assert.equal(lastPayload(run, 'role_status_changed').status, 'finished');
 });
 
@@ -70,5 +71,5 @@ test('a drafted brief citing made-up evidence is replaced by one built from the 
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;
   assert.deepEqual(brief.knownFacts, READING_FACTS);
   assert.equal(brief.summary, '12.3% of recommendation requests failed in the last 10 minutes. Answer about customer impact: "I don\'t know".');
-  assert.match(brief.nextStep, /treated as urgent/);
+  assert.match(brief.nextStep, /^Treated as urgent\. This run stops here/);
 });

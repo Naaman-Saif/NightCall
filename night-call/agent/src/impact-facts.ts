@@ -39,12 +39,21 @@ export function impactQuestionText(readings: ImpactReadings): string {
   return `${capitalized(facts.join(', and '))}. ${QUESTION_ENDING}`;
 }
 
+export function precisePercent(share: number): string {
+  const hundredths = Math.floor(share * 10000 + 1e-9);
+  return share > 0 && hundredths === 0 ? 'less than 0.01%' : `${(hundredths / 100).toFixed(2)}%`;
+}
+
+function failureNumbers(failure: FailureReading | null): string[] {
+  if (failure === null || failure.errorShare === null) return [];
+  const shown = failure.errorShare > 0 ? [percentText(failure.errorShare), precisePercent(failure.errorShare)] : [precisePercent(0)];
+  return [...shown.map((text) => text.replace(/[^0-9.]/g, '')), String(failure.windowMinutes)];
+}
+
 function measuredNumbers(readings: ImpactReadings): Set<string> {
-  const values: string[] = [];
-  const { failure, crashes } = readings;
-  if (failure?.errorShare) values.push(percentText(failure.errorShare).replace(/[^0-9.]/g, ''), String(failure.windowMinutes));
-  if (crashes) values.push(String(crashes.outOfMemory), String(crashes.restarts), String(crashes.windowMinutes));
-  return new Set(values);
+  const { crashes } = readings;
+  const crashNumbers = crashes ? [String(crashes.outOfMemory), String(crashes.restarts), String(crashes.windowMinutes)] : [];
+  return new Set([...failureNumbers(readings.failure), ...crashNumbers]);
 }
 
 export function unmeasuredNumbers(text: string, readings: ImpactReadings): string[] {
