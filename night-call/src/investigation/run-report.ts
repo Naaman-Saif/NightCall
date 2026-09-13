@@ -1,3 +1,4 @@
+import { causesOf } from './run-causes';
 import type { RunStatus } from './run-report-types';
 import type { EvidenceItem, InvestigationState, Snapshot } from './snapshot';
 
@@ -44,7 +45,9 @@ function noteOf(snapshot: Snapshot): string | null {
 
 export function withRunReport(snapshot: Snapshot): Snapshot {
   const status = STATUS_BY_STATE[snapshot.investigation];
+  const causes = causesOf(snapshot);
+  const notDone = causes.length > 0 ? NOT_DONE.slice(1) : [...NOT_DONE];
   const timing = { status, statusAt: statusAtOf(snapshot), note: noteOf(snapshot) };
-  const derived = { ...timing, nowDoing: nowDoingOf(snapshot), found: foundOf(snapshot), notDone: [...NOT_DONE] };
+  const derived = { ...timing, nowDoing: nowDoingOf(snapshot), found: foundOf(snapshot), causes, notDone };
   return { ...snapshot, runReport: { ...snapshot.runReport, ...derived } };
 }

@@ -37,6 +37,7 @@ describe('run report', () => {
         { text: 'Asked about customer impact', value: 'Tolerable', evidenceId: null, questionId: 'q-impact' },
       ],
       found: [RATE_SUMMARY, crashSummary(2), MEMORY_SUMMARY, DEPLOY_SUMMARY],
+      causes: [],
       notDone: NOT_DONE,
     });
     expect(snapshot.headline).toBe(
