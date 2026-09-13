@@ -64,9 +64,14 @@ export type InvestigationProgress = 'not_started' | 'running' | 'stopped' | 'sta
 
 export type RunStatus = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted';
 export type RunStep = { text: string; value: string | null; evidenceId: string | null; questionId?: string | null };
+export type CauseStatus = 'proposed' | 'supported' | 'contradicted';
+export type CauseLine = { text: string; evidenceId: string | null };
+export type RunCause = {
+  id: string; claim: string; status: CauseStatus; supporting: CauseLine[]; contradicting: CauseLine[]; confirmBy: string | null;
+};
 export type RunReport = {
   status: RunStatus; statusAt: string | null; note?: string | null; nowDoing: string | null;
-  did: RunStep[]; found: string[]; notDone: string[];
+  did: RunStep[]; found: string[]; causes?: RunCause[]; notDone: string[];
 };
 
 export type Snapshot = {
