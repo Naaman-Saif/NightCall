@@ -29,7 +29,7 @@ function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: 
     <div className="page">
       <IncidentHeader incident={snapshot.incident} connection={view.connection} />
       {!isOperator && <PublicBanner />}
-      <div className="incident-columns">
+      <div className="incident-columns" data-layout={phoneLayoutFor(snapshot)}>
         <MainSections snapshot={snapshot} events={view.events} isSample={isSample} />
         <aside className="incident-aside">
           <QuestionColumn questions={snapshot.questions} context={snapshot.context} isOperator={isOperator} submitAnswer={submitAnswer} />
@@ -42,9 +42,9 @@ function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: 
 function MainSections({ snapshot, events, isSample }: MainSectionsProps) {
   return (
     <section className="incident-main">
-      <ResultPanel snapshot={snapshot} />
-      <VerificationPanel snapshot={snapshot} />
       <BriefBlock brief={snapshot.brief} />
+      <VerificationPanel snapshot={snapshot} />
+      <ResultPanel snapshot={snapshot} />
       <RolesStrip roles={snapshot.roles} />
       <Timeline events={events} />
       <HypothesesPanel snapshot={snapshot} />
@@ -52,6 +52,11 @@ function MainSections({ snapshot, events, isSample }: MainSectionsProps) {
       <ChartsPanel incident={snapshot.incident} isSample={isSample} />
     </section>
   );
+}
+
+function phoneLayoutFor(snapshot: Snapshot): 'question-first' | 'story-first' {
+  const hasOpenQuestion = snapshot.questions.some((question) => !question.answer);
+  return snapshot.incident.lifecycle === 'active' && hasOpenQuestion ? 'question-first' : 'story-first';
 }
 
 function PublicBanner() {

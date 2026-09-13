@@ -97,15 +97,16 @@
 @media (max-width: 960px) {
   .incident-columns { display: flex; flex-direction: column; gap: var(--sp-4); }
   .incident-main, .incident-aside { display: contents; }
-  .section-questions { order: 1; }
-  .section-timeline { order: 2; }
+  .section-brief { order: 1; }
+  .section-verification { order: 2; }
   .section-result { order: 3; }
-  .section-verification { order: 4; }
-  .section-brief { order: 5; }
-  .section-roles { order: 6; }
+  .section-roles { order: 4; }
+  .section-timeline { order: 5; }
+  .section-questions { order: 6; }
   .section-hypotheses { order: 7; }
   .section-experiments { order: 8; }
   .section-charts { order: 9; }
+  [data-layout='question-first'] .section-questions { order: 0; }
 }
 @media (max-width: 480px) {
   .page { padding: var(--sp-4); }
