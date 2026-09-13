@@ -34,7 +34,7 @@ function ClearReport(props: IncidentLayoutProps & { report: RunReport }) {
   const isAnswerNeeded = props.isOperator && hasOpenQuestion(props.snapshot);
   return (
     <>
-      <RunReportSummary report={props.report} evidence={props.snapshot.evidence} incident={props.snapshot.incident} />
+      <RunReportSummary report={props.report} snapshot={props.snapshot} />
       {isAnswerNeeded && <UnresolvedQuestions snapshot={props.snapshot} isOperator submitAnswer={props.submitAnswer} />}
       <DetailsToggle>
         <IncidentDetails {...props} includeQuestions={!isAnswerNeeded} />

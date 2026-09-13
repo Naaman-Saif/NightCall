@@ -55,6 +55,10 @@
 .now-dot { display: inline-flex; }
 .run-note { margin-top: var(--sp-1); }
 .possible-causes { display: grid; gap: var(--sp-3); }
+.proof-block { display: grid; gap: var(--sp-2); min-width: 0; }
+.proof-block p { margin: 0; }
+.proof-state { font: var(--type-body); color: var(--text-title); }
+.proof-block .source-links, .proof-state .source-link { margin-left: var(--sp-2); }
 .cause { display: grid; gap: var(--sp-1); padding: var(--sp-3); background: var(--surface-card); border: 1px solid var(--line-soft); border-left: 2px solid var(--line); border-radius: var(--radius-sm); }
 .cause[data-cause-status='supported'] { border-left-color: var(--beacon-400); }
 .cause[data-cause-status='contradicted'] { opacity: 0.8; }
