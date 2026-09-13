@@ -1,4 +1,4 @@
-import { readJson } from './client';
+import { fetchIncidentList, readJson } from './client';
 
 export type StartResult =
   | { outcome: 'started'; incidentId: string }
@@ -10,9 +10,10 @@ export async function fetchServices(): Promise<string[]> {
   return readJson(await fetch('/op/api/services'));
 }
 
-async function runningIncidentIdFrom(response: Response): Promise<string | null> {
-  const body = await response.json().catch(() => null);
-  return typeof body?.incidentId === 'string' ? body.incidentId : null;
+export async function findRunningIncidentId(service: string): Promise<string | null> {
+  const items = await fetchIncidentList().catch(() => []);
+  const running = items.find((item) => item.service === service && item.lifecycle === 'active' && !item.illustrative);
+  return running?.id ?? null;
 }
 
 export async function startInvestigation(service: string): Promise<StartResult> {
@@ -22,7 +23,7 @@ export async function startInvestigation(service: string): Promise<StartResult> 
     body: JSON.stringify({ service }),
   });
   if (response.status === ALREADY_RUNNING_STATUS) {
-    return { outcome: 'already_running', incidentId: await runningIncidentIdFrom(response) };
+    return { outcome: 'already_running', incidentId: await findRunningIncidentId(service) };
   }
   const { incidentId } = await readJson<{ incidentId: string }>(response);
   return { outcome: 'started', incidentId };
