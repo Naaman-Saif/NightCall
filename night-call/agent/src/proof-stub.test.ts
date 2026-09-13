@@ -1,7 +1,9 @@
 import type { CheckResult, JobResult, ProofApi, Verdict } from './proof-types.js';
 import { ToolAnswerError } from './tool-client.js';
 
-export type ProofOptions = { proof?: 'passing' | 'unavailable'; verdict?: Verdict; verificationVerdict?: Verdict; recipeMissing?: boolean };
+export type ProofOptions = { proof?: 'passing' | 'unavailable'; verdict?: Verdict; verificationVerdict?: Verdict; recipeMissing?: boolean; stuckExperiment?: () => void };
+
+const STILL_RUNNING: JobResult = { state: 'running', verdict: null, checks: [], failureReason: null };
 
 type Steps = { steps: string[] };
 
@@ -23,7 +25,7 @@ function experimentStart(recorded: Steps, options: ProofOptions): ProofApi['star
     recorded.steps.push(`proof experiment ${request.hypothesisId} ${request.recipe} flag ${request.flagVariant} speed ${request.speed}`);
     if (options.recipeMissing && request.recipe === 'incident_traffic') throw refusal(422, 'recipe_missing');
     starts += 1;
-    return { id: `exp-${starts}`, jobId: `job-experiment-${starts}`, recipeSource: request.recipe === 'fixed_fallback' ? 'fixed_fallback' : 'traces' };
+    return { id: `exp-${starts}`, jobId: `job-experiment-${starts}`, recipeSource: request.recipe === 'fixed_fallback' ? 'fixed_fallback' : 'traces', estimatedMinutes: 6 };
   };
 }
 
@@ -35,7 +37,8 @@ function jobWait(recorded: Steps, options: ProofOptions): ProofApi['waitForJob']
   return async (jobId, poller) => {
     recorded.steps.push(`proof job ${jobId} by ${poller}`);
     if (jobId.startsWith('job-verification')) return finished(options.verificationVerdict ?? 'matches', MITIGATED_CHECKS);
-    return finished(options.verdict ?? 'matches', FAULT_CHECKS);
+    options.stuckExperiment?.();
+    return options.stuckExperiment ? STILL_RUNNING : finished(options.verdict ?? 'matches', FAULT_CHECKS);
   };
 }
 

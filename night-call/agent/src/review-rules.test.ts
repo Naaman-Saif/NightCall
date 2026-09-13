@@ -28,7 +28,7 @@ test('a missing observation is a reject reason, even when the check claims to pa
 });
 
 test('verification is approved only for a finished matching run with every check passed', () => {
-  assert.deepEqual(verificationDecision(job({})), { accepted: true, reasons: ['all three rounds passed', 'mitigated.restarts passed with 0'] });
+  assert.deepEqual(verificationDecision(job({})), { accepted: true, reasons: ['the verification run finished with verdict matches and every recorded check passed', 'mitigated.restarts passed with 0'] });
 });
 
 test('a failed job, a failed check or a missing observation stops approval with the reason', () => {

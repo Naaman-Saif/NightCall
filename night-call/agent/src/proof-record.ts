@@ -63,8 +63,8 @@ function mitigationSentence(record: ProofRecord): string {
 function verificationSentence(record: ProofRecord): string {
   const run = record.verification;
   if (!run) return record.mitigationId ? 'The mitigation was not verified.' : '';
-  if (run.approved) return 'Verified: all three rounds passed the recorded checks and the review approved it.';
-  return 'Not verified: the three rounds did not all pass the recorded checks.';
+  if (run.approved) return 'Verified: the verification run passed every recorded check and its review was accepted.';
+  return 'Not verified: the verification run did not pass every recorded check.';
 }
 
 function publicationSentence(record: ProofRecord): string {

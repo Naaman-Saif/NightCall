@@ -25,6 +25,6 @@ export function verificationDecision(result: JobResult): ReviewDecision {
   const jobProblem = result.state === 'finished' ? [] : [`the verification job ${result.state === 'failed' ? 'failed' : 'did not finish'}`];
   const reason = result.failureReason ? [result.failureReason] : [];
   const decision = experimentDecision(result);
-  if (jobProblem.length === 0 && decision.accepted) return { accepted: true, reasons: ['all three rounds passed', ...decision.reasons] };
+  if (jobProblem.length === 0 && decision.accepted) return { accepted: true, reasons: ['the verification run finished with verdict matches and every recorded check passed', ...decision.reasons] };
   return { accepted: false, reasons: [...jobProblem, ...reason, ...(decision.accepted ? [] : decision.reasons)] };
 }

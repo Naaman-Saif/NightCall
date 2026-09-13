@@ -50,7 +50,9 @@ export function startedOf(reply: unknown): Started {
 }
 
 export function experimentStartedOf(reply: unknown): ExperimentStarted {
-  return { id: requireText(reply, 'experimentId'), jobId: requireText(reply, 'jobId'), recipeSource: textOf(reply, 'recipeSource') };
+  const estimate = ((reply ?? {}) as Loose).estimatedMinutes;
+  const estimatedMinutes = typeof estimate === 'number' ? estimate : null;
+  return { id: requireText(reply, 'experimentId'), jobId: requireText(reply, 'jobId'), recipeSource: textOf(reply, 'recipeSource'), estimatedMinutes };
 }
 
 export function jobResultOf(reply: unknown): JobResult {

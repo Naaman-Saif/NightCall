@@ -17,7 +17,7 @@ test('urgent: checks, reproduction with the incident traffic, review, then strai
   await investigate(run.parts);
   assert.deepEqual(proofSteps(run), [...REPRODUCE_H1, ...MITIGATE_AND_VERIFY]);
   assert.ok(run.steps.indexOf('proof contract') > run.steps.indexOf('propose causes'));
-  const expected = /\(reproduced in a test copy\)\. Reproduced in a test copy: the failure matched every recorded check and the review accepted it\. Proposed mitigation: set the recommendationCacheFailure flag to off and restart the service\. Verified: all three rounds passed the recorded checks and the review approved it\.$/;
+  const expected = /\(reproduced in a test copy\)\. Reproduced in a test copy: the failure matched every recorded check and the review accepted it\. Proposed mitigation: set the recommendationCacheFailure flag to off and restart the service\. Verified: the verification run passed every recorded check and its review was accepted\.$/;
   assert.match(stopSummary(run), expected);
   assert.equal(lastBrief(run).nextStep, 'Treated as urgent. The mitigation is verified; no pull request is open yet.');
   assert.equal(run.events.at(-1)?.type, 'investigation_stopped');
@@ -57,8 +57,18 @@ test('failed verification rounds are rejected by the review and reported as not 
   const run = stubInvestigation("I don't know", { verificationVerdict: 'differs' });
   await investigate(run.parts);
   assert.equal(proofSteps(run).at(-1), 'proof verification review rejected');
-  assert.match(stopSummary(run), /Not verified: the three rounds did not all pass the recorded checks\.$/);
+  assert.match(stopSummary(run), /Not verified: the verification run did not pass every recorded check\.$/);
   assert.equal(lastBrief(run).nextStep, 'Treated as urgent. The failure was reproduced, but no mitigation was verified in this run.');
+});
+
+test('a reproduction job still running past its wait cap is skipped as out of time and the run still stops', async () => {
+  const clock = { now: 0 };
+  const run = stubInvestigation("I don't know", { stuckExperiment: () => (clock.now += 60_000) });
+  run.parts.run = { skipped: [], fallbacks: [], openedAt: 0, deadline: 30 * 60_000, now: () => clock.now };
+  await investigate(run.parts);
+  assert.equal(proofSteps(run).filter((step) => step === 'proof job job-experiment-1 by investigator').length, 8);
+  assert.match(stopSummary(run), /Skipped: reproducing the failure \(it ran out of time\); proposing the mitigation \(no reproduction was accepted\)\.$/);
+  assert.equal(run.events.at(-1)?.type, 'investigation_stopped');
 });
 
 test('when the proof routes are not on the server yet, one skip is recorded and nothing claims proof', async () => {

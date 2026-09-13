@@ -22,7 +22,7 @@ export type JobResult = {
 };
 
 export type Started = { id: string; jobId: string };
-export type ExperimentStarted = Started & { recipeSource: string };
+export type ExperimentStarted = Started & { recipeSource: string; estimatedMinutes: number | null };
 export type MitigationProposal = { variant: 'off'; restart: boolean; explanation: string; caveats: string[]; notFixed: string };
 export type Review = { id: string; accepted: boolean; reasons: string[] };
 
