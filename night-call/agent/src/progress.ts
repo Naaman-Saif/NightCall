@@ -1,15 +1,15 @@
-import { postTool } from './tool-client.js';
+import { toolClientFor } from './tool-client.js';
 
 export type ProgressEvent = {
-  actor: string;
   type: string;
   summary: string;
   payload: Record<string, unknown>;
+  refs?: string[];
 };
 
 export function postEvent(incidentId: string, event: ProgressEvent): Promise<unknown> {
   const path = `/tool/incidents/${encodeURIComponent(incidentId)}/events`;
-  return postTool(path, { ...event, refs: [] });
+  return toolClientFor('lead').post(path, { refs: [], ...event });
 }
 
 export function logProgress(details: Record<string, unknown>): void {

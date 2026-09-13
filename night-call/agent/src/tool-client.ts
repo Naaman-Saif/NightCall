@@ -1,28 +1,36 @@
-const TOOL_TIMEOUT_MS = 60_000;
+const TOOL_TIMEOUT_MS = 90_000;
 
-function toolAddress(path: string): string {
-  return `${process.env.TOOL_API_URL ?? ''}${path}`;
+export type ToolRole = 'lead' | 'investigator' | 'verifier';
+
+export type ToolClient = {
+  get(path: string): Promise<unknown>;
+  post(path: string, body: unknown): Promise<unknown>;
+};
+
+export class ToolAnswerError extends Error {
+  constructor(readonly status: number) {
+    super(`tool answered ${status}`);
+  }
 }
 
-function authorizedRequest(init: RequestInit): RequestInit {
-  const headers = {
-    authorization: `Bearer ${process.env.NIGHT_CALL_TOOL_TOKEN_LEAD ?? ''}`,
-    'content-type': 'application/json',
-  };
+function requestInit(token: string, init: RequestInit): RequestInit {
+  const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
   return { ...init, headers, signal: AbortSignal.timeout(TOOL_TIMEOUT_MS) };
 }
 
-async function readReply(path: string, response: Response): Promise<unknown> {
-  if (!response.ok) throw new Error(`tool ${path} answered ${response.status}`);
+async function readReply(response: Response): Promise<unknown> {
+  if (!response.ok) throw new ToolAnswerError(response.status);
   return response.json();
 }
 
-export async function getTool(path: string): Promise<unknown> {
-  const response = await fetch(toolAddress(path), authorizedRequest({ method: 'GET' }));
-  return readReply(path, response);
-}
-
-export async function postTool(path: string, body: unknown): Promise<unknown> {
-  const init = authorizedRequest({ method: 'POST', body: JSON.stringify(body) });
-  return readReply(path, await fetch(toolAddress(path), init));
+export function toolClientFor(role: ToolRole): ToolClient {
+  const token = process.env[`NIGHT_CALL_TOOL_TOKEN_${role.toUpperCase()}`] ?? '';
+  const base = process.env.TOOL_API_URL ?? '';
+  return {
+    get: async (path) => readReply(await fetch(`${base}${path}`, requestInit(token, { method: 'GET' }))),
+    post: async (path, body) => {
+      const init = requestInit(token, { method: 'POST', body: JSON.stringify(body) });
+      return readReply(await fetch(`${base}${path}`, init));
+    },
+  };
 }

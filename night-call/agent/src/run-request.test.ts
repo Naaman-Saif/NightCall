@@ -6,6 +6,7 @@ import { runRequestShape } from './run-request.js';
 test('accepts a hello run for a plain incident id', () => {
   const parsed = runRequestShape.safeParse({ incidentId: 'hello-01', mode: 'hello' });
   assert.equal(parsed.success, true);
+  assert.equal(runRequestShape.safeParse({ incidentId: 'INC-001', mode: 'investigate' }).success, true);
 });
 
 test('refuses an unknown mode and a path-like incident id', () => {
