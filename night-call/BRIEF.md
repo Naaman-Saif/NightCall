@@ -11,7 +11,7 @@ Every AI SRE tool wakes you up with a theory. Night Call wakes you up with evide
 
 ## Hackathon facts
 - Agents for Humans Hackathon (AWS, Devpost). Track: Professional Agents.
-- Deadline: Sep 14 2026, 5:00pm PDT. That is Sep 15, 05:00 PKT. Product freeze: Sunday Sep 13, 23:00 PKT.
+- Deadline: Sep 14 2026, 5:00pm PDT. That is Sep 15, 05:00 PKT. Product freeze: Monday Sep 14, 14:00 PKT.
 - Must use Strands Agents SDK. Deliverables: public repo with OSI license, architecture diagram, demo video under 5 minutes, text description on Devpost, AWS Builder ID, one builder.aws.com post with "Agents for Humans" in the title (bonus points). A live demo link strengthens the technical score.
 - Judging, equally weighted: Technical Implementation (Strands usage, AgentCore deployment helps), Design, Potential Impact, Creativity, Presentation.
 

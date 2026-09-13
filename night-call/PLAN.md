@@ -6,7 +6,7 @@ Read BRIEF.md first. Product and interface detail live in `docs/design/NIGHTCALL
 
 Codex pivoted NightCall to the product in the design brief: an incident investigator with three roles (lead, experiment investigator, verifier), a live incident page, three of three sandbox verification rounds and an automatic mitigation PR. It then proved the flagship scenario on the box (run `20260912-cache-feasibility-01`, passed): `recommendationCacheFailure` on gives a Docker out-of-memory kill plus HTTP 500 after 107, 122 and 100 requests; flag off plus restart gives 400 of 400 healthy requests at about 47 MiB; production identity unchanged; sealed stack; clean teardown. The trace time-window query returned no traces (service and trace-id lookups work).
 
-Goal: a working product for Devpost "Agents for Humans" (deadline Tue 2026-09-15 05:00 PKT). Product freeze Sun 2026-09-13 23:00 PKT. Saif records the video Monday evening PKT.
+Goal: a working product for Devpost "Agents for Humans" (deadline Tue 2026-09-15 05:00 PKT). Product freeze moved by Saif on Sun 2026-09-13 17:25 PKT to Mon 2026-09-14 14:00 PKT. Saif records the video Monday evening PKT.
 
 ## Decisions
 
