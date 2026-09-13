@@ -16,9 +16,10 @@ test('an early answer never cuts the investigation short', async () => {
   const run = stubInvestigation('Rush it');
   await investigate(run.parts);
   const reads = run.steps.filter((step) => step.startsWith('read '));
-  assert.deepEqual(reads, ['read failure-rate', 'read oom-events', 'read memory', 'read cpu', 'read logs', 'read traces', 'read deploy-history']);
+  assert.deepEqual(reads, ['read failure-rate', 'read oom-events', 'read memory', 'read cpu', 'read logs', 'read traces', 'read deploy-history', 'read flag-state']);
   assert.ok(run.steps.indexOf('wait for answer') < run.steps.indexOf('read memory'));
-  assert.ok(run.steps.indexOf('propose causes') > run.steps.indexOf('read deploy-history'));
+  assert.ok(run.steps.indexOf('propose causes') > run.steps.indexOf('read flag-state'));
+  assert.equal(run.steps.indexOf('now: Reading the live flag settings') + 1, run.steps.indexOf('read flag-state'));
   assert.deepEqual(run.events.slice(-3).map((event) => event.type), ['brief_updated', 'role_status_changed', 'investigation_stopped']);
 });
 

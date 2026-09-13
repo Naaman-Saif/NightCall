@@ -3,7 +3,7 @@ import type { ReaderName } from './incident-api.js';
 export const NOT_REPRODUCED = 'Not yet reproduced in a test copy.';
 
 export const READER_WORDS: Record<ReaderName, string> = {
-  'failure-rate': 'failure rate', memory: 'memory', cpu: 'CPU', 'oom-events': 'crashes', logs: 'logs', traces: 'traces', 'deploy-history': 'deploy history',
+  'failure-rate': 'failure rate', memory: 'memory', cpu: 'CPU', 'oom-events': 'crashes', logs: 'logs', traces: 'traces', 'deploy-history': 'deploy history', 'flag-state': 'live flag settings',
 };
 
 const CLAIM_CHARACTERS = 300;

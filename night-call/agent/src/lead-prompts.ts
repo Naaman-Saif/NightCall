@@ -25,7 +25,7 @@ export function causesTask(facts: IncidentFacts, readings: string): string {
     'supportingEvidenceIds: the readings that point to it;',
     'contradictingEvidenceIds: the readings that point against it, empty if none, never a reading already listed as supporting;',
     'confirmWith: the check or test that would confirm it, at most 200 characters.',
-    'Look at whether memory climbs before each out-of-memory restart, and at recent changes to the feature flag file in the deploy history.',
+    'Look at whether memory climbs before each out-of-memory restart, at recent changes to the feature flag file in the deploy history, and at whether the live flag settings differ from what is committed and when they changed.',
   ].join('\n');
 }
 

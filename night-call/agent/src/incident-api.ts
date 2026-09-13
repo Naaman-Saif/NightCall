@@ -1,7 +1,7 @@
 import type { ProgressEvent } from './progress.js';
 import type { ToolClient } from './tool-client.js';
 
-export type ReaderName = 'failure-rate' | 'memory' | 'cpu' | 'oom-events' | 'logs' | 'traces' | 'deploy-history';
+export type ReaderName = 'failure-rate' | 'memory' | 'cpu' | 'oom-events' | 'logs' | 'traces' | 'deploy-history' | 'flag-state';
 
 export type ReaderQuery = Record<string, string | number>;
 
