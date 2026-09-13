@@ -12,6 +12,14 @@ import { appendAsService } from '../investigation/service-append';
 
 type SampleEvent = EventDraft & { delayMs: number };
 
+const sampleStart: EventDraft = {
+  actor: 'system',
+  type: 'investigation_started',
+  summary: 'Sample investigation started',
+  refs: [],
+  payload: { trigger: 'alert', illustrative: true },
+};
+
 function alertPayloadOf(alert: SampleEvent): PayloadOf<'alert_received'> {
   return parsePayload('alert_received', alert.payload) as PayloadOf<'alert_received'>;
 }
@@ -27,6 +35,7 @@ async function replaySample(): Promise<void> {
   const writer = new EventWriter(settings.stateDir, new LiveStream());
   const opened = await openInvestigation(writer, { facts: factsFrom(alert), blockDuplicates: false });
   if (!opened) throw new Error('sample incident did not open');
+  await appendAsService(writer, { incidentId: opened.incidentId, draft: sampleStart });
   const clock = { fixtureAlertAt: alertPayloadOf(alert).startedAt, replayAlertAt: String(opened.payload.startedAt) };
   for (const { delayMs, ...draft } of retimedDrafts(rest, clock)) {
     await sleep(delayMs);
