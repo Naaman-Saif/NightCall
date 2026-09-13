@@ -1,4 +1,6 @@
 import type { Mitigation, Snapshot } from '../api/contract';
+import { cycleLivePath } from '../api/live-run';
+import { LiveRunPanel } from './live-run-panel';
 import { describePublication, latestTrafficSourceOf } from '../format/experiment-live-text';
 import { describeFixAction } from '../format/fix-text';
 import { cycleTiles } from '../format/proof-text';
@@ -46,6 +48,18 @@ export function VerificationSummary({ snapshot }: { snapshot: Snapshot }) {
       <div className="eyebrow">Verification</div>
       <MitigationStatus mitigation={mitigation} cycles={snapshot.cycles} />
       <VerificationCycles cycles={tiles} conditions={RECORDED_CONDITIONS} />
+      <RunningRound snapshot={snapshot} />
+    </div>
+  );
+}
+
+function RunningRound({ snapshot }: { snapshot: Snapshot }) {
+  const running = snapshot.cycles.find((cycle) => cycle.state === 'running');
+  if (!running) return null;
+  return (
+    <div className="live-round" data-round={running.number}>
+      <p className="eyebrow">Round {running.number} now</p>
+      <LiveRunPanel livePath={cycleLivePath(snapshot.incident.id, running.number)} />
     </div>
   );
 }

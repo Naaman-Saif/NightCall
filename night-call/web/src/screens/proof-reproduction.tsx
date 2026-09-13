@@ -1,8 +1,10 @@
 import type { CheckResult, Experiment, Snapshot } from '../api/contract';
+import { experimentLivePath } from '../api/live-run';
 import type { IncidentMarker } from '../api/markers';
 import { useExperimentSeries } from '../api/use-experiment-series';
 import { WhatHappenedChart } from '../charts/what-happened-chart';
 import { describeExperimentState, describeTrafficSource, latestExperimentOf } from '../format/experiment-live-text';
+import { LiveRunPanel } from './live-run-panel';
 
 type ReviewProps = { review: NonNullable<Experiment['review']> };
 
@@ -16,6 +18,7 @@ export function ReproductionSummary({ snapshot }: { snapshot: Snapshot }) {
       <div className="eyebrow">Reproduction</div>
       <p className="proof-state">{describeExperimentState(experiment)}</p>
       <p className="muted">{describeTrafficSource(experiment)}</p>
+      <LiveRunPanel livePath={experiment.finishedAt ? null : experimentLivePath(snapshot.incident.id, experiment.id)} />
       <ExperimentChart incidentId={snapshot.incident.id} experiment={experiment} />
       <CheckList checks={experiment.checks} />
       {experiment.review && <ReviewLine review={experiment.review} />}

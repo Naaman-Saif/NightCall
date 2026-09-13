@@ -10,7 +10,7 @@ const TRAFFIC_SOURCE_TEXT: Record<TrafficSource, string> = {
 
 const NORMAL_SPEED = 1;
 
-function speedSuffix(speed: number | null | undefined): string {
+export function speedSuffix(speed: number | null | undefined): string {
   if (typeof speed !== 'number' || speed === NORMAL_SPEED) return '';
   return ` at ${speed}x speed`;
 }
