@@ -1,15 +1,17 @@
-import type { Incident } from '../api/contract';
+import type { Incident, RunReport } from '../api/contract';
 import type { ConnectionState } from '../api/use-connection-state';
 import { describeAttention, describeBudgetLeft, describeElapsed, describePhase } from '../format/incident-text';
+import { describeRunStatus } from '../format/run-status-text';
 import { formatAbsolute, formatClock } from '../format/time';
 import { useNow } from '../format/use-now';
 import { Badge, DemoBadge } from '../kit';
 import { ConnectionBadge } from './connection-badge';
 import { ManualTag } from './manual-tag';
 
-type IncidentHeaderProps = { incident: Incident; connection: ConnectionState; latestSequence: number };
+type IncidentHeaderProps = { incident: Incident; connection: ConnectionState; latestSequence: number; runReport?: RunReport | null };
+type FactsProps = { incident: Incident; runReport?: RunReport | null };
 
-export function IncidentHeader({ incident, connection, latestSequence }: IncidentHeaderProps) {
+export function IncidentHeader({ incident, connection, latestSequence, runReport }: IncidentHeaderProps) {
   return (
     <header className="incident-header">
       <div className="incident-header-tags">
@@ -21,19 +23,19 @@ export function IncidentHeader({ incident, connection, latestSequence }: Inciden
         <ConnectionBadge connection={connection} latestSequence={latestSequence} lastUpdateAt={incident.lastActivityAt} />
       </div>
       <h1 className="incident-title">{incident.alertName}</h1>
-      <IncidentFacts incident={incident} />
+      <IncidentFacts incident={incident} runReport={runReport} />
     </header>
   );
 }
 
-function IncidentFacts({ incident }: { incident: Incident }) {
+function IncidentFacts({ incident, runReport }: FactsProps) {
   const now = useNow();
   return (
     <dl className="incident-facts">
       <Fact label="Started" value={formatClock(incident.startedAt)} detail={formatAbsolute(incident.startedAt)} />
       <Fact label="Elapsed" value={describeElapsed(incident, now)} />
       <Fact label="Budget left" value={describeBudgetLeft(incident, now)} />
-      <Fact label="Phase" value={describePhase(incident)} />
+      <Fact label="Phase" value={runReport ? describeRunStatus(runReport) : describePhase(incident)} />
       <Fact label="Attention" value={describeAttention(incident.attention)} />
     </dl>
   );

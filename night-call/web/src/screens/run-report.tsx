@@ -1,16 +1,19 @@
-import type { Evidence, RunReport, RunStep } from '../api/contract';
-import { describeRunStatus } from '../format/run-status-text';
+import type { Evidence, Incident, RunReport, RunStep } from '../api/contract';
+import { describeIncidentClosing, describeRunStatus } from '../format/run-status-text';
 import { SourceLinks } from './source-links';
 
 type EvidenceById = Record<string, Evidence>;
+type SummaryProps = { report: RunReport; evidence: EvidenceById; incident: Incident };
 type ListProps = { title: string; emptyText: string; items: string[]; isMuted?: boolean };
 
-export function RunReportSummary({ report, evidence }: { report: RunReport; evidence: EvidenceById }) {
+export function RunReportSummary({ report, evidence, incident }: SummaryProps) {
+  const closing = describeIncidentClosing(incident, report);
   return (
     <section className="run-report" data-run-status={report.status}>
       <div>
         <NowLine report={report} />
         {report.note && <p className="muted run-note">{report.note}</p>}
+        {closing && <p className="muted run-note" data-closing>{closing}</p>}
       </div>
       <DidList steps={report.did} evidence={evidence} />
       <ReportList title="What it found" emptyText="Nothing established yet." items={report.found} />
