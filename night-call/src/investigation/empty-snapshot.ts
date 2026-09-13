@@ -1,4 +1,5 @@
 import type { IncidentFacts, RoleState, Snapshot } from './snapshot';
+import { SNAPSHOT_VERSION } from './snapshot-version';
 
 const readyRole: RoleState = { status: 'ready', assignment: '', updatedAt: null };
 
@@ -13,6 +14,7 @@ const emptyPublication: Snapshot['publication'] = {
 };
 
 const emptyAreas: Omit<Snapshot, 'incident'> = {
+  snapshotVersion: SNAPSHOT_VERSION,
   headline: '',
   investigation: 'not_started',
   investigationStop: null,
