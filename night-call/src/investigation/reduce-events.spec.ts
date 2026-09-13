@@ -32,6 +32,17 @@ describe('reducer', () => {
     expect(snapshot?.context).toHaveLength(2);
   });
 
+  it('lets a later answer override an earlier one while context keeps both', async () => {
+    const writer = freshWriter();
+    const incidentId = await openIncident(writer);
+    await appendAsRole(writer, { role: 'lead', incidentId, body: toolBody('question_asked', impactQuestion) });
+    await supplyContext(writer, { incidentId, body: { questionId: 'q-impact', text: "I don't know", idempotencyKey: 'first' } });
+    await supplyContext(writer, { incidentId, body: { questionId: 'q-impact', text: 'Tolerable for an hour', idempotencyKey: 'second' } });
+    const snapshot = readSnapshot(writer.stateDir, incidentId);
+    expect(snapshot?.questions[0].answer?.text).toBe('Tolerable for an hour');
+    expect(snapshot?.context.map((item) => item.text)).toEqual(["I don't know", 'Tolerable for an hour']);
+  });
+
   it('keeps the brief, roles and hypotheses and moves the phase', async () => {
     const writer = freshWriter();
     const incidentId = await openIncident(writer);
