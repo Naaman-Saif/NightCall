@@ -1,5 +1,5 @@
 import type { LiveRequest } from '../api/live-run';
-import { isFailedRequest } from '../format/live-run-text';
+import { describeRequestStatus, isFailedRequest } from '../format/live-run-text';
 import { formatTimeOfDay } from '../format/time';
 
 const REQUESTS_SHOWN = 12;
@@ -17,7 +17,7 @@ export function LiveRequestFeed({ requests }: { requests: LiveRequest[] }) {
           <span>{formatTimeOfDay(request.at)}</span>
           <span className="live-feed-route">{request.route}</span>
           <span>{request.productId ?? '-'}</span>
-          <span className="live-feed-status">{request.status === 0 ? 'no reply' : request.status}</span>
+          <span className="live-feed-status">{describeRequestStatus(request.status)}</span>
           <span>{request.ms === null ? '-' : `${Math.round(request.ms)} ms`}</span>
         </li>
       ))}

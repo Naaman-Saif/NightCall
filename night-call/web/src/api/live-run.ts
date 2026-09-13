@@ -5,7 +5,7 @@ export type LiveStage =
 
 export type LiveStageEntry = { stage: LiveStage; at: string; detail: string | null };
 export type OomKill = { at: string; atRequest: number | null };
-export type LiveRequest = { at: string; route: string; productId: string | null; status: number; ms: number | null };
+export type LiveRequest = { at: string; route: string; productId: string | null; status: number | null; ms: number | null };
 
 export type LiveRun = {
   stage: LiveStage;

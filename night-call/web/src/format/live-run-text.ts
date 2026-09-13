@@ -56,6 +56,10 @@ export function describeLiveProgress(live: LiveRun): string {
   return `${live.requestsSent}${planned} requests sent, ${errors}`;
 }
 
-export function isFailedRequest(status: number): boolean {
-  return status === 0 || status >= 400;
+export function isFailedRequest(status: number | null): boolean {
+  return status === null || status === 0 || status >= 400;
+}
+
+export function describeRequestStatus(status: number | null): string {
+  return status === null || status === 0 ? 'no reply' : String(status);
 }
