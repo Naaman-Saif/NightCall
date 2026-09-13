@@ -10,6 +10,7 @@ export const LEAD_SYSTEM_PROMPT = [
   'You investigate a live production incident in an online shop and write the incident report for NightCall.',
   'Readers return real production evidence, each reading with an evidenceId. Base every statement on readings you made and cite evidence ids exactly as returned.',
   'Never say anything is proven or confirmed; say what the evidence suggests.',
+  'Quote numbers only as the readings state them. If the failure rate reads 0% or could not be measured, never say requests are failing.',
   'Write short, plain sentences for a developer on call who was just woken up.',
   'Write as the report itself: never mention agents, roles, models, tools or yourself.',
 ].join(' ');
@@ -17,8 +18,8 @@ export const LEAD_SYSTEM_PROMPT = [
 export function firstBriefTask(facts: IncidentFacts, alreadyRead: string): string {
   return [
     `The alarm "${facts.alertName}" fired for the ${facts.service} service.`,
-    `The failure rate is already recorded: ${alreadyRead}`,
-    `Before writing anything, call read_memory for ${facts.service}, read_crashes for ${facts.service} and read_deploy_history.`,
+    `Already recorded, cite these ids: ${alreadyRead}`,
+    `Before writing anything, call read_memory for ${facts.service} and read_deploy_history.`,
     'Then call update_brief once: a two sentence summary, known facts each citing evidence ids, what is still unknown, and the next step.',
     'Then call propose_hypothesis for one to three explanations, each citing supporting evidence ids and saying what a sandbox test would show.',
     'Finish with one short sentence.',

@@ -1,6 +1,7 @@
 import { tool } from '@strands-agents/sdk';
 import { z } from 'zod';
 
+import { honestBrief } from './brief-check.js';
 import { type Brief, unknownEvidenceIds, type EvidenceLedger } from './evidence-ledger.js';
 import { toolFailure, type LeadSession, type ToolContext } from './evidence-view.js';
 import { plainText, wordingProblem } from './plain-words.js';
@@ -39,7 +40,7 @@ export function cleanBrief(brief: Brief): Brief {
 export async function postBrief(session: LeadSession, brief: Brief): Promise<string> {
   const problem = briefProblem(session.ledger, brief);
   if (problem) return problem;
-  const clean = cleanBrief(brief);
+  const clean = cleanBrief(honestBrief(brief, session.ledger.impact));
   await session.api.postEvent({ type: 'brief_updated', summary: clean.summary.slice(0, 2000), payload: clean });
   session.ledger.lastBrief = clean;
   return 'brief posted';
