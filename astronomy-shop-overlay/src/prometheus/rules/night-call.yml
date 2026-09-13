@@ -2,33 +2,41 @@ groups:
   - name: night-call
     interval: 15s
     rules:
-      - alert: PaymentErrorRateHigh
+      - alert: RecommendationCrashed
+        expr: resets(container_uptime_seconds{container_name="recommendation"}[2m]) > 0
+        labels:
+          service: recommendation
+          severity: page
+        annotations:
+          summary: recommendation container restarted in the last 2 minutes
+
+      - alert: RecommendationRequestsFailing
         expr: |
-          sum(rate(traces_span_metrics_calls_total{service_name="payment", status_code="STATUS_CODE_ERROR"}[2m]))
-          /
-          sum(rate(traces_span_metrics_calls_total{service_name="payment"}[2m]))
-          > 0.2
-        for: 30s
+          (
+            sum(rate(traces_span_metrics_calls_total{service_name="recommendation", span_name="oteldemo.RecommendationService/ListRecommendations", status_code="STATUS_CODE_ERROR"}[2m]))
+            or vector(0)
+          )
+          +
+          (
+            sum(rate(traces_span_metrics_calls_total{service_name="frontend", span_name="GET /api/recommendations", status_code="STATUS_CODE_ERROR"}[2m]))
+            or vector(0)
+          )
+          > 0
+        for: 1m
         labels:
-          service: payment
+          service: recommendation
           severity: page
         annotations:
-          summary: payment error rate above 20 percent
+          summary: recommendation requests are failing
 
-      - alert: AdServiceCpuHigh
-        expr: max(jvm_cpu_recent_utilization_ratio{service_name="ad"}) > 0.25
-        for: 45s
+      - alert: RecommendationCanaryFailing
+        expr: |
+          max(httpcheck_status{http_url=~".*api/recommendations.*", http_status_class="2xx"}) < 1
+          or
+          max(httpcheck_error{http_url=~".*api/recommendations.*"}) > 0
+        for: 1m
         labels:
-          service: ad
+          service: recommendation
           severity: page
         annotations:
-          summary: ad service jvm cpu utilization above 25 percent of available cores
-
-      - alert: KafkaConsumerLagHigh
-        expr: max(kafka_consumer_group_lag_ratio or kafka_consumer_group_lag) > 500
-        for: 60s
-        labels:
-          service: kafka
-          severity: page
-        annotations:
-          summary: kafka consumer lag above 500 messages
+          summary: recommendations canary request is failing
