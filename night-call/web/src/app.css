@@ -56,6 +56,28 @@
 .run-note { margin-top: var(--sp-1); }
 .possible-causes { display: grid; gap: var(--sp-3); }
 .proof-block { display: grid; gap: var(--sp-2); min-width: 0; }
+.live-run {
+  display: grid; gap: var(--sp-2); min-width: 0; padding: var(--sp-3);
+  background: var(--surface-inset); border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+}
+.live-run p { margin: 0; }
+.live-step { display: flex; align-items: center; gap: var(--sp-2); font: var(--type-body-sm); color: var(--text-title); }
+.live-progress-block { display: grid; gap: var(--sp-1); }
+.live-progress { height: 6px; background: var(--surface-raised); border-radius: var(--radius-xs); overflow: hidden; }
+.live-progress-fill { height: 100%; background: var(--observed-400); transition: width 600ms ease-out; }
+.live-feed {
+  margin: 0; padding: var(--sp-2); list-style: none; display: grid; gap: 2px; max-height: 240px; overflow: auto;
+  background: var(--surface-page); border-radius: var(--radius-xs); font: var(--type-mono-sm); color: var(--text-body);
+}
+.live-feed li { display: grid; grid-template-columns: 7ch minmax(0, 1fr) 10ch 7ch 7ch; gap: var(--sp-2); white-space: nowrap; }
+.live-feed-route { overflow: hidden; text-overflow: ellipsis; }
+.live-feed li[data-failed='true'] .live-feed-status { color: var(--critical-400); }
+.live-stages { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font: var(--type-meta-sm); color: var(--text-muted); }
+.live-stages li { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.live-stage-time { font: var(--type-mono-sm); color: var(--text-faint); }
+.live-round { display: grid; gap: var(--sp-2); }
+.live-round .eyebrow { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .live-progress-fill { transition: none; } }
 .proof-block p { margin: 0; }
 .proof-state { font: var(--type-body); color: var(--text-title); }
 .proof-block .source-links, .proof-state .source-link { margin-left: var(--sp-2); }
@@ -68,6 +90,7 @@
 .cause[data-cause-status='supported'] .cause-status { color: var(--text-accent); }
 .cause-lines { margin-top: var(--sp-1); }
 .cause-side { color: var(--text-muted); }
+.contradiction-line { display: block; margin: 0; font: var(--type-meta-sm); }
 .report-list { margin: var(--sp-2) 0 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-1); font: var(--type-body-sm); color: var(--text-body); }
 .report-list[data-tone='muted'] { color: var(--text-muted); }
 .details { display: grid; gap: var(--sp-4); justify-items: start; }

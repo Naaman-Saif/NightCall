@@ -20,7 +20,7 @@ export function RunReportSummary({ report, snapshot }: SummaryProps) {
       </div>
       <DidList steps={report.did} evidence={evidence} />
       <ReportList title="What it found" emptyText="Nothing established yet." items={report.found} />
-      <PossibleCauses causes={report.causes} status={report.status} evidence={evidence} />
+      <PossibleCauses causes={report.causes} status={report.status} evidence={evidence} hypotheses={snapshot.hypotheses} />
       <ProofSummary snapshot={snapshot} />
       {report.notDone.length > 0 && <ReportList title="Not done yet" emptyText="" items={report.notDone} isMuted />}
     </section>

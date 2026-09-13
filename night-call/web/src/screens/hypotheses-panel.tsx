@@ -3,6 +3,8 @@ import type { Hypothesis, Snapshot } from '../api/contract';
 import { hypothesisClaim } from '../format/claims';
 import { describeMissingCauses } from '../format/investigation-text';
 import { Card, HypothesisCard } from '../kit';
+import { contradictionFor } from '../format/contradiction-text';
+import { ContradictionLine } from './possible-causes';
 import { EvidenceLine } from './source-links';
 
 type HypothesisViewProps = { snapshot: Snapshot; hypothesis: Hypothesis; index: number };
@@ -31,10 +33,19 @@ function HypothesisView({ snapshot, hypothesis, index }: HypothesisViewProps) {
       claim={claim}
       qualifier={qualifier}
       supporting={evidenceLines(snapshot, hypothesis.supportingEvidenceIds)}
-      contradicting={evidenceLines(snapshot, hypothesis.contradictingEvidenceIds)}
+      contradicting={contradictingLines(snapshot, hypothesis)}
       nextStep={isOpen ? `check the prediction. ${hypothesis.predicted}` : undefined}
     />
   );
+}
+
+function contradictingLines(snapshot: Snapshot, hypothesis: Hypothesis): ReactNode[] {
+  return hypothesis.contradictingEvidenceIds.map((evidenceId) => (
+    <span key={evidenceId}>
+      <EvidenceLine evidence={snapshot.evidence[evidenceId]} fallback={evidenceId} />
+      <ContradictionLine text={contradictionFor(hypothesis.contradictions, evidenceId)} />
+    </span>
+  ));
 }
 
 function evidenceLines(snapshot: Snapshot, evidenceIds: string[]): ReactNode[] {
