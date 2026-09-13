@@ -6,6 +6,12 @@ import { proposeMitigation } from '../experiments/mitigation-proposal';
 import { flagText, incidentWithReproduction } from '../experiments/proof.fixture';
 import type { Github } from './github-steps';
 import { publishPullRequest } from './publish-pr';
+import type { AlertFacts } from '../investigation/open-investigation';
+import { recommendationFacts } from '../investigation/writer.fixture';
+
+function testFacts(labels: Record<string, string>): AlertFacts {
+  return { ...recommendationFacts, illustrative: true, labels: { ...recommendationFacts.labels, nightcall_test: 'true', ...labels } };
+}
 
 const mitigation = { variant: 'off', restart: true, explanation: 'Turn the cache flag off', caveats: ['Cold cache'], notFixed: 'No size limit' };
 const encoded = Buffer.from(flagText).toString('base64');
@@ -28,8 +34,8 @@ function fakeGithub(options: { branchExists: boolean; failPull: boolean }) {
   return { github, calls, bodies };
 }
 
-async function verifiedIncident(approved = true): Promise<{ writer: EventWriter; incidentId: string }> {
-  const { writer, incidentId } = await incidentWithReproduction();
+async function verifiedIncident(approved = true, facts: AlertFacts = recommendationFacts): Promise<{ writer: EventWriter; incidentId: string }> {
+  const { writer, incidentId } = await incidentWithReproduction(true, facts);
   const { mitigationId } = await proposeMitigation(writer, { incidentId, body: mitigation, flagText });
   const runIds = { verificationRunId: 'vr-1', mitigationId, contractId: 'contract-1' };
   const system = (type: string, payload: Record<string, unknown>) => ({ actor: 'system' as const, type: type as never, summary: type, refs: [], payload });
@@ -57,11 +63,24 @@ describe('publication', () => {
     const snapshot = readSnapshot(writer.stateDir, incidentId);
     expect(snapshot?.publication).toMatchObject({ state: 'published', number: 7, baseBranch: 'nightcall-demo' });
     expect(snapshot?.publication.diff).toContain('+      "defaultVariant": "off",');
-    expect(snapshot?.incident).toMatchObject({ lifecycle: 'finished', completionReason: 'completed' });
+    expect(snapshot?.incident.lifecycle).toBe('active');
     expect(snapshot?.runReport.notDone).toEqual(['Looking for the cause']);
     expect(snapshot?.runReport.did.map((step) => step.text)).toEqual(expect.arrayContaining(['Reproduced the crash in a test copy', 'Verified the fix', 'Opened a pull request']));
     expect(snapshot?.headline).toContain('Fix verified 3 of 3, replayed at 2x speed. PR #7 opened.');
-    expect(await publishPullRequest({ writer, github }, incidentId)).toBe('the incident is completed');
+    expect(await publishPullRequest({ writer, github }, incidentId)).toBe('publication is already published');
+  });
+
+  it('opens no pull request for a test incident unless it carries the publish label', async () => {
+    const quiet = await verifiedIncident(true, testFacts({}));
+    const idle = fakeGithub({ branchExists: false, failPull: false });
+    expect(await publishPullRequest({ writer: quiet.writer, github: idle.github }, quiet.incidentId)).toBe('Test incident: no pull request');
+    expect(idle.calls).toEqual([]);
+    const skipped = readSnapshot(quiet.writer.stateDir, quiet.incidentId);
+    expect(skipped?.publication).toMatchObject({ state: 'not_eligible', failureReason: null });
+    expect(skipped?.runReport.did.at(-1)).toMatchObject({ text: 'Pull request not opened', value: 'Test incident: no pull request' });
+    const labelled = await verifiedIncident(true, testFacts({ nightcall_publish: 'true' }));
+    const { github } = fakeGithub({ branchExists: false, failPull: false });
+    expect(await publishPullRequest({ writer: labelled.writer, github }, labelled.incidentId)).toBeNull();
   });
 
   it('refuses without an approval and records a failure the operator can retry', async () => {

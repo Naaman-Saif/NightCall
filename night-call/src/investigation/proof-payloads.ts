@@ -20,7 +20,7 @@ export const proofPayloads = {
   cycle_finished: payload({ ...runIds, cycle, speed: speed.optional(), passed: z.boolean(), checks: z.array(checkResult).max(20) }),
   verification_reviewed: payload({ ...runIds, approved: z.boolean(), reasons: texts }),
   publication_changed: payload({
-    state: z.enum(['publishing', 'published', 'failed']),
+    state: z.enum(['publishing', 'published', 'failed', 'not_eligible']),
     repository: name,
     baseBranch: name,
     number: z.number().int().nullable(),
