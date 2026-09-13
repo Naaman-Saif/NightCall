@@ -1,5 +1,6 @@
-import type { Experiment, Publication, Snapshot, TrafficSource, Verdict } from '../api/contract';
+import type { Experiment, Publication, Snapshot, Verdict } from '../api/contract';
 import { bytesToMib } from './series-points';
+import { describeTraffic } from './traffic-text';
 
 const VERDICT_TEXT: Record<Verdict, string> = {
   matches: 'Finished: the checks matched production',
@@ -19,15 +20,9 @@ export function describeExperimentState(experiment: Experiment): string {
   return `Running: ${experiment.progress.requests} requests sent, peak memory ${memory} MiB`;
 }
 
-const TRAFFIC_SOURCE_TEXT: Record<TrafficSource, string> = {
-  traces: "Replayed the incident's real traffic",
-  prometheus_rate_fallback: "Replayed the incident's request rate (request details missing)",
-  fixed_fallback: 'Fixed test load (real traffic missing)',
-};
-
 export function describeTrafficSource(experiment: Experiment): string {
-  if (!experiment.trafficSource) return 'Traffic source not recorded';
-  return TRAFFIC_SOURCE_TEXT[experiment.trafficSource] ?? 'Traffic source not recorded';
+  const traffic = describeTraffic({ trafficSource: experiment.trafficSource, speed: experiment.recipe.speed });
+  return traffic ?? 'Traffic source not recorded';
 }
 
 export function describePublication(publication: Publication): string | null {

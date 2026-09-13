@@ -55,6 +55,7 @@ export type Mitigation = {
 
 export type Cycle = {
   number: number; state: 'pending' | 'running' | 'passed' | 'failed'; checks: CheckResult[]; verificationRunId: string;
+  trafficSource?: TrafficSource | null; speed?: number | null;
 };
 
 export type Publication = {
