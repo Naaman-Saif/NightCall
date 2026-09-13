@@ -10,7 +10,9 @@ export type KnownFact = { text: string; evidenceIds: string[] };
 export type SourceLink = { label: string; url: string };
 export type CheckResult = { name: string; passed: boolean; observed: number };
 export type ContractCheck = { name: string; comparator: 'gte' | 'lte' | 'eq'; value: number; unit: string };
-export type Recipe = { flagVariant: string; restart: boolean; count: number; pacingMs: number; stopOnFailure: boolean };
+export type Recipe = {
+  flagVariant: string; restart: boolean; count: number; pacingMs: number; stopOnFailure: boolean; speed?: number;
+};
 export type VerificationRunIds = { verificationRunId: string; mitigationId: string; contractId: string };
 
 export type EventPayloads = {
