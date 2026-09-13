@@ -23,6 +23,15 @@ function clockOf(snapshot: Snapshot, view: CaseView) {
   };
 }
 
+function publicationOf(snapshot: Snapshot) {
+  const { state, url, number, failureReason } = snapshot.publication;
+  return { publication: { state, url, number, failureReason } };
+}
+
+function clockAndPublicationOf(snapshot: Snapshot, view: CaseView) {
+  return { ...clockOf(snapshot, view), ...publicationOf(snapshot) };
+}
+
 export function agentCaseOf(snapshot: Snapshot, view: CaseView) {
   const evidence = Object.entries(snapshot.evidence).map(([evidenceId, item]) => {
     return { evidenceId, kind: item.kind, summary: item.summary, observedAt: item.observedAt };
@@ -31,7 +40,7 @@ export function agentCaseOf(snapshot: Snapshot, view: CaseView) {
   const questions = snapshot.questions.map(({ id, text, blocks, askedAt, answer }) => ({ questionId: id, text, blocks, askedAt, answer }));
   return {
     incident: caseIncident(snapshot, view.nowMs),
-    ...clockOf(snapshot, view),
+    ...clockAndPublicationOf(snapshot, view),
     headline: snapshot.headline,
     investigation: snapshot.investigation,
     brief: snapshot.brief,

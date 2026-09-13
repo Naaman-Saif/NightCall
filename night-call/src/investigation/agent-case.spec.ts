@@ -21,6 +21,7 @@ describe('agent case and context', () => {
     const view = agentCaseOf(snapshot!, { nowMs: Date.parse(snapshot!.incident.startedAt) + 5 * 60_000, recipe });
     expect(view.incident.minutesLeft).toBe(25);
     expect(view).toMatchObject({ minutesLeft: 25, explorationMinutesLeft: 7, verificationStartMinutesLeft: 8, recipe });
+    expect(view.publication).toEqual({ state: 'not_eligible', url: null, number: null, failureReason: null });
     expect(view.questions[0]).toMatchObject({ questionId: 'q-impact', answer: { text: 'Tolerable' } });
     expect(minutesLeftAt('2026-09-13T00:00:00Z', Date.parse('2026-09-13T01:00:00Z'))).toBe(0);
   });
