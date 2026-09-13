@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { FALLBACK_ATTEMPT, promptForAttempt, settingForAttempt } from './attempt-plan.js';
 import type { Cause } from './cause-rules.js';
 import { causesTask, classifyTask, LEAD_SYSTEM_PROMPT, type IncidentFacts } from './lead-prompts.js';
-import { buildModel } from './model.js';
+import { buildModel, type RoleSetting } from './model.js';
 import { logProgress } from './progress.js';
 import { withRetries } from './retry.js';
 import type { Classification } from './urgency.js';
@@ -37,10 +37,21 @@ function runAgent(plan: AgentPlan, prompt: string): Promise<AgentResult> {
       logProgress({ fallbackModelAttempt: attempt });
       plan.onFallback();
     }
-    const model = await buildModel(settingForAttempt(attempt));
-    const agent = new Agent({ model, tools: [], printer: false, systemPrompt: LEAD_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: plan.schema });
-    return agent.invoke(promptForAttempt({ prompt, attempt }), { cancelSignal: plan.signal, limits: { turns: TURN_LIMIT } });
+    const setting = settingForAttempt(attempt);
+    const agent = new Agent({ model: await buildModel(setting), tools: [], printer: false, systemPrompt: LEAD_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: plan.schema });
+    const startedAt = Date.now();
+    const result = await agent.invoke(promptForAttempt({ prompt, attempt }), { cancelSignal: plan.signal, limits: { turns: TURN_LIMIT } });
+    logModelCall({ setting, attempt, seconds: (Date.now() - startedAt) / 1000, result });
+    return result;
   }, { signal: plan.signal });
+}
+
+type ModelCall = { setting: RoleSetting; attempt: number; seconds: number; result: AgentResult };
+
+function logModelCall(call: ModelCall): void {
+  const usage = call.result.metrics?.accumulatedUsage;
+  const model = `${call.setting.modelId} reasoning ${call.setting.reasoning}`;
+  logProgress({ modelCall: model, attempt: call.attempt, seconds: Number(call.seconds.toFixed(1)), inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens });
 }
 
 export function leadFor(facts: IncidentFacts): Lead {
