@@ -3,7 +3,6 @@ import type { IncidentEvent, Snapshot } from '../api/contract';
 import type { IncidentView } from '../api/use-incident-stream';
 import { Banner, EmptyState } from '../kit';
 import { BriefBlock } from './brief-block';
-import { ChartsPanel } from './charts-panel';
 import { ExperimentsPanel } from './experiments-panel';
 import { HypothesesPanel } from './hypotheses-panel';
 import { IncidentHeader } from './incident-header';
@@ -12,9 +11,10 @@ import { ResultPanel } from './result-panel';
 import { RolesStrip } from './roles-strip';
 import { Timeline } from './timeline';
 import { VerificationPanel } from './verification-panel';
+import { WhatHappenedSection } from './what-happened-section';
 
 type IncidentScreenProps = { view: IncidentView; isOperator: boolean; isSample: boolean; submitAnswer: SubmitAnswer };
-type MainSectionsProps = { snapshot: Snapshot; events: IncidentEvent[]; isSample: boolean };
+type MainSectionsProps = { snapshot: Snapshot; events: IncidentEvent[] };
 
 export function IncidentScreen(props: IncidentScreenProps) {
   if (props.view.loadFailed) {
@@ -29,8 +29,9 @@ function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: 
     <div className="page">
       <IncidentHeader incident={snapshot.incident} connection={view.connection} />
       {!isOperator && <PublicBanner />}
+      <WhatHappenedSection incident={snapshot.incident} events={view.events} isSample={isSample} />
       <div className="incident-columns" data-layout={phoneLayoutFor(snapshot)}>
-        <MainSections snapshot={snapshot} events={view.events} isSample={isSample} />
+        <MainSections snapshot={snapshot} events={view.events} />
         <aside className="incident-aside">
           <QuestionColumn questions={snapshot.questions} context={snapshot.context} isOperator={isOperator} submitAnswer={submitAnswer} />
         </aside>
@@ -39,7 +40,7 @@ function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: 
   );
 }
 
-function MainSections({ snapshot, events, isSample }: MainSectionsProps) {
+function MainSections({ snapshot, events }: MainSectionsProps) {
   return (
     <section className="incident-main">
       <BriefBlock brief={snapshot.brief} />
@@ -49,7 +50,6 @@ function MainSections({ snapshot, events, isSample }: MainSectionsProps) {
       <Timeline events={events} />
       <HypothesesPanel snapshot={snapshot} />
       <ExperimentsPanel experiments={snapshot.experiments} />
-      <ChartsPanel incident={snapshot.incident} isSample={isSample} />
     </section>
   );
 }
