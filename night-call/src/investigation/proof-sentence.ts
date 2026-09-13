@@ -22,6 +22,7 @@ function publicationSentence(snapshot: Snapshot): string | null {
   const { state, number } = snapshot.publication;
   if (state === 'published') return `PR #${number} opened.`;
   if (state === 'failed') return 'The pull request failed to open.';
+  if (state === 'not_eligible' && snapshot.publication.repository !== null) return 'Test incident: no pull request.';
   return null;
 }
 

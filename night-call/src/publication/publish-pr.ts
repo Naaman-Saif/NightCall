@@ -11,16 +11,18 @@ import { defaultVariantIn } from '../production/flag-text';
 import { flagChangeOf } from './flag-diff';
 import { ensureBranch, fileOnBranch, openPull, writeFlagFile, type Github, type PullRequest } from './github-steps';
 import { prBodyOf } from './pr-body';
+import { pullRequestAllowed, TEST_INCIDENT_NOTE } from './publish-label';
 
 export type PublishDeps = { writer: EventWriter; github: Github };
-type Publication = { state: 'publishing' | 'published' | 'failed'; number: number | null; url: string | null; diff: string | null; failureReason: string | null };
+type Publication = { state: 'publishing' | 'published' | 'failed' | 'not_eligible'; number: number | null; url: string | null; diff: string | null; failureReason: string | null };
 
 export function publicationRefusal(snapshot: Snapshot, nowMs: number): string | null {
   if (snapshot.incident.lifecycle !== 'active') return `the incident is ${snapshot.incident.completionReason ?? 'finished'}`;
   if (Date.parse(snapshot.incident.deadlineAt) <= nowMs) return 'the time budget is used up';
   if (!runIsVerified(snapshot)) return 'no approved 3 of 3 verification run';
   if (!snapshot.mitigation?.variant) return 'the mitigation has no flag variant';
-  return ['publishing', 'published'].includes(snapshot.publication.state) ? `publication is already ${snapshot.publication.state}` : null;
+  const settled = snapshot.publication.state !== 'failed' && (snapshot.publication.state !== 'not_eligible' || snapshot.publication.repository !== null);
+  return settled ? `publication is already ${snapshot.publication.state}` : null;
 }
 
 function append(deps: PublishDeps, request: { incidentId: string; summary: string; publication: Publication }) {
@@ -48,8 +50,6 @@ async function recordPublished(deps: PublishDeps, request: { incidentId: string;
   const { incidentId, pull } = request;
   const publication = { state: 'published' as const, number: pull.number, url: pull.url, diff: pull.diff, failureReason: null };
   await append(deps, { incidentId, summary: `Pull request #${pull.number} opened: ${pull.url}`, publication });
-  const draft = { actor: 'system' as const, type: 'investigation_finished' as const, summary: `Finished: fix verified 3 of 3 and pull request #${pull.number} opened`, refs: [], payload: { reason: 'completed' } };
-  await appendAsService(deps.writer, { incidentId, draft });
 }
 
 export async function publishPullRequest(deps: PublishDeps, incidentId: string): Promise<string | null> {
@@ -57,6 +57,10 @@ export async function publishPullRequest(deps: PublishDeps, incidentId: string):
   const refusal = publicationRefusal(snapshot, Date.now());
   if (refusal) return refusal;
   const empty = { number: null, url: null, diff: null, failureReason: null };
+  if (!pullRequestAllowed(deps.writer.stateDir, snapshot)) {
+    await append(deps, { incidentId, summary: TEST_INCIDENT_NOTE, publication: { state: 'not_eligible', ...empty } });
+    return TEST_INCIDENT_NOTE;
+  }
   await append(deps, { incidentId, summary: `Opening a pull request against ${settings.demoBranch}`, publication: { state: 'publishing', ...empty } });
   try {
     await recordPublished(deps, { incidentId, pull: await pushPull(deps, snapshot) });

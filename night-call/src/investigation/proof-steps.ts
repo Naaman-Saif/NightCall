@@ -32,5 +32,6 @@ export function publicationStep(event: IncidentEvent): RunStep | null {
   const { state, number, url, failureReason } = payloadOf(event, 'publication_changed');
   if (state === 'published') return step('Opened a pull request', `PR #${number}: ${url}`);
   if (state === 'failed') return step('Pull request failed to open', String(failureReason));
+  if (state === 'not_eligible') return step('Pull request not opened', 'Test incident: no pull request');
   return null;
 }

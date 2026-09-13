@@ -4,7 +4,8 @@ import { join } from 'node:path';
 
 import type { EventWriter } from '../investigation/event-writer';
 import { appendAsService } from '../investigation/service-append';
-import { freshWriter, openIncident } from '../investigation/writer.fixture';
+import { openInvestigation, type AlertFacts } from '../investigation/open-investigation';
+import { freshWriter, recommendationFacts } from '../investigation/writer.fixture';
 import type { SandboxOwner } from './sandbox-owner';
 import type { WorkerCommandBody } from './worker-messages';
 import type { WorkerProcess } from './worker-process';
@@ -23,9 +24,10 @@ function system(type: string, payload: Record<string, unknown>) {
   return { actor: 'system' as const, type: type as never, summary: type, refs: [], payload };
 }
 
-export async function incidentWithReproduction(accepted = true): Promise<{ writer: EventWriter; incidentId: string }> {
+export async function incidentWithReproduction(accepted = true, facts: AlertFacts = recommendationFacts): Promise<{ writer: EventWriter; incidentId: string }> {
   const writer = freshWriter();
-  const incidentId = await openIncident(writer);
+  const opened = await openInvestigation(writer, { facts, blockDuplicates: false });
+  const incidentId = String(opened?.incidentId);
   const recipe = { flagVariant: 'on', restart: true, count: 400, pacingMs: 200, stopOnFailure: true, speed: 1 };
   const passed = [{ name: 'fault.oom_kills', passed: true, observed: 1 }, { name: 'fault.http_failures', passed: true, observed: 1 }];
   const drafts = [
