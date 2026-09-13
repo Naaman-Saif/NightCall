@@ -22,7 +22,7 @@ function requireCurrentMitigation(snapshot: Snapshot, draft: EventDraft): void {
   const { mitigationId, contractId } = draft.payload as RunIds;
   const mitigationMatches = snapshot.mitigation?.id === mitigationId;
   if (mitigationMatches && snapshot.contract?.id === contractId) return;
-  throw new ConflictException('verification_started does not match the current mitigation and contract');
+  throw new ConflictException({ code: 'mitigation_not_current', message: 'verification_started does not match the current mitigation and contract' });
 }
 
 function requireVerifiedBeforePublishing(snapshot: Snapshot, draft: EventDraft): void {

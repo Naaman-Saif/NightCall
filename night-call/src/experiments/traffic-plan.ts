@@ -34,8 +34,9 @@ export function recipeSummaryOf(folder: string): RecipeSummary {
 
 function fixedPlan(request: TrafficRequest): TrafficPlan {
   const count = request.requestCount ?? FIXED_COUNT;
-  const shape = { speed: 1, capMs: null, requestCount: count };
-  return { source: 'fixed_fallback', recipePath: null, count, pacingMs: FIXED_PACING_MS, replayMinutes: (count * FIXED_PACING_MS) / 60_000, shape };
+  const pacingMs = Math.round(FIXED_PACING_MS / request.speed);
+  const shape = { speed: request.speed, capMs: null, requestCount: count };
+  return { source: 'fixed_fallback', recipePath: null, count, pacingMs, replayMinutes: (count * pacingMs) / 60_000, shape };
 }
 
 export function trafficPlanOf(folder: string, request: TrafficRequest): TrafficPlan {
