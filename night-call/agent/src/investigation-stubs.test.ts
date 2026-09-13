@@ -27,10 +27,11 @@ const SUMMARIES: Record<string, string> = {
   logs: '200 log lines from recommendation in the last 30 minutes',
   traces: '3 error spans in 40 traces from recommendation in the last 30 minutes',
   'deploy-history': 'Flag file changed in 84d1eb7: release: enable recommendation cache',
+  'flag-state': 'recommendationCacheFailure is on in the live flag file, changed at 17:54 UTC, not committed to nightcall-demo',
 };
 
 function dataFor(reader: string, errorShare: number | null): unknown {
-  if (reader === 'failure-rate') return { spans: [{ errorShare }, { errorShare: 0.0271, callsPerSecond: 1.7740707887577989 }] };
+  if (reader === 'failure-rate') return { spans: [{ service: 'frontend', errorShare: 0.0271, callsPerSecond: 1.7740707887577989 }, { service: 'recommendation', errorShare }] };
   if (reader === 'oom-events') return { events: [1, 2, 3, 4].flatMap(() => [{ action: 'oom' }, { action: 'die' }, { action: 'start' }]) };
   return {};
 }
@@ -40,7 +41,7 @@ function stubApi(recorded: Recorded, options: StubOptions): IncidentApi {
   return {
     read: async (reader) => {
       recorded.steps.push(`read ${reader}`);
-      if (options.failingReaders?.includes(reader)) throw new ToolAnswerError(502);
+      if (options.failingReaders?.includes(reader)) throw new ToolAnswerError(reader === 'flag-state' ? 404 : 502);
       return { evidence: { evidenceId: `ev-${reader}-1`, kind: reader, summary: SUMMARIES[reader], excerpt: '' }, data: dataFor(reader, errorShare) } as ReaderReply;
     },
     postEvent: async (event) => {

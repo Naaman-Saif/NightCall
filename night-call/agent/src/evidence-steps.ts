@@ -16,6 +16,7 @@ export const EVIDENCE_READS: EvidenceRead[] = [
   { nowDoing: 'Reading logs', skipLabel: 'reading logs', reader: 'logs', query: { ...LOOK_BACK, tail: 200 } },
   { nowDoing: 'Reading traces', skipLabel: 'reading traces', reader: 'traces', query: LOOK_BACK },
   { nowDoing: 'Reading deploy history', skipLabel: 'reading deploy history', reader: 'deploy-history', query: {} },
+  { nowDoing: 'Reading the live flag settings', skipLabel: 'reading the live flag settings', reader: 'flag-state', query: {} },
 ];
 
 export async function askImpact(context: RunContext): Promise<boolean> {

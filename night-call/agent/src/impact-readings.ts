@@ -6,7 +6,8 @@ import { describeError } from './retry.js';
 
 export const IMPACT_WINDOW_MINUTES = 10;
 
-type SpanData = { spans?: { errorShare?: unknown; callsPerSecond?: unknown }[] };
+type Span = { service?: unknown; errorShare?: unknown; callsPerSecond?: unknown };
+type SpanData = { spans?: Span[] };
 type EventsData = { events?: { action?: unknown }[] };
 type ImpactSession = { api: IncidentApi; ledger: EvidenceLedger };
 
@@ -15,7 +16,9 @@ function numberOrNull(value: unknown): number | null {
 }
 
 export function failureReadingOf(reply: ReaderReply): FailureReading {
-  const [service, frontend] = (reply.data as SpanData | undefined)?.spans ?? [];
+  const spans = (reply.data as SpanData | undefined)?.spans ?? [];
+  const service = spans.find((span) => span.service === 'recommendation') ?? spans[0];
+  const frontend = spans.find((span) => span.service === 'frontend') ?? spans[1];
   return {
     evidenceId: reply.evidence.evidenceId,
     errorShare: numberOrNull(service?.errorShare),

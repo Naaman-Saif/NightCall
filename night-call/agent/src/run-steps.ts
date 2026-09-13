@@ -39,7 +39,7 @@ export async function postStatus(context: RunContext, status: { status: string; 
 }
 
 function failureWords(error: unknown): string {
-  if (error instanceof ToolAnswerError) return 'NightCall refused the call';
+  if (error instanceof ToolAnswerError) return error.status === 404 ? 'not available on this server yet' : 'NightCall refused the call';
   if (/abort|timeout/i.test(describeError(error))) return 'it ran out of time';
   return isRetryable(error) ? 'the model or network kept failing' : 'it failed';
 }
