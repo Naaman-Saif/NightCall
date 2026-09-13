@@ -15,6 +15,10 @@ const emptyPublication: Snapshot['publication'] = {
 const emptyAreas: Omit<Snapshot, 'incident'> = {
   headline: '',
   investigation: 'not_started',
+  investigationStop: null,
+  investigationChangedAt: null,
+  lastAgentActivityAt: null,
+  runReport: { status: 'not_started', statusAt: '', note: null, nowDoing: null, did: [], found: [], notDone: [] },
   brief: null,
   roles: { lead: readyRole, investigator: readyRole, verifier: readyRole },
   evidence: {},

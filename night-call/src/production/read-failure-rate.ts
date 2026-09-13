@@ -56,5 +56,6 @@ export async function readFailureRate(query: { minutes: number }): Promise<Readi
   const summary = `Recommendation requests failing: ${percentText(spans[0].errorShare)} over the last ${window} minutes`;
   const source = 'span metrics and canary: recommendation';
   const excerpt = excerptOf([...spanLines, canaryLine(canary)]);
-  return { kind: 'logs', source, summary, excerpt, data: { spans, canary }, sourceLinks: failureLinks(query.minutes) };
+  const value = `${percentText(spans[0].errorShare)} over ${window} min`;
+  return { kind: 'logs', source, summary, excerpt, value, data: { spans, canary }, sourceLinks: failureLinks(query.minutes) };
 }

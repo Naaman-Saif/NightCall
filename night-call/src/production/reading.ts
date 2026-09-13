@@ -12,6 +12,7 @@ export type Reading = {
   sourceLinks?: SourceLink[];
   exactSource?: ExactSource;
   crashCounts?: CrashCounts;
+  value?: string;
   observedAt?: string;
 };
 

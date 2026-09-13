@@ -11,6 +11,7 @@ import type {
   Verification,
   VerificationRun,
 } from './proof-snapshot';
+import type { RunReport } from './run-report-types';
 
 export type Lifecycle = 'active' | 'finished';
 export type Attention = 'none' | 'context_requested' | 'blocked';
@@ -44,11 +45,12 @@ export type Question = Omit<PayloadOf<'question_asked'>, 'questionId' | 'illustr
 export type ContextItem = { questionId: string | null; text: string; suppliedAt: string };
 type EvidencePayload = PayloadOf<'evidence_recorded'>;
 export type CrashCounts = NonNullable<EvidencePayload['crashCounts']>;
-export type EvidenceItem = Omit<EvidencePayload, 'evidenceId' | 'illustrative' | 'sourceLinks' | 'crashCounts'> & {
+export type EvidenceItem = Omit<EvidencePayload, 'evidenceId' | 'illustrative' | 'sourceLinks' | 'crashCounts' | 'value'> & {
   sourceLinks: NonNullable<EvidencePayload['sourceLinks']>;
   crashCounts: CrashCounts | null;
 };
-export type InvestigationState = 'not_started' | 'running' | 'interrupted' | 'finished';
+export type InvestigationState = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted' | 'finished';
+export type InvestigationStop = Omit<PayloadOf<'investigation_stopped'>, 'illustrative'> & { stoppedAt: string };
 export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' | 'illustrative'> & {
   id: string;
   status: PayloadOf<'hypothesis_status_changed'>['status'] | 'proposed';
@@ -59,6 +61,10 @@ export type Snapshot = {
   incident: IncidentFacts;
   headline: string;
   investigation: InvestigationState;
+  investigationStop: InvestigationStop | null;
+  investigationChangedAt: string | null;
+  lastAgentActivityAt: string | null;
+  runReport: RunReport;
   brief: Brief | null;
   roles: Record<Role, RoleState>;
   evidence: Record<string, EvidenceItem>;

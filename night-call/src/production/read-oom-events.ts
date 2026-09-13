@@ -26,5 +26,6 @@ export function readOomEvents(events: EventsBuffer, query: EventsReadQuery): Rea
   const summary = `${counts} for ${query.service} in the last ${query.minutes} minutes`;
   const exactSource = { kind: 'stored_excerpt' as const };
   const excerpt = excerptOf(found.map(lineOf));
-  return { kind: 'oom_events', source: `docker events: ${query.service}`, summary, excerpt, data: { events: found }, exactSource, crashCounts };
+  const value = `${crashCounts.oom} out-of-memory kills, ${crashCounts.start} restarts in ${query.minutes} min`;
+  return { kind: 'oom_events', source: `docker events: ${query.service}`, summary, excerpt, value, data: { events: found }, exactSource, crashCounts };
 }

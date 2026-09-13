@@ -11,6 +11,8 @@ import { reduceMitigation } from './reduce-mitigation';
 import { reducePublication } from './reduce-publication';
 import { reduceQuestions } from './reduce-questions';
 import { reduceRoles } from './reduce-roles';
+import { reduceRunSteps } from './reduce-run-steps';
+import { withRunReport } from './run-report';
 import { reduceVerification } from './reduce-verification';
 import type { Reducer } from './reducer';
 import type { Snapshot } from './snapshot';
@@ -20,6 +22,7 @@ const areaReducers: Reducer[] = [
   reduceInvestigation,
   reduceRoles,
   reduceBrief,
+  reduceRunSteps,
   reduceHypotheses,
   reduceQuestions,
   reduceExperiments,
@@ -29,7 +32,8 @@ const areaReducers: Reducer[] = [
 ];
 
 function applyEvent(snapshot: Snapshot, event: IncidentEvent): Snapshot {
-  return withHeadline(withPhase(areaReducers.reduce((current, reduceArea) => reduceArea(current, event), snapshot)));
+  const reduced = areaReducers.reduce((current, reduceArea) => reduceArea(current, event), snapshot);
+  return withHeadline(withRunReport(withPhase(reduced)));
 }
 
 export function reduceEvents(events: IncidentEvent[]): Snapshot | null {

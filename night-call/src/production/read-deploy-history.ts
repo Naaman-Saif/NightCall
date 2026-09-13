@@ -35,7 +35,8 @@ export function deployHistoryReading(changes: DeployChange[]): Reading {
   const commitLinks = changes.map((change) => ({ label: `GitHub: commit ${change.sha.slice(0, 7)}`, url: change.url }));
   const source = `github: ${place} ${FLAG_FILE}`;
   const sourceLinks = [fileHistoryLink(), ...commitLinks];
-  return { kind: 'deploy_history', source, summary, excerpt: excerptFromStart(lines), observedAt: latest?.committedAt, sourceLinks, data: { changes } };
+  const value = latest ? `${latest.sha.slice(0, 7)} ${latest.message}` : 'no changes';
+  return { kind: 'deploy_history', source, summary, excerpt: excerptFromStart(lines), value, observedAt: latest?.committedAt, sourceLinks, data: { changes } };
 }
 
 export async function readDeployHistory(): Promise<Reading> {

@@ -23,8 +23,9 @@ function evidencePayload(reading: Reading, incidentId: string) {
   const observedAt = reading.observedAt ?? new Date().toISOString();
   const sourceLinks = linksFor(reading, { incidentId, evidenceId });
   const crashCounts = reading.crashCounts ? { crashCounts: reading.crashCounts } : {};
+  const value = reading.value ? { value: reading.value.slice(0, 200) } : {};
   const described = { kind: reading.kind, source: reading.source.slice(0, 200), summary: reading.summary.slice(0, 2000) };
-  return { evidenceId, ...described, observedAt, excerpt: reading.excerpt, sourceLinks, ...crashCounts };
+  return { evidenceId, ...described, observedAt, excerpt: reading.excerpt, sourceLinks, ...crashCounts, ...value };
 }
 
 export async function recordReading(writer: EventWriter, request: { incidentId: string; reading: Reading }): Promise<ReadingAnswer> {
