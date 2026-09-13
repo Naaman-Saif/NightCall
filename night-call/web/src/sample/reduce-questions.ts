@@ -10,8 +10,7 @@ export function withQuestion(snapshot: Snapshot, event: IncidentEvent<'question_
 export function withContext(snapshot: Snapshot, event: IncidentEvent<'context_supplied'>): Snapshot {
   const { questionId, text } = event.payload;
   const answer = { text, suppliedAt: event.occurredAt };
-  const isAnsweredNow = (question: Question) => question.id === questionId && !question.answer;
-  const questions = snapshot.questions.map((question) => (isAnsweredNow(question) ? { ...question, answer } : question));
+  const questions = snapshot.questions.map((question) => (question.id === questionId ? { ...question, answer } : question));
   const context = [...snapshot.context, { questionId, text, suppliedAt: event.occurredAt }];
   return { ...snapshot, questions, context };
 }
