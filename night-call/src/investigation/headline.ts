@@ -1,0 +1,65 @@
+import type { CrashCounts, InvestigationState, Snapshot } from './snapshot';
+
+const INVESTIGATION_SENTENCES: Record<InvestigationState, string> = {
+  not_started: 'Investigation has not started.',
+  running: 'Investigation is running.',
+  interrupted: 'Investigation was interrupted before analysis completed.',
+  finished: 'Investigation finished.',
+};
+
+const ESTABLISHED_CAUSE = 'The cause is established by an accepted reproduction.';
+const UNKNOWN_CAUSE = 'The cause is not established.';
+
+function times(count: number): string {
+  return count === 1 ? 'once' : `${count} times`;
+}
+
+function clock(iso: string): string {
+  const moment = Date.parse(iso);
+  return Number.isNaN(moment) ? 'an unknown time' : `${new Date(moment).toISOString().slice(11, 16)} UTC`;
+}
+
+function serviceName(service: string): string {
+  return service.charAt(0).toUpperCase() + service.slice(1);
+}
+
+function latestCrashCounts(snapshot: Snapshot): CrashCounts | null {
+  const counted = Object.values(snapshot.evidence).filter((item) => item.crashCounts !== null);
+  return counted.at(-1)?.crashCounts ?? null;
+}
+
+function crashPhrase(counts: CrashCounts): string {
+  const stopped = counts.oom > 0 ? 'ran out of memory' : 'exited';
+  const stops = counts.oom > 0 ? counts.oom : counts.die;
+  if (counts.start === 0) return `${stopped} ${times(stops)} and has not restarted`;
+  if (stops === counts.start) return `${stopped} and restarted ${times(stops)}`;
+  return `${stopped} ${times(stops)} and restarted ${times(counts.start)}`;
+}
+
+function openingSentence(snapshot: Snapshot): string {
+  const { service, alertName, severity, startedAt } = snapshot.incident;
+  const counts = latestCrashCounts(snapshot);
+  if (counts && counts.oom + counts.die > 0) return `${serviceName(service)} ${crashPhrase(counts)} since ${clock(counts.since)}.`;
+  if (severity === 'manual') return `An investigation of ${service} was started by hand at ${clock(startedAt)}.`;
+  return `Alert ${alertName} fired for ${service} at ${clock(startedAt)}.`;
+}
+
+function causeIsEstablished(snapshot: Snapshot): boolean {
+  const supported = new Set(snapshot.hypotheses.filter((hypothesis) => hypothesis.status === 'supported').map((hypothesis) => hypothesis.id));
+  return snapshot.experiments.some(
+    (experiment) =>
+      experiment.kind === 'reproduction' &&
+      supported.has(experiment.hypothesisId) &&
+      experiment.verdict === 'matches' &&
+      experiment.review?.accepted === true,
+  );
+}
+
+export function headlineOf(snapshot: Snapshot): string {
+  const cause = causeIsEstablished(snapshot) ? ESTABLISHED_CAUSE : UNKNOWN_CAUSE;
+  return `${openingSentence(snapshot)} ${cause} ${INVESTIGATION_SENTENCES[snapshot.investigation]}`;
+}
+
+export function withHeadline(snapshot: Snapshot): Snapshot {
+  return { ...snapshot, headline: headlineOf(snapshot) };
+}

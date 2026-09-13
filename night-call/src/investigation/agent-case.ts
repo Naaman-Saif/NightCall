@@ -17,6 +17,8 @@ export function agentCaseOf(snapshot: Snapshot, nowMs: number) {
   const questions = snapshot.questions.map(({ id, text, blocks, askedAt, answer }) => ({ questionId: id, text, blocks, askedAt, answer }));
   return {
     incident: caseIncident(snapshot, nowMs),
+    headline: snapshot.headline,
+    investigation: snapshot.investigation,
     brief: snapshot.brief,
     roles: snapshot.roles,
     evidence,
