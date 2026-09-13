@@ -10,3 +10,4 @@ Claude outputs/
 .DS_Store
 NightCall Design System.zip
 .claude/
+.playwright-mcp/
