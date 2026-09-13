@@ -1,5 +1,6 @@
 import type { Evidence, Incident, RunReport, RunStep } from '../api/contract';
 import { describeIncidentClosing, describeRunStatus } from '../format/run-status-text';
+import { PossibleCauses } from './possible-causes';
 import { SourceLinks } from './source-links';
 
 type EvidenceById = Record<string, Evidence>;
@@ -17,6 +18,7 @@ export function RunReportSummary({ report, evidence, incident }: SummaryProps) {
       </div>
       <DidList steps={report.did} evidence={evidence} />
       <ReportList title="What it found" emptyText="Nothing established yet." items={report.found} />
+      <PossibleCauses causes={report.causes} status={report.status} evidence={evidence} />
       {report.notDone.length > 0 && <ReportList title="Not done yet" emptyText="" items={report.notDone} isMuted />}
     </section>
   );
