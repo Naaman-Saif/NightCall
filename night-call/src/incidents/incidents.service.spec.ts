@@ -19,12 +19,13 @@ function firing(alertname: string, service: string): AlertPayload {
 }
 
 describe('IncidentsService', () => {
-  it('opens one active incident per service and alert name', async () => {
+  it('opens one active incident per service, whatever the alert name', async () => {
     const writer = freshWriter();
     const service = serviceFor(writer);
-    expect(await service.receive(firing('RecommendationRestarted', 'recommendation'))).toEqual(['inc-001']);
-    expect(await service.receive(firing('RecommendationRestarted', 'recommendation'))).toEqual([]);
-    expect(await service.receive(firing('RecommendationFailing', 'recommendation'))).toEqual(['inc-002']);
+    expect(await service.receive(firing('RecommendationCrashed', 'recommendation'))).toEqual(['inc-001']);
+    expect(await service.receive(firing('RecommendationCrashed', 'recommendation'))).toEqual([]);
+    expect(await service.receive(firing('RecommendationCanaryFailing', 'recommendation'))).toEqual([]);
+    expect(await service.receive(firing('PaymentErrorRateHigh', 'payment'))).toEqual(['inc-002']);
     expect(readSnapshot(writer.stateDir, 'inc-001')?.incident).toMatchObject({ service: 'recommendation', lifecycle: 'active' });
   });
 
