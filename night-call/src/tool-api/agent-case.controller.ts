@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { agentCaseOf } from '../investigation/agent-case';
 import { waitForAnswers } from '../investigation/context-answers';
 import { EventWriter } from '../investigation/event-writer';
-import { validIncidentId } from '../investigation/incident-paths';
+import { recipeSummaryOf } from '../experiments/traffic-plan';
+import { incidentFolder, validIncidentId } from '../investigation/incident-paths';
 import { LiveStream } from '../investigation/live-stream';
 import { requireSnapshot } from '../investigation/require-snapshot';
 import { parseQuery } from '../production/reader-query';
@@ -28,8 +29,10 @@ export class AgentCaseController {
 
   @Get('case')
   caseOf(@Req() request: CaseRequest) {
-    const snapshot = requireSnapshot(this.writer.stateDir, validIncidentId(request.params.id));
-    return agentCaseOf(snapshot, Date.now());
+    const incidentId = validIncidentId(request.params.id);
+    const snapshot = requireSnapshot(this.writer.stateDir, incidentId);
+    const recipe = recipeSummaryOf(incidentFolder(this.writer.stateDir, incidentId));
+    return agentCaseOf(snapshot, { nowMs: Date.now(), recipe });
   }
 
   @Get('context')

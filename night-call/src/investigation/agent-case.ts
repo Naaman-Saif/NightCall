@@ -1,3 +1,4 @@
+import { explorationMinutesLeft, verificationStartMinutesLeft } from '../experiments/exploration-clock';
 import type { Snapshot } from './snapshot';
 
 export function minutesLeftAt(deadlineAt: string, nowMs: number): number {
@@ -9,14 +10,28 @@ function caseIncident(snapshot: Snapshot, nowMs: number) {
   return { id, label, service, alertName, startedAt, deadlineAt, minutesLeft: minutesLeftAt(deadlineAt, nowMs), lifecycle, phase, attention };
 }
 
-export function agentCaseOf(snapshot: Snapshot, nowMs: number) {
+export type RecipeView = { present: boolean; source: string | null; requests: number };
+export type CaseView = { nowMs: number; recipe: RecipeView };
+
+function clockOf(snapshot: Snapshot, view: CaseView) {
+  const reading = { startedAt: snapshot.incident.startedAt, nowMs: view.nowMs };
+  return {
+    minutesLeft: minutesLeftAt(snapshot.incident.deadlineAt, view.nowMs),
+    explorationMinutesLeft: explorationMinutesLeft(reading),
+    verificationStartMinutesLeft: verificationStartMinutesLeft(reading),
+    recipe: view.recipe,
+  };
+}
+
+export function agentCaseOf(snapshot: Snapshot, view: CaseView) {
   const evidence = Object.entries(snapshot.evidence).map(([evidenceId, item]) => {
     return { evidenceId, kind: item.kind, summary: item.summary, observedAt: item.observedAt };
   });
   const hypotheses = snapshot.hypotheses.map(({ id, claim, status, reason }) => ({ hypothesisId: id, claim, status, reason }));
   const questions = snapshot.questions.map(({ id, text, blocks, askedAt, answer }) => ({ questionId: id, text, blocks, askedAt, answer }));
   return {
-    incident: caseIncident(snapshot, nowMs),
+    incident: caseIncident(snapshot, view.nowMs),
+    ...clockOf(snapshot, view),
     headline: snapshot.headline,
     investigation: snapshot.investigation,
     brief: snapshot.brief,

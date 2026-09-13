@@ -34,8 +34,9 @@ function reproduction(accepted: boolean): EventDraft[] {
   return [
     system('hypothesis_proposed', hypothesis),
     system('hypothesis_status_changed', { hypothesisId: 'h1', status: 'supported', reason: 'r' }),
+    system('contract_recorded', { contractId: 'c1', checks: [{ name: 'fault.oom_kills', comparator: 'gte', value: 1, unit: 'count' }] }),
     system('experiment_started', experiment),
-    system('experiment_finished', { experimentId: 'x1', verdict: 'matches', checks: [], seriesRef: null }),
+    system('experiment_finished', { experimentId: 'x1', verdict: 'matches', checks: [{ name: 'fault.oom_kills', passed: true, observed: 1 }], seriesRef: null }),
     system('experiment_reviewed', { experimentId: 'x1', accepted, reasons: [] }),
   ];
 }

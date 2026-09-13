@@ -5,10 +5,13 @@ import { checkResult, name, names, payload, text, texts } from './payload-parts'
 const recipe = z.strictObject({
   flagVariant: name,
   restart: z.boolean(),
-  count: z.number().int().min(50).max(600),
-  pacingMs: z.number().int().min(100).max(2000),
+  count: z.number().int().min(1).max(5000),
+  pacingMs: z.number().int().min(0).max(2000),
   stopOnFailure: z.boolean(),
+  speed: z.number().min(0.5).max(4).optional(),
 });
+
+export const TRAFFIC_SOURCES = ['traces', 'prometheus_rate_fallback', 'fixed_fallback'] as const;
 
 const contractCheck = z.strictObject({
   name,
@@ -38,6 +41,7 @@ export const analysisPayloads = {
     contractId: name,
     purpose: text,
     recipe,
+    trafficSource: z.enum(TRAFFIC_SOURCES).optional(),
   }),
   experiment_progress: payload({
     experimentId: name,

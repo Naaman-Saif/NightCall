@@ -1,6 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { settings } from '../config/settings';
+import { SandboxOwner } from '../experiments/sandbox-owner';
+import { warmInBackground } from '../experiments/warm-in-background';
 import type { IncidentEvent } from '../investigation/event-types';
 import { openInvestigation } from '../investigation/open-investigation';
 import { captureRecipeInBackground } from '../production/recipe-in-background';
@@ -12,7 +14,10 @@ import { alertIsFiring, alertNameOf, factsOf, type AlertPayload } from './alert-
 export class IncidentsService {
   private readonly log = new Logger('Incidents');
 
-  constructor(@Inject(SeriesKeeper) private readonly keeper: SeriesKeeper) {}
+  constructor(
+    @Inject(SeriesKeeper) private readonly keeper: SeriesKeeper,
+    @Inject(SandboxOwner) private readonly owner: SandboxOwner,
+  ) {}
 
   async receive(payload: AlertPayload): Promise<string[]> {
     const firing = payload.alerts.filter(alertIsFiring);
@@ -33,6 +38,7 @@ export class IncidentsService {
     const writer = this.keeper.writer;
     const openedAtMs = Date.parse(String(event.payload.startedAt));
     captureRecipeInBackground(this.log, { writer, incidentId: event.incidentId, openedAtMs });
+    warmInBackground(this.log, { owner: this.owner, opened: event });
     if (settings.invokeAgentsOnAlert) investigateInBackground(this.log, { writer, incidentId: event.incidentId, trigger: 'alert' });
   }
 }

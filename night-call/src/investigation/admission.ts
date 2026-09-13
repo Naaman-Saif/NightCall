@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { matchesCurrentRun, type RunIds } from './current-run';
 import type { EventDraft, EventType, IncidentEvent } from './event-types';
+import { requireExperimentRules } from './experiment-admission';
 import { cleanedHypothesis } from './hypothesis-admission';
 import { reduceEvents } from './reduce-events';
 import { hasRecordedContradiction } from './run-causes';
@@ -47,6 +48,7 @@ export function admit(events: IncidentEvent[], draft: EventDraft): EventDraft {
   if (snapshot?.incident.lifecycle !== 'active') throw new ConflictException('incident is not active');
   requireSingleStop(snapshot, draft);
   requireUncontradictedSupport(snapshot, draft);
+  requireExperimentRules(snapshot, draft);
   requireCurrentRun(snapshot, draft);
   requireCurrentMitigation(snapshot, draft);
   requireVerifiedBeforePublishing(snapshot, draft);

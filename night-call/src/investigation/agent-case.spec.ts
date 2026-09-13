@@ -17,8 +17,10 @@ describe('agent case and context', () => {
     await appendAsRole(writer, { role: 'lead', incidentId, body: toolBody('question_asked', impactQuestion) });
     await supplyContext(writer, { incidentId, body: { questionId: 'q-impact', text: 'Tolerable', idempotencyKey: 'k' } });
     const snapshot = readSnapshot(writer.stateDir, incidentId);
-    const view = agentCaseOf(snapshot!, Date.parse(snapshot!.incident.startedAt) + 5 * 60_000);
+    const recipe = { present: true, source: 'traces', requests: 1040 };
+    const view = agentCaseOf(snapshot!, { nowMs: Date.parse(snapshot!.incident.startedAt) + 5 * 60_000, recipe });
     expect(view.incident.minutesLeft).toBe(25);
+    expect(view).toMatchObject({ minutesLeft: 25, explorationMinutesLeft: 7, verificationStartMinutesLeft: 8, recipe });
     expect(view.questions[0]).toMatchObject({ questionId: 'q-impact', answer: { text: 'Tolerable' } });
     expect(minutesLeftAt('2026-09-13T00:00:00Z', Date.parse('2026-09-13T01:00:00Z'))).toBe(0);
   });

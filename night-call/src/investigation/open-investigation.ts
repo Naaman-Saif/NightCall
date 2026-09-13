@@ -1,9 +1,10 @@
+import { settings } from '../config/settings';
 import type { EventDraft, IncidentEvent } from './event-types';
 import type { EventWriter } from './event-writer';
 import { allSnapshots } from './incident-catalog';
 import { nextLabel } from './label-counter';
 
-const BUDGET_MS = 30 * 60 * 1000;
+const BUDGET_MS = settings.budgetMinutes * 60 * 1000;
 
 export type AlertFacts = {
   alertName: string;

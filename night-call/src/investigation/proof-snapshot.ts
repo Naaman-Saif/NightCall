@@ -10,8 +10,9 @@ export type ExperimentProgress = Omit<Plain<PayloadOf<'experiment_progress'>>, '
 
 export type ExperimentReview = { accepted: boolean; reasons: string[]; reviewedAt: string };
 
-export type Experiment = Omit<Plain<PayloadOf<'experiment_started'>>, 'experimentId'> & {
+export type Experiment = Omit<Plain<PayloadOf<'experiment_started'>>, 'experimentId' | 'trafficSource'> & {
   id: string;
+  trafficSource: NonNullable<PayloadOf<'experiment_started'>['trafficSource']> | null;
   startedAt: string;
   finishedAt: string | null;
   progress: ExperimentProgress | null;

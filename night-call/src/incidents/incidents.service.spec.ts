@@ -7,12 +7,13 @@ import { EventWriter } from '../investigation/event-writer';
 import { ProductionWatch } from '../recorder/production-watch';
 import { FakeSource } from '../recorder/recorder.fixture';
 import { SeriesKeeper } from '../recorder/series-keeper';
+import { idleSandboxOwner } from '../experiments/sandbox-owner.fixture';
 import { IncidentsService } from './incidents.service';
 
 jest.mock('../production/recipe-in-background', () => ({ captureRecipeInBackground: jest.fn() }));
 
 function serviceFor(writer: EventWriter): IncidentsService {
-  return new IncidentsService(new SeriesKeeper(writer, new ProductionWatch(new FakeSource())));
+  return new IncidentsService(new SeriesKeeper(writer, new ProductionWatch(new FakeSource())), idleSandboxOwner);
 }
 
 function firing(alertname: string, service: string): AlertPayload {

@@ -10,6 +10,7 @@ import { ProductionWatch } from '../recorder/production-watch';
 import { FakeSource } from '../recorder/recorder.fixture';
 import { SeriesKeeper } from '../recorder/series-keeper';
 import { invokeAgents } from '../runtime/runtime-invoker';
+import { idleSandboxOwner } from '../experiments/sandbox-owner.fixture';
 import { manualFacts, ManualStartService } from './manual-start.service';
 
 jest.mock('../production/recipe-in-background', () => ({ captureRecipeInBackground: jest.fn() }));
@@ -19,7 +20,7 @@ jest.mock('../runtime/runtime-invoker', () => ({
 }));
 
 function starterFor(writer: EventWriter): ManualStartService {
-  return new ManualStartService(new SeriesKeeper(writer, new ProductionWatch(new FakeSource())));
+  return new ManualStartService(new SeriesKeeper(writer, new ProductionWatch(new FakeSource())), idleSandboxOwner);
 }
 
 describe('manual investigation start', () => {
