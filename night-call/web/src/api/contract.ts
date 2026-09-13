@@ -60,12 +60,12 @@ export type Publication = {
   number: number | null; url: string | null; diff: string | null; failureReason: string | null;
 };
 
-export type InvestigationProgress = 'not_started' | 'running' | 'interrupted' | 'finished';
+export type InvestigationProgress = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted' | 'finished';
 
 export type RunStatus = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted';
-export type RunStep = { text: string; value: string | null; evidenceId: string | null };
+export type RunStep = { text: string; value: string | null; evidenceId: string | null; questionId?: string | null };
 export type RunReport = {
-  status: RunStatus; statusAt: string | null; nowDoing: string | null;
+  status: RunStatus; statusAt: string | null; note?: string | null; nowDoing: string | null;
   did: RunStep[]; found: string[]; notDone: string[];
 };
 

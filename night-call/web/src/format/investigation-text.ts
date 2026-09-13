@@ -3,6 +3,8 @@ import type { InvestigationProgress, Snapshot } from '../api/contract';
 const PROGRESS_TEXT: Record<Exclude<InvestigationProgress, 'finished'>, string> = {
   not_started: 'Investigation not started.',
   running: 'Investigation running: gathering evidence.',
+  stopped: 'Investigation stopped.',
+  stalled: 'Investigation stalled: no recent activity.',
   interrupted: 'Investigation interrupted before analysis completed.',
 };
 

@@ -53,6 +53,7 @@
 .run-report { display: grid; gap: var(--sp-4); max-width: 80ch; }
 .now-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: 0; font: var(--type-subheading); color: var(--text-title); }
 .now-dot { display: inline-flex; }
+.run-note { margin-top: var(--sp-1); }
 .report-list { margin: var(--sp-2) 0 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-1); font: var(--type-body-sm); color: var(--text-body); }
 .report-list[data-tone='muted'] { color: var(--text-muted); }
 .details { display: grid; gap: var(--sp-4); justify-items: start; }
