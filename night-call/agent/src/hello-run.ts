@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { buildModel, readRoleSetting } from './model.js';
 import { logProgress, postEvent } from './progress.js';
-import { getTool } from './tool-client.js';
+import { toolClientFor } from './tool-client.js';
 
 const REPLY_LIMIT = 400;
 
@@ -11,7 +11,7 @@ const pingBox = tool({
   name: 'ping_box',
   description: 'Asks the Night Call box whether it is reachable. Returns the box reply.',
   inputSchema: z.object({}),
-  callback: async () => JSON.stringify(await getTool('/tool/ping')),
+  callback: async () => JSON.stringify(await toolClientFor('lead').get('/tool/ping')),
 });
 
 async function askLead() {

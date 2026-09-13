@@ -1,11 +1,12 @@
 import { BedrockAgentCoreApp } from 'bedrock-agentcore/runtime';
 
 import { runHello } from './hello-run.js';
+import { runInvestigation } from './investigate-run.js';
 import { runLong } from './long-run.js';
 import { logProgress } from './progress.js';
 import { type RunRequest, runRequestShape } from './run-request.js';
 
-const runs = { hello: runHello, long: runLong };
+const runs = { hello: runHello, long: runLong, investigate: runInvestigation };
 
 const app = new BedrockAgentCoreApp({
   invocationHandler: { requestSchema: runRequestShape, process: (request) => startRun(request) },
