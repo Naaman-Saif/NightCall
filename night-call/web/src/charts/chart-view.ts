@@ -15,8 +15,18 @@ export type ChartView = {
 
 type ChartInput = { series: Series; markers: IncidentMarker[]; width: number };
 
-export function chartViewOf({ series, markers, width }: ChartInput): ChartView {
+const MARKER_REACH_MS = 60 * 60_000;
+
+function markersNearSamples(markers: IncidentMarker[], sampleTimes: number[]): IncidentMarker[] {
+  if (sampleTimes.length === 0) return markers;
+  const earliest = Math.min(...sampleTimes) - MARKER_REACH_MS;
+  const latest = Math.max(...sampleTimes) + MARKER_REACH_MS;
+  return markers.filter((marker) => Date.parse(marker.at) >= earliest && Date.parse(marker.at) <= latest);
+}
+
+export function chartViewOf({ series, markers: allMarkers, width }: ChartInput): ChartView {
   const sampleTimes = series.samples.map((sample) => Date.parse(sample.at));
+  const markers = markersNearSamples(allMarkers, sampleTimes);
   const scale = timeScaleOf([...sampleTimes, ...markers.map((marker) => Date.parse(marker.at))], width);
   if (!scale) return { scale, panels: [], lines: [], groups: [], sampleTimes, alarmX: null };
   const alarm = markers.find((marker) => marker.kind === 'alarm');
