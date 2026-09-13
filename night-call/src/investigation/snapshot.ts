@@ -51,8 +51,9 @@ export type EvidenceItem = Omit<EvidencePayload, 'evidenceId' | 'illustrative' |
 };
 export type InvestigationState = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted' | 'finished';
 export type InvestigationStop = Omit<PayloadOf<'investigation_stopped'>, 'illustrative'> & { stoppedAt: string };
-export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' | 'illustrative'> & {
+export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' | 'illustrative' | 'contradictions'> & {
   id: string;
+  contradictions: NonNullable<PayloadOf<'hypothesis_proposed'>['contradictions']>;
   status: PayloadOf<'hypothesis_status_changed'>['status'] | 'proposed';
   reason: string | null;
 };

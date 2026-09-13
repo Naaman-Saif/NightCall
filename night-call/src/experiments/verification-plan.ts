@@ -13,6 +13,7 @@ export type VerificationPlan = {
   runIds: RunIds;
   contract: ContractCheck[];
   speed: number;
+  trafficSource: string;
   faultRound(cycle: number): RoundRequest;
   recoveryRound(cycle: number): RoundRequest;
 };
@@ -40,5 +41,5 @@ export function verificationPlanOf(snapshot: Snapshot, source: PlanSource): Veri
   const recoveryChoice = { flagVariant: mitigation.variant, restart: mitigation.restart ?? true, stopOnFailure: false, speed, traffic: recoveryTraffic };
   const faultRound = (cycle: number) => roundRequestOf({ name: `${prefix(cycle)}-fault`, ...faultChoice });
   const recoveryRound = (cycle: number) => roundRequestOf({ name: `${prefix(cycle)}-mitigated`, ...recoveryChoice });
-  return { incidentId: snapshot.incident.id, runIds: source.runIds, contract, speed, faultRound, recoveryRound };
+  return { incidentId: snapshot.incident.id, runIds: source.runIds, contract, speed, trafficSource: faultTraffic.source, faultRound, recoveryRound };
 }

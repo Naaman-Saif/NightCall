@@ -5,6 +5,7 @@ export interface WorkloadSample {
   at: string;
   index: number;
   traceId: string;
+  productId?: string;
   response: RequestResult;
   observation: Observation;
   requestMs: number;

@@ -4,7 +4,7 @@ import { reducerFrom } from './reducer';
 import type { Snapshot } from './snapshot';
 
 function proposeHypothesis(snapshot: Snapshot, event: IncidentEvent): Snapshot {
-  const { hypothesisId, claim, supportingEvidenceIds, contradictingEvidenceIds, predicted } = payloadOf(
+  const { hypothesisId, claim, supportingEvidenceIds, contradictingEvidenceIds, predicted, contradictions } = payloadOf(
     event,
     'hypothesis_proposed',
   );
@@ -15,6 +15,7 @@ function proposeHypothesis(snapshot: Snapshot, event: IncidentEvent): Snapshot {
     status: 'proposed' as const,
     supportingEvidenceIds,
     contradictingEvidenceIds,
+    contradictions: contradictions ?? [],
     predicted,
     reason: null,
   };

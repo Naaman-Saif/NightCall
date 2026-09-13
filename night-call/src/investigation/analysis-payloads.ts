@@ -27,6 +27,7 @@ export const analysisPayloads = {
     supportingEvidenceIds: names,
     contradictingEvidenceIds: names,
     predicted: text,
+    contradictions: z.array(z.strictObject({ evidenceId: name, contradicts: z.string().min(1).max(160) })).max(20).optional(),
   }),
   hypothesis_status_changed: payload({
     hypothesisId: name,

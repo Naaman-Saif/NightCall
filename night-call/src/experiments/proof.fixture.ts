@@ -64,6 +64,6 @@ export function fakeVerificationOwner(failingSuffix: string | null): SandboxOwne
     return { runFolder, name: body.round.name, summary, oomEvents, workload: {} };
   };
   const worker = { listen: () => undefined, request: (body: WorkerCommandBody) => Promise.resolve(answer(body)) } as unknown as WorkerProcess;
-  const owner = { workerFor: async () => worker, freshStack: async () => runFolder, stackStartMinutes: () => 1, release: async () => undefined };
+  const owner = { workerFor: async () => worker, freshStack: async () => runFolder, stopStack: async () => undefined, stackStartMinutes: () => 1, release: async () => undefined };
   return owner as unknown as SandboxOwner;
 }
