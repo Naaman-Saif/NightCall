@@ -8,10 +8,27 @@ export type CheckedCause = Cause & { hypothesisId: string };
 export type DroppedCause = { claim: string; problem: string };
 
 export const MAX_CAUSES = 3;
+export const CLAIM_LIMIT = 160;
+export const CONFIRM_LIMIT = 200;
 const NUMBER = /\d+(?:\.\d+)?/g;
 
 function citedIds(cause: Cause): string[] {
   return [...cause.supportingEvidenceIds, ...cause.contradictingEvidenceIds];
+}
+
+function distinct(ids: string[]): string[] {
+  return [...new Set(ids)];
+}
+
+function tidied(cause: Cause): Cause {
+  return { ...cause, supportingEvidenceIds: distinct(cause.supportingEvidenceIds), contradictingEvidenceIds: distinct(cause.contradictingEvidenceIds) };
+}
+
+function shapeProblem(cause: Cause): string | null {
+  if (cause.claim.length > CLAIM_LIMIT) return `claim is longer than ${CLAIM_LIMIT} characters`;
+  if (cause.confirmWith.length > CONFIRM_LIMIT) return `confirm step is longer than ${CONFIRM_LIMIT} characters`;
+  const both = cause.supportingEvidenceIds.filter((id) => cause.contradictingEvidenceIds.includes(id));
+  return both.length > 0 ? `cites the same evidence as supporting and contradicting: ${distinct(both).join(', ')}` : null;
 }
 
 function unsupportedNumbers(cause: Cause, ledger: EvidenceLedger): string[] {
@@ -24,6 +41,8 @@ export function causeProblem(cause: Cause, ledger: EvidenceLedger): string | nul
   const unknown = unknownEvidenceIds(ledger, citedIds(cause));
   if (unknown.length > 0) return `cites evidence that does not exist: ${unknown.join(', ')}`;
   if (cause.supportingEvidenceIds.length === 0) return 'cites no supporting evidence';
+  const shape = shapeProblem(cause);
+  if (shape) return shape;
   const numbers = unsupportedNumbers(cause, ledger);
   if (numbers.length > 0) return `quotes numbers that no cited reading contains: ${numbers.join(', ')}`;
   if (claimsFailingRequests(cause.claim) && !failuresMeasured(ledger.impact)) return 'claims failing requests but the failure-rate reading shows none';
@@ -33,7 +52,7 @@ export function causeProblem(cause: Cause, ledger: EvidenceLedger): string | nul
 export function checkCauses(causes: Cause[], ledger: EvidenceLedger): { accepted: CheckedCause[]; dropped: DroppedCause[] } {
   const accepted: CheckedCause[] = [];
   const dropped: DroppedCause[] = [];
-  for (const cause of causes.slice(0, MAX_CAUSES)) {
+  for (const cause of causes.slice(0, MAX_CAUSES).map(tidied)) {
     const problem = causeProblem(cause, ledger);
     if (problem) dropped.push({ claim: cause.claim, problem });
     else accepted.push({ ...cause, hypothesisId: `h-${accepted.length + 1}` });

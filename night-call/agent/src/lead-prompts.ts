@@ -21,10 +21,10 @@ export function causesTask(facts: IncidentFacts, readings: string): string {
     `The ${facts.service} service has an incident ("${facts.alertName}"). These production readings were recorded, each with its evidenceId:`,
     readings,
     'Propose one to three possible causes these readings point to. For each give:',
-    'claim: one or two plain sentences a developer can act on;',
+    'claim: one plain sentence a developer can act on, at most 160 characters;',
     'supportingEvidenceIds: the readings that point to it;',
-    'contradictingEvidenceIds: the readings that point against it, empty if none;',
-    'confirmWith: the check or test that would confirm it.',
+    'contradictingEvidenceIds: the readings that point against it, empty if none, never a reading already listed as supporting;',
+    'confirmWith: the check or test that would confirm it, at most 200 characters.',
     'Look at whether memory climbs before each out-of-memory restart, and at recent changes to the feature flag file in the deploy history.',
   ].join('\n');
 }

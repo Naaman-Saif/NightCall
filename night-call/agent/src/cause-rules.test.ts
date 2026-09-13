@@ -45,6 +45,15 @@ test('failing requests against a 0% reading, or a claim of proof, are dropped', 
   assert.match(causeProblem(cause({ claim: 'Memory growth is proven to cause the restarts.' }), ledger) ?? '', /proven/);
 });
 
+test('causes the server would refuse are dropped, and repeated ids are merged', () => {
+  const ledger = ledgerWithReadings();
+  assert.match(causeProblem(cause({ claim: `Memory grows ${'a'.repeat(160)}` }), ledger) ?? '', /claim is longer than 160 characters/);
+  assert.match(causeProblem(cause({ confirmWith: 'b'.repeat(201) }), ledger) ?? '', /confirm step is longer than 200 characters/);
+  assert.match(causeProblem(cause({ contradictingEvidenceIds: ['ev-memory'] }), ledger) ?? '', /supporting and contradicting: ev-memory/);
+  const { accepted } = checkCauses([cause({ supportingEvidenceIds: ['ev-memory', 'ev-memory', 'ev-oom-events'] })], ledger);
+  assert.deepEqual(accepted[0].supportingEvidenceIds, ['ev-memory', 'ev-oom-events']);
+});
+
 test('checkCauses numbers the valid causes and says why the others were dropped', () => {
   const { accepted, dropped } = checkCauses([cause({ claim: 'Memory reaches 900 MiB.' }), cause({}), cause({ claim: 'Logs show an OutOfMemoryError.', supportingEvidenceIds: ['ev-logs'] })], ledgerWithReadings());
   assert.deepEqual(accepted.map((item) => item.hypothesisId), ['h-1', 'h-2']);
