@@ -39,7 +39,7 @@ function LimitRule({ y, right, label }: RuleProps) {
   return (
     <g data-limit>
       <line x1={CHART_LEFT} x2={right} y1={y} y2={y} stroke="var(--critical-400)" strokeWidth={1} strokeDasharray="4 3" />
-      <text className="chart-text" x={right} y={y - 6} textAnchor="end">{label}</text>
+      <text className="chart-text" x={CHART_LEFT + 8} y={y - 6}>{label}</text>
     </g>
   );
 }

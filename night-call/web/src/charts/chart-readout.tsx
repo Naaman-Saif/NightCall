@@ -1,12 +1,14 @@
 import type { IncidentMarker } from '../api/markers';
 import type { Series, SeriesSample } from '../api/series';
-import { markerNote } from '../format/marker-text';
+import { hasSandboxOnlyMarker } from '../format/marker-text';
 import { formatClock } from '../format/time';
-import { AXIS_TOP, FLAG_ROWS, FLAG_ROW_HEIGHT, READOUT_WIDTH, xAt, type TimeScale } from './chart-geometry';
-import type { PanelView } from './chart-panels';
+import type { FlagGroup } from './chart-flags';
+import { FLAG_ROWS, FLAG_ROW_HEIGHT, READOUT_WIDTH, xAt, type TimeScale } from './chart-geometry';
 import type { ChartFocus } from './use-chart-focus';
 
-type ReadoutProps = { focus: ChartFocus; series: Series; markers: IncidentMarker[]; scale: TimeScale };
+type ReadoutProps = { focus: ChartFocus; series: Series; groups: FlagGroup[]; scale: TimeScale };
+
+const NOTHING_DEPLOYED = 'Nothing was deployed, so the live line is unchanged.';
 
 function formatMemory(bytes: number | null): string {
   return bytes === null ? 'no reading' : `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
@@ -16,14 +18,26 @@ function formatCpu(percent: number | null): string {
   return percent === null ? 'no reading' : `${percent.toFixed(1)} %`;
 }
 
-export function ChartReadout({ focus, series, markers, scale }: ReadoutProps) {
-  const at = focus?.kind === 'sample' ? series.samples[focus.index]?.at : focus ? markers[focus.index]?.at : undefined;
-  if (!focus || !at) return null;
-  const left = Math.min(Math.max(0, xAt(scale, Date.parse(at)) + 12), Math.max(0, scale.width - READOUT_WIDTH));
+function anchorX({ focus, series, groups, scale }: ReadoutProps): number | null {
+  if (focus?.kind === 'sample') {
+    const sample = series.samples[focus.index];
+    return sample ? xAt(scale, Date.parse(sample.at)) : null;
+  }
+  return focus ? (groups[focus.index]?.flagX ?? null) : null;
+}
+
+export function ChartReadout(props: ReadoutProps) {
+  const x = anchorX(props);
+  if (!props.focus || x === null) return null;
+  const left = Math.min(Math.max(0, x + 12), Math.max(0, props.scale.width - READOUT_WIDTH));
   const top = FLAG_ROWS * FLAG_ROW_HEIGHT + 8;
   return (
-    <div className="chart-readout" role="status" data-focus={focus.kind} style={{ left, top }}>
-      {focus.kind === 'sample' ? <SampleReadout sample={series.samples[focus.index]} /> : <MarkerReadout marker={markers[focus.index]} />}
+    <div className="chart-readout" role="status" data-focus={props.focus.kind} style={{ left, top }}>
+      {props.focus.kind === 'sample' ? (
+        <SampleReadout sample={props.series.samples[props.focus.index]} />
+      ) : (
+        <GroupReadout markers={props.groups[props.focus.index].markers} />
+      )}
     </div>
   );
 }
@@ -48,30 +62,16 @@ function ReadoutRow({ value, label, series = 'memory' }: { value: string; label:
   );
 }
 
-function MarkerReadout({ marker }: { marker: IncidentMarker }) {
-  const note = markerNote(marker.kind);
+function GroupReadout({ markers }: { markers: IncidentMarker[] }) {
   return (
     <>
-      <div className="readout-value">{marker.label}</div>
-      <div className="readout-time">{formatClock(marker.at)}</div>
-      {note && <div className="readout-note">{note}</div>}
+      {markers.map((marker) => (
+        <div key={`${marker.kind}-${marker.at}`} className="readout-marker">
+          <div className="readout-value">{marker.label}</div>
+          <div className="readout-time">{formatClock(marker.at)}</div>
+        </div>
+      ))}
+      {hasSandboxOnlyMarker(markers) && <div className="readout-note">{NOTHING_DEPLOYED}</div>}
     </>
-  );
-}
-
-export function Crosshair({ focus, panels }: { focus: ChartFocus; panels: PanelView[] }) {
-  if (focus?.kind !== 'sample') return null;
-  const x = panels[0]?.points[focus.index]?.x;
-  if (x === undefined) return null;
-  return (
-    <g data-crosshair>
-      <line x1={x} x2={x} y1={0} y2={AXIS_TOP} stroke="var(--text-muted)" strokeWidth={1} />
-      {panels.map((panel) => {
-        const y = panel.points[focus.index]?.y;
-        return y === null || y === undefined ? null : (
-          <circle key={panel.key} cx={x} cy={y} r={4} fill={panel.color} stroke="var(--surface-card)" strokeWidth={2} />
-        );
-      })}
-    </g>
   );
 }

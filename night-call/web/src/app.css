@@ -91,8 +91,6 @@
   background: var(--surface-raised); border: 1px solid var(--line); border-left: 2px solid; border-radius: var(--radius-xs);
   font: var(--type-meta-sm); color: var(--text-body); white-space: nowrap; cursor: pointer;
 }
-.marker-flag[data-edge='right'] { transform: translateX(-100%); border-left-width: 1px; border-right: 2px solid; }
-.marker-flag[data-edge='right'] { border-left-color: var(--line); }
 .marker-flag:hover, .marker-flag:focus-visible { background: var(--night-750); color: var(--text-title); }
 .chart-plot { position: relative; touch-action: pan-y; border-radius: var(--radius-xs); }
 .chart-svg { display: block; overflow: visible; }
@@ -142,3 +140,4 @@
   .page { padding: var(--sp-4); }
   .top-bar { padding-inline: var(--sp-4); }
 }
+.readout-marker { display: grid; gap: 2px; }

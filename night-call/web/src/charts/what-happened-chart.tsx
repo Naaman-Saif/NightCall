@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import type { IncidentMarker } from '../api/markers';
 import type { Series } from '../api/series';
 import { PLOT_HEIGHT, type TimeScale } from './chart-geometry';
-import { Crosshair, ChartReadout } from './chart-readout';
+import { ChartReadout } from './chart-readout';
+import { Crosshair } from './crosshair';
 import { chartViewOf, type ChartView } from './chart-view';
 import { MarkerFlags, MarkerLines } from './marker-layer';
 import { MetricPlot } from './metric-plot';
@@ -26,13 +27,13 @@ export function WhatHappenedChart({ series, markers }: ChartSource) {
   );
 }
 
-function ChartBody({ series, markers, view, scale, focus }: ChartBodyProps) {
+function ChartBody({ series, view, scale, focus }: ChartBodyProps) {
   return (
     <>
-      <MarkerFlags placements={view.placements} width={scale.width} onFocusMarker={focus.focusMarker} />
+      <MarkerFlags groups={view.groups} onFocusMarker={focus.focusMarker} />
       <div className="chart-plot" tabIndex={0} role="group" aria-label={PLOT_LABEL} {...focus.plotHandlers}>
         <svg width={scale.width} height={PLOT_HEIGHT} className="chart-svg" aria-hidden>
-          <MarkerLines placements={view.placements} alarmX={view.alarmX} />
+          <MarkerLines lines={view.lines} alarmX={view.alarmX} />
           {view.panels.map((panel) => (
             <MetricPlot key={panel.key} panel={panel} width={scale.width} />
           ))}
@@ -40,7 +41,7 @@ function ChartBody({ series, markers, view, scale, focus }: ChartBodyProps) {
           <Crosshair focus={focus.focus} panels={view.panels} />
         </svg>
       </div>
-      <ChartReadout focus={focus.focus} series={series} markers={markers} scale={scale} />
+      <ChartReadout focus={focus.focus} series={series} groups={view.groups} scale={scale} />
     </>
   );
 }

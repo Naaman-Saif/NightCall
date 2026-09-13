@@ -8,7 +8,7 @@ export const AXIS_TOP = 276;
 export const PLOT_HEIGHT = 300;
 export const FLAG_ROW_HEIGHT = 28;
 export const FLAG_ROWS = 3;
-export const FLAG_SPACING = 72;
+export const FLAG_SPACING = 84;
 export const READOUT_WIDTH = 240;
 
 const SMALLEST_TIME_SPAN_MS = 60_000;
