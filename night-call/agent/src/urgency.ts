@@ -1,3 +1,4 @@
+import { evidenceIdsOf, impactQuestionText, requireMeasured, type ImpactReadings } from './impact-facts.js';
 import type { Answer } from './incident-api.js';
 import type { ProgressEvent } from './progress.js';
 
@@ -10,12 +11,8 @@ export type Classification = { urgency: Urgency; reason: string };
 export type UrgencyDecision = Classification & { impactConfirmed: boolean };
 export type Classify = (answer: string) => Promise<Classification>;
 
-export function failuresPer100(errorShare: number | null): number {
-  return Math.max(1, Math.round((errorShare ?? 0) * 100));
-}
-
-export function impactQuestionEvent(failures: number): ProgressEvent {
-  const text = `Recommendations are failing on about ${failures} in 100 requests. Is that tolerable while I test a fix, or should I rush the safest fix first?`;
+export function impactQuestionEvent(readings: ImpactReadings): ProgressEvent {
+  const text = requireMeasured(impactQuestionText(readings), readings);
   const payload = {
     questionId: IMPACT_QUESTION_ID,
     text,
@@ -23,7 +20,7 @@ export function impactQuestionEvent(failures: number): ProgressEvent {
     meanwhile: 'I keep gathering evidence.',
     blocks: 'none',
   };
-  return { type: 'question_asked', summary: text, refs: [IMPACT_QUESTION_ID], payload };
+  return { type: 'question_asked', summary: text, refs: [IMPACT_QUESTION_ID, ...evidenceIdsOf(readings)], payload };
 }
 
 export async function decideUrgency(answer: Answer | null, classify: Classify): Promise<UrgencyDecision> {
