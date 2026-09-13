@@ -15,6 +15,13 @@ function requireShortText(draft: EventDraft): void {
   throw new BadRequestException(`predicted must be at most ${CONFIRM_BY_LIMIT} characters`);
 }
 
+function requireCitedContradictions(contradictions: unknown, contradictingEvidenceIds: string[]): void {
+  const listed = Array.isArray(contradictions) ? (contradictions as { evidenceId: string }[]) : [];
+  const uncited = listed.map((item) => item.evidenceId).filter((evidenceId) => !contradictingEvidenceIds.includes(evidenceId));
+  if (uncited.length === 0) return;
+  throw new BadRequestException(`a contradiction must name evidence cited against the cause: ${[...new Set(uncited)].join(', ')}`);
+}
+
 export function cleanedHypothesis(draft: EventDraft): EventDraft {
   if (draft.type !== 'hypothesis_proposed') return draft;
   requireShortText(draft);
@@ -22,5 +29,6 @@ export function cleanedHypothesis(draft: EventDraft): EventDraft {
   const contradictingEvidenceIds = distinct(draft.payload.contradictingEvidenceIds);
   const both = supportingEvidenceIds.filter((evidenceId) => contradictingEvidenceIds.includes(evidenceId));
   if (both.length > 0) throw new BadRequestException(`evidence cannot both support and contradict a cause: ${both.join(', ')}`);
+  requireCitedContradictions(draft.payload.contradictions, contradictingEvidenceIds);
   return { ...draft, payload: { ...draft.payload, supportingEvidenceIds, contradictingEvidenceIds } };
 }

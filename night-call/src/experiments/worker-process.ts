@@ -29,6 +29,7 @@ export class WorkerProcess {
   private readonly pending = new Map<number, Pending>();
   private listener: ProgressListener = () => undefined;
   private sentCommands = 0;
+  private exitCode: number | null | undefined = undefined;
   readonly exited: Promise<number | null>;
 
   constructor(private readonly child: WorkerChild) {
@@ -37,6 +38,7 @@ export class WorkerProcess {
   }
 
   request<Value>(body: WorkerCommandBody): Promise<Value> {
+    if (this.exitCode !== undefined) return Promise.reject(new Error(`sandbox worker exited with code ${this.exitCode}`));
     this.sentCommands += 1;
     const id = this.sentCommands;
     const answered = new Promise<Value>((resolve, reject) => this.pending.set(id, { resolve: resolve as Pending['resolve'], reject }));
@@ -65,6 +67,7 @@ export class WorkerProcess {
   }
 
   private failAll(code: number | null): number | null {
+    this.exitCode = code;
     for (const pending of this.pending.values()) pending.reject(new Error(`sandbox worker exited with code ${code}`));
     this.pending.clear();
     return code;

@@ -53,14 +53,17 @@ export class SandboxOwner implements OnApplicationShutdown {
     return warm.starting;
   }
 
-  async freshStack(incidentId: string): Promise<string> {
+  async stopStack(incidentId: string): Promise<void> {
     const warm = this.warm;
-    if (warm?.incidentId !== incidentId) throw new Error(`no sandbox worker for ${incidentId}`);
-    if (warm.starting) {
-      await warm.starting.catch(() => undefined);
-      await warm.worker.request({ command: 'stop' });
-      warm.starting = null;
-    }
+    if (warm?.incidentId !== incidentId || !warm.starting) return;
+    await warm.starting.catch(() => undefined);
+    await warm.worker.request({ command: 'stop' });
+    warm.starting = null;
+  }
+
+  async freshStack(incidentId: string): Promise<string> {
+    if (this.warm?.incidentId !== incidentId) throw new Error(`no sandbox worker for ${incidentId}`);
+    await this.stopStack(incidentId);
     return this.warmUp(incidentId);
   }
 

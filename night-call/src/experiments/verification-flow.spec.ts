@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, UnprocessableEntityException } from '@nestjs/common';
 
 import { readSnapshot } from '../investigation/incident-catalog';
+import { incidentFolder } from '../investigation/incident-paths';
+import { liveCyclePath, readLive } from './live-files';
 import { closeExpiredIncident, expiredIncidents } from './deadline-watch';
 import { JobRegistry } from './job-registry';
 import { proposeMitigation } from './mitigation-proposal';
@@ -48,6 +50,13 @@ describe('verification route', () => {
     expect(job).toMatchObject({ kind: 'verification', state: 'finished', result: { verdict: 'matches', verificationRunId: started.verificationRunId } });
     const cycles = readSnapshot(writer.stateDir, incidentId)?.cycles ?? [];
     expect(cycles.map((cycle) => [cycle.state, cycle.speed])).toEqual([['passed', 2], ['passed', 2], ['passed', 2]]);
+    const live = readLive(liveCyclePath(incidentFolder(writer.stateDir, incidentId), 2));
+    expect(live.stages.map((mark) => [mark.stage, mark.detail])).toEqual([
+      ['starting_copy', null], ['copy_ready', null], ['restarting', 'fault'], ['replaying', 'fault'], ['fault_seen', 'fault'],
+      ['restarting', 'fix'], ['replaying', 'fix'], ['stopping_copy', null], ['cleaned', null],
+    ]);
+    expect(live).toMatchObject({ stage: 'cleaned', speed: 2, trafficSource: 'fixed_fallback', requestsSent: 200, requestsPlanned: 200, errors: 0 });
+    expect(live.lastRequests).toHaveLength(12);
     await reviewVerification(writer, { incidentId, runId: started.verificationRunId, body: approve });
     expect(readSnapshot(writer.stateDir, incidentId)?.mitigation?.status).toBe('verified');
   });

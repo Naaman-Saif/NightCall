@@ -1,4 +1,5 @@
 import { ROLES, type IncidentEvent } from './event-types';
+import { JOB_ACTIVITY_TYPES } from './job-running';
 import { payloadOf } from './payload-schemas';
 import { plainPayload } from './plain-payload';
 import { reducerFrom } from './reducer';
@@ -38,7 +39,7 @@ const handleEvent = reducerFrom({
 });
 
 function agentActed(event: IncidentEvent): boolean {
-  return AGENT_ACTORS.has(event.actor) || AGENT_DRIVEN_TYPES.has(event.type);
+  return AGENT_ACTORS.has(event.actor) || AGENT_DRIVEN_TYPES.has(event.type) || JOB_ACTIVITY_TYPES.has(event.type);
 }
 
 function startedByAgentWork(snapshot: Snapshot, event: IncidentEvent): Snapshot {

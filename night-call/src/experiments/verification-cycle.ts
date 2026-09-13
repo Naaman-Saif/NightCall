@@ -2,19 +2,29 @@ import { identitiesMatch, type ProductionIdentity } from '../sandbox-copy/produc
 import type { CheckOutcome } from './evaluate-checks';
 import type { ExperimentDeps } from './experiment-job';
 import type { Job } from './job-registry';
+import type { LiveTracker } from './live-tracker';
 import { evaluateStage } from './stage-evaluation';
 import type { VerificationPlan } from './verification-plan';
-import type { RoundOutcome } from './worker-messages';
+import type { RoundOutcome, RoundRequest } from './worker-messages';
 import type { WorkerProcess } from './worker-process';
 
-export type CycleRun = { plan: VerificationPlan; job: Job; cycle: number };
+export type CycleRun = { plan: VerificationPlan; job: Job; cycle: number; live: LiveTracker };
 export type CycleOutcome = { passed: boolean; checks: CheckOutcome[]; productionChanged: boolean; failureReason: string | null };
 type PlayedCycle = { before: ProductionIdentity; after: ProductionIdentity; fault: RoundOutcome; recovery: RoundOutcome };
+type PhaseRound = { round: RoundRequest; phase: 'fault' | 'fix'; runFolder: string };
 
-async function playCycle(worker: WorkerProcess, run: CycleRun): Promise<PlayedCycle> {
+async function playPhase(worker: WorkerProcess, run: CycleRun & PhaseRound): Promise<RoundOutcome> {
+  run.live.mark('restarting', run.phase);
+  run.live.follow({ runFolder: run.runFolder, name: run.round.name, planned: run.round.count, phase: run.phase });
+  const outcome = await worker.request<RoundOutcome>({ command: 'round', round: run.round });
+  run.live.roundDone(outcome);
+  return outcome;
+}
+
+async function playCycle(worker: WorkerProcess, run: CycleRun & { runFolder: string }): Promise<PlayedCycle> {
   const before = await worker.request<ProductionIdentity>({ command: 'identity' });
-  const fault = await worker.request<RoundOutcome>({ command: 'round', round: run.plan.faultRound(run.cycle) });
-  const recovery = await worker.request<RoundOutcome>({ command: 'round', round: run.plan.recoveryRound(run.cycle) });
+  const fault = await playPhase(worker, { ...run, round: run.plan.faultRound(run.cycle), phase: 'fault' });
+  const recovery = await playPhase(worker, { ...run, round: run.plan.recoveryRound(run.cycle), phase: 'fix' });
   const after = await worker.request<ProductionIdentity>({ command: 'identity' });
   return { before, after, fault, recovery };
 }
@@ -35,6 +45,8 @@ export async function runCycle(deps: ExperimentDeps, run: CycleRun): Promise<Cyc
     run.job.progress = { requests: progress.requests, errors: progress.errors, peakMemoryBytes: progress.peakMemoryBytes, round: run.cycle };
   });
   run.job.progress = { requests: 0, errors: 0, peakMemoryBytes: 0, round: run.cycle };
-  await deps.owner.freshStack(run.plan.incidentId);
-  return outcomeOf(run.plan, await playCycle(worker, run));
+  run.live.mark('starting_copy');
+  const runFolder = await deps.owner.freshStack(run.plan.incidentId);
+  run.live.mark('copy_ready');
+  return outcomeOf(run.plan, await playCycle(worker, { ...run, runFolder }));
 }

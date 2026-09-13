@@ -9,6 +9,7 @@ import { freshWriter, openIncident } from '../investigation/writer.fixture';
 import type { EventWriter } from '../investigation/event-writer';
 import { appendAsService } from '../investigation/service-append';
 import { readEvidence } from './experiment-evidence';
+import { liveExperimentPath, readLive } from './live-files';
 import { reviewExperiment } from './experiment-review';
 import { startExperiment } from './experiment-start';
 import { JobRegistry } from './job-registry';
@@ -68,6 +69,9 @@ describe('experiment flow', () => {
     expect(job).toMatchObject({ state: 'finished', result: { verdict: 'matches', failureReason: null } });
     const experiment = readSnapshot(writer.stateDir, incidentId)?.experiments[0];
     expect(experiment).toMatchObject({ trafficSource: 'fixed_fallback', verdict: 'matches', seriesRef: 'series/experiment-exp-1.jsonl' });
+    const live = readLive(liveExperimentPath(incidentFolder(writer.stateDir, incidentId), 'exp-1'));
+    expect(live.stages.map((mark) => mark.stage)).toEqual(['starting_copy', 'copy_ready', 'restarting', 'replaying', 'fault_seen']);
+    expect(live).toMatchObject({ requestsSent: 2, errors: 1, speed: 1, trafficSource: 'fixed_fallback', oomKills: [{ at: '2026-09-14T00:01:00.000Z', atRequest: 2 }] });
     const evidence = readEvidence(incidentFolder(writer.stateDir, incidentId), 'exp-1');
     expect(evidence).toMatchObject({ requestsSent: 2, firstFailureAtRequest: 2, oomEvents: [{ at: '2026-09-14T00:01:00.000Z' }] });
     const review = await reviewExperiment(writer, { incidentId, experimentId: 'exp-1', body: { accepted: true, reasons: ['1 OOM kill'] } });

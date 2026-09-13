@@ -5,5 +5,6 @@ export const idleSandboxOwner = {
   warmUp: () => Promise.resolve('idle'),
   stackStartMinutes: () => 1,
   freshStack: () => Promise.resolve('idle'),
+  stopStack: () => Promise.resolve(),
   release: () => Promise.resolve(),
 } as unknown as SandboxOwner;

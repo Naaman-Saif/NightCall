@@ -1,4 +1,7 @@
+import { incidentFolder } from '../investigation/incident-paths';
 import { appendAsService } from '../investigation/service-append';
+import { liveCyclePath } from './live-files';
+import { LiveTracker } from './live-tracker';
 import type { CheckOutcome, Verdict } from './evaluate-checks';
 import type { ExperimentDeps } from './experiment-job';
 import type { Job, JobResult } from './job-registry';
@@ -19,12 +22,28 @@ function append(deps: ExperimentDeps, request: { plan: VerificationPlan; type: '
   return appendAsService(deps.writer, { incidentId: plan.incidentId, draft });
 }
 
+function cycleLive(deps: ExperimentDeps, run: VerificationRun & { cycle: number }): LiveTracker {
+  const path = liveCyclePath(incidentFolder(deps.writer.stateDir, run.plan.incidentId), run.cycle);
+  return new LiveTracker({ path, speed: run.plan.speed, trafficSource: run.plan.trafficSource });
+}
+
+async function closeCycleCopy(deps: ExperimentDeps, closing: { plan: VerificationPlan; live: LiveTracker; outcome: CycleOutcome }): Promise<void> {
+  const { plan, live, outcome } = closing;
+  if (outcome.failureReason) live.mark('failed', outcome.productionChanged ? 'production_changed' : 'worker_error');
+  live.mark('stopping_copy');
+  await deps.owner.stopStack(plan.incidentId).catch(() => undefined);
+  live.mark('cleaned');
+  live.close();
+}
+
 async function playAndRecord(deps: ExperimentDeps, run: VerificationRun & { cycle: number }): Promise<CycleOutcome> {
   const { plan, cycle } = run;
   const speed = plan.speed;
   await append(deps, { plan, type: 'cycle_started', summary: `Round ${cycle} of 3 started, replayed at ${speed}x speed`, payload: { ...plan.runIds, cycle, speed } });
   const failed = (error: unknown): CycleOutcome => ({ passed: false, checks: [], productionChanged: false, failureReason: String(error) });
-  const outcome = await runCycle(deps, run).catch(failed);
+  const live = cycleLive(deps, run);
+  const outcome = await runCycle(deps, { ...run, live }).catch(failed);
+  await closeCycleCopy(deps, { plan, live, outcome });
   const summary = `Round ${cycle} of 3 ${outcome.passed ? 'passed' : 'failed'}${outcome.failureReason ? `: ${outcome.failureReason}` : ''}`.slice(0, 2000);
   await append(deps, { plan, type: 'cycle_finished', summary, payload: { ...plan.runIds, cycle, speed, passed: outcome.passed, checks: outcome.checks } });
   return outcome;

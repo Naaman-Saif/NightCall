@@ -42,7 +42,8 @@ async function takeSample(session: WorkloadSession, { index, request }: SampleRe
   const query = request ? { productIds: request.productIds, currencyCode: request.currencyCode } : undefined;
   const response = await requestRecommendations({ endpoint: session.endpoint, identity, query });
   const observation = await session.observer.observe();
-  return { at: new Date().toISOString(), index: index + 1, traceId, response, observation, requestMs: Date.now() - started };
+  const productId = (request?.productIds ?? 'OLJCESPC7Z').split(',')[0];
+  return { at: new Date().toISOString(), index: index + 1, traceId, productId, response, observation, requestMs: Date.now() - started };
 }
 
 function recorded(session: WorkloadSession, sample: WorkloadSample): WorkloadSample {
