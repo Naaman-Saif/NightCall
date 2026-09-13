@@ -18,7 +18,7 @@ const emptyAreas: Omit<Snapshot, 'incident'> = {
   investigationStop: null,
   investigationChangedAt: null,
   lastAgentActivityAt: null,
-  runReport: { status: 'not_started', statusAt: '', note: null, nowDoing: null, did: [], found: [], notDone: [] },
+  runReport: { status: 'not_started', statusAt: '', note: null, nowDoing: null, did: [], found: [], causes: [], notDone: [] },
   brief: null,
   roles: { lead: readyRole, investigator: readyRole, verifier: readyRole },
   evidence: {},

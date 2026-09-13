@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { matchesCurrentRun, type RunIds } from './current-run';
 import type { EventDraft, EventType, IncidentEvent } from './event-types';
 import { reduceEvents } from './reduce-events';
+import { hasRecordedContradiction } from './run-causes';
 import type { Snapshot } from './snapshot';
 
 const runBoundTypes = new Set<EventType>(['cycle_started', 'cycle_finished', 'verification_reviewed']);
@@ -34,10 +35,17 @@ function requireSingleStop(snapshot: Snapshot, draft: EventDraft): void {
   throw new BadRequestException('investigation_stopped summary must be identical in the event and the payload');
 }
 
+function requireUncontradictedSupport(snapshot: Snapshot, draft: EventDraft): void {
+  if (draft.type !== 'hypothesis_status_changed' || draft.payload.status !== 'supported') return;
+  if (!hasRecordedContradiction(snapshot, draft.payload.hypothesisId)) return;
+  throw new ConflictException('a cause cannot be marked supported while recorded evidence it cites contradicts it');
+}
+
 export function admit(events: IncidentEvent[], draft: EventDraft): EventDraft {
   const snapshot = reduceEvents(events);
   if (snapshot?.incident.lifecycle !== 'active') throw new ConflictException('incident is not active');
   requireSingleStop(snapshot, draft);
+  requireUncontradictedSupport(snapshot, draft);
   requireCurrentRun(snapshot, draft);
   requireCurrentMitigation(snapshot, draft);
   requireVerifiedBeforePublishing(snapshot, draft);

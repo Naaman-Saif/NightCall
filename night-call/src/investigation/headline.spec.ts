@@ -70,6 +70,6 @@ describe('fact headline', () => {
     const accepted = await incidentWith([started, ...reproduction(true), finished]);
     expect(accepted.headline).toMatch(/The cause is established by an accepted reproduction\. Investigation finished\.$/);
     const rejected = await incidentWith([started, ...reproduction(false)]);
-    expect(rejected.headline).toMatch(/The cause is not established\. Investigation is running\.$/);
+    expect(rejected.headline).toMatch(/Most likely cause: cache grows, not yet reproduced\. Investigation is running\.$/);
   });
 });

@@ -45,8 +45,17 @@ function causeIsEstablished(snapshot: Snapshot): boolean {
   );
 }
 
+function causeClause(snapshot: Snapshot): string {
+  if (causeIsEstablished(snapshot)) return ESTABLISHED_CAUSE;
+  const causes = snapshot.runReport.causes;
+  const supported = causes.filter((cause) => cause.status === 'supported').at(-1);
+  if (supported) return `Most likely cause: ${supported.claim.trim().replace(/[.\s]+$/, '')}, not yet reproduced.`;
+  const possible = causes.filter((cause) => cause.status === 'proposed').length;
+  return possible > 0 ? `Possible causes: ${possible}, none established yet.` : UNKNOWN_CAUSE;
+}
+
 export function headlineOf(snapshot: Snapshot): string {
-  const cause = causeIsEstablished(snapshot) ? ESTABLISHED_CAUSE : UNKNOWN_CAUSE;
+  const cause = causeClause(snapshot);
   if (snapshot.investigation === 'stopped') return `${openingSentence(snapshot)} ${activitySentence(snapshot)} ${cause}`;
   return `${openingSentence(snapshot)} ${cause} ${investigationSentence(snapshot)}`;
 }
