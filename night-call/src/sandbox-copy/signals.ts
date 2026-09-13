@@ -1,12 +1,17 @@
-import { stopSandbox } from './cleanup';
+import { abortDockerCommands } from './docker-cli';
 import { requestInterrupt } from './stop-request';
 
 const forcedExitMs = 300_000;
 
-function onSignal(signal: NodeJS.Signals): void {
-  console.log(JSON.stringify({ interrupted: signal }));
+export function interruptSandbox(signal: NodeJS.Signals): number {
   requestInterrupt(signal);
-  stopSandbox().catch((error: unknown) => console.error(JSON.stringify({ cleanupFailed: String(error) })));
+  const abortedDockerCommands = abortDockerCommands();
+  console.log(JSON.stringify({ interrupted: signal, abortedDockerCommands }));
+  return abortedDockerCommands;
+}
+
+function onSignal(signal: NodeJS.Signals): void {
+  interruptSandbox(signal);
   setTimeout(() => process.exit(130), forcedExitMs).unref();
 }
 

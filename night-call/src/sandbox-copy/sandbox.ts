@@ -7,6 +7,7 @@ import { restartRecommendation } from './restart-recommendation';
 import { createRunFolder, runFolderFor, writeJson } from './run-files';
 import { setSandboxFlag } from './sandbox-flag';
 import { bringStackUp } from './stack-ready';
+import { collectStageTraces } from './stage-traces';
 import { requireNotInterrupted } from './stop-request';
 import { sleep } from './time-budget';
 import { runWorkload } from './workload';
@@ -86,5 +87,7 @@ export async function runRound(options: RoundOptions): Promise<RoundResult> {
   await sleep(2000);
   const oomEvents = recommendationOomEvents(runFolder, sinceSeconds);
   writeJson(join(runFolder, `${name}-oom-events.json`), oomEvents);
+  const traces = await collectStageTraces({ runFolder, stage: name }).catch((error: unknown) => ({ error: String(error) }));
+  writeJson(join(runFolder, 'evidence', name, 'traces-summary.json'), traces);
   return { name, summary, oomEvents };
 }

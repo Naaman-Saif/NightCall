@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { cleanupMarkerPath } from './constants';
 import { stopEvents } from './docker-events';
+import { sweepLateSandboxResources, type LateSweep } from './late-containers';
 import { requireNoProjectContainers, requireNoSandboxNetwork } from './preflight';
 import { writeJson } from './run-files';
 import { currentSandbox, forgetSandbox, sandboxIsStarted } from './sandbox';
@@ -14,6 +15,7 @@ export interface CleanupRecord {
   at: string;
   composeWritten: boolean;
   composeDown: string;
+  lateSweep: LateSweep | null;
   errors: string[];
   clean: boolean;
 }
@@ -36,16 +38,25 @@ async function takeStackDown(runFolder: string, errors: string[]): Promise<strin
   return 'ran';
 }
 
+async function sweepLate(errors: string[]): Promise<LateSweep | null> {
+  let sweep: LateSweep | null = null;
+  await attempt(errors, async () => {
+    sweep = await sweepLateSandboxResources();
+  });
+  return sweep;
+}
+
 async function tearDown(): Promise<CleanupRecord> {
   const { runFolder, events } = currentSandbox();
   const errors: string[] = [];
   grantCleanupTime(240_000);
   const composeDown = await takeStackDown(runFolder, errors);
   if (events) stopEvents(events);
+  const lateSweep = await sweepLate(errors);
   await attempt(errors, requireNoProjectContainers);
   await attempt(errors, requireNoSandboxNetwork);
   const composeWritten = composeDown === 'ran';
-  const record = { at: new Date().toISOString(), composeWritten, composeDown, errors, clean: errors.length === 0 };
+  const record = { at: new Date().toISOString(), composeWritten, composeDown, lateSweep, errors, clean: errors.length === 0 };
   writeJson(join(runFolder, 'cleanup.json'), record);
   if (composeWritten && !record.clean) writeJson(cleanupMarkerPath, { runFolder, ...record });
   forgetSandbox();
