@@ -1,22 +1,9 @@
 import type { CheckResult, Experiment } from '../api/contract';
 import { experimentClaim } from '../format/claims';
 import { EXPERIMENT_KIND_TEXT, describeProgress, describeRecipe } from '../format/experiment-text';
-import { Badge, Card, ClaimLabel, EvidenceRow, Icon, RoleTag } from '../kit';
+import { Badge, ClaimLabel, EvidenceRow, Icon } from '../kit';
 
-export function ExperimentsPanel({ experiments }: { experiments: Experiment[] }) {
-  return (
-    <Card eyebrow="Experiment investigator" title="Experiments" actions={<RoleTag role="investigator" />} className="section-experiments">
-      {experiments.length === 0 && <p className="muted">No experiment has started yet.</p>}
-      <div className="card-stack">
-        {experiments.map((experiment) => (
-          <ExperimentCard key={experiment.id} experiment={experiment} />
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-function ExperimentCard({ experiment }: { experiment: Experiment }) {
+export function ExperimentCard({ experiment }: { experiment: Experiment }) {
   const claim = experimentClaim(experiment);
   return (
     <article className="summary-card" data-experiment={experiment.id}>

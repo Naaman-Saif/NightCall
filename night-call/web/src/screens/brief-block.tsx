@@ -1,23 +1,29 @@
-import type { Brief } from '../api/contract';
+import type { Brief, Evidence, KnownFact, Snapshot } from '../api/contract';
 import { formatAgo } from '../format/time';
 import { useNow } from '../format/use-now';
-import { Card, Icon, RoleTag } from '../kit';
+import { Card, Icon } from '../kit';
+import { SourceLinks } from './source-links';
 
-export function BriefBlock({ brief }: { brief: Brief | null }) {
+type EvidenceById = Record<string, Evidence>;
+
+export function BriefBlock({ snapshot }: { snapshot: Snapshot }) {
   return (
-    <Card eyebrow="Investigation lead" title="Incident brief" actions={<RoleTag role="lead" />} className="section-brief">
-      {brief ? <BriefContent brief={brief} /> : <p className="muted">The lead has not written the brief yet.</p>}
+    <Card title="What happened" className="section-brief">
+      {snapshot.brief ? (
+        <BriefContent brief={snapshot.brief} evidence={snapshot.evidence} />
+      ) : (
+        <p className="muted">No summary yet. Evidence is still being gathered.</p>
+      )}
     </Card>
   );
 }
 
-function BriefContent({ brief }: { brief: Brief }) {
+function BriefContent({ brief, evidence }: { brief: Brief; evidence: EvidenceById }) {
   const now = useNow();
   return (
     <div className="brief">
       <p className="brief-summary">{brief.summary}</p>
-      <BriefList title="Known" icon="check" items={brief.knownFacts.map((fact) => fact.text)} />
-      <BriefList title="Still unknown" icon="circle-dashed" items={brief.unknowns} />
+      <KnownFacts facts={brief.knownFacts} evidence={evidence} />
       <div>
         <div className="eyebrow">Next step</div>
         <p className="brief-next">{brief.nextStep}</p>
@@ -27,19 +33,30 @@ function BriefContent({ brief }: { brief: Brief }) {
   );
 }
 
-function BriefList({ title, icon, items }: { title: string; icon: string; items: string[] }) {
-  if (items.length === 0) return null;
+function KnownFacts({ facts, evidence }: { facts: KnownFact[]; evidence: EvidenceById }) {
+  if (facts.length === 0) return null;
   return (
     <div>
-      <div className="eyebrow">{title}</div>
+      <div className="eyebrow">Known</div>
       <ul className="brief-list">
-        {items.map((item) => (
-          <li key={item}>
-            <Icon name={icon} size={13} />
-            {item}
-          </li>
+        {facts.map((fact) => (
+          <FactLine key={fact.text} fact={fact} evidence={evidence} />
         ))}
       </ul>
     </div>
+  );
+}
+
+function FactLine({ fact, evidence }: { fact: KnownFact; evidence: EvidenceById }) {
+  return (
+    <li>
+      <Icon name="check" size={13} />
+      <span>
+        {fact.text}
+        {fact.evidenceIds.map((evidenceId) => (
+          <SourceLinks key={evidenceId} links={evidence[evidenceId]?.sourceLinks} />
+        ))}
+      </span>
+    </li>
   );
 }

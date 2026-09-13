@@ -1,6 +1,6 @@
 import type {
   CheckResult, CompletionReason, ContractCheck, EvidenceKind, HypothesisStatus, KnownFact,
-  Recipe, RoleName, RoleStatus, Verdict,
+  Recipe, RoleName, RoleStatus, SourceLink, Verdict,
 } from './contract-events';
 
 export type * from './contract-events';
@@ -21,7 +21,9 @@ export type Incident = {
 export type Brief = { summary: string; knownFacts: KnownFact[]; unknowns: string[]; nextStep: string; updatedAt: string };
 export type RoleState = { status: RoleStatus; assignment: string; updatedAt: string | null };
 export type Answer = { text: string; suppliedAt: string };
-export type Evidence = { kind: EvidenceKind; source: string; summary: string; observedAt: string; excerpt: string };
+export type Evidence = {
+  kind: EvidenceKind; source: string; summary: string; observedAt: string; excerpt: string; sourceLinks?: SourceLink[];
+};
 
 export type Hypothesis = {
   id: string; claim: string; status: 'proposed' | HypothesisStatus; supportingEvidenceIds: string[];

@@ -3,7 +3,7 @@ import type { Answer, Question, SuppliedContext } from '../api/contract';
 export const I_DO_NOT_KNOW = "I don't know";
 
 const IMPACT_QUESTION_ID = 'q-impact';
-const LEAD_ADJUSTS_PLAN = 'Saved. The investigation lead reads this next and adjusts the plan.';
+const LEAD_ADJUSTS_PLAN = 'Saved. NightCall reads this next and adjusts the plan.';
 const IMPACT_TREATED_AS_URGENT =
   'Saved. NightCall treats the impact as urgent and goes for the safest fix. Answer again anytime to change that.';
 

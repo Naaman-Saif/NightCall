@@ -29,8 +29,8 @@ export function hypothesisClaim(snapshot: Snapshot, hypothesis: Hypothesis): Cla
 }
 
 function reviewText(experiment: Experiment): string {
-  if (!experiment.review) return 'waiting for the verifier';
-  return experiment.review.accepted ? 'accepted by the verifier' : 'rejected by the verifier';
+  if (!experiment.review) return 'waiting for review';
+  return experiment.review.accepted ? 'accepted in review' : 'rejected in review';
 }
 
 export function experimentClaim(experiment: Experiment): ClaimView | null {
