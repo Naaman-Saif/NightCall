@@ -25,9 +25,11 @@ export type Evidence = {
   kind: EvidenceKind; source: string; summary: string; observedAt: string; excerpt: string; sourceLinks?: SourceLink[];
 };
 
+export type Contradiction = { evidenceId: string; contradicts: string };
+
 export type Hypothesis = {
   id: string; claim: string; status: 'proposed' | HypothesisStatus; supportingEvidenceIds: string[];
-  contradictingEvidenceIds: string[]; predicted: string; reason: string | null;
+  contradictingEvidenceIds: string[]; predicted: string; reason: string | null; contradictions?: Contradiction[];
 };
 
 export type Question = {

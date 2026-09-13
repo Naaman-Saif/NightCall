@@ -90,6 +90,7 @@
 .cause[data-cause-status='supported'] .cause-status { color: var(--text-accent); }
 .cause-lines { margin-top: var(--sp-1); }
 .cause-side { color: var(--text-muted); }
+.contradiction-line { display: block; margin: 0; font: var(--type-meta-sm); }
 .report-list { margin: var(--sp-2) 0 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-1); font: var(--type-body-sm); color: var(--text-body); }
 .report-list[data-tone='muted'] { color: var(--text-muted); }
 .details { display: grid; gap: var(--sp-4); justify-items: start; }
