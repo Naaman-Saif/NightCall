@@ -23,7 +23,7 @@ function IncidentLayout(props: IncidentLayoutProps) {
   const report = snapshot.runReport;
   return (
     <div className="page">
-      <IncidentHeader incident={snapshot.incident} connection={view.connection} latestSequence={view.events.at(-1)?.sequence ?? 0} />
+      <IncidentHeader incident={snapshot.incident} connection={view.connection} latestSequence={view.events.at(-1)?.sequence ?? 0} runReport={report} />
       {snapshot.headline && <p className="incident-headline">{snapshot.headline}</p>}
       {report ? <ClearReport {...props} report={report} /> : <IncidentDetails {...props} includeQuestions />}
     </div>
@@ -34,7 +34,7 @@ function ClearReport(props: IncidentLayoutProps & { report: RunReport }) {
   const isAnswerNeeded = props.isOperator && hasOpenQuestion(props.snapshot);
   return (
     <>
-      <RunReportSummary report={props.report} evidence={props.snapshot.evidence} />
+      <RunReportSummary report={props.report} evidence={props.snapshot.evidence} incident={props.snapshot.incident} />
       {isAnswerNeeded && <UnresolvedQuestions snapshot={props.snapshot} isOperator submitAnswer={props.submitAnswer} />}
       <DetailsToggle>
         <IncidentDetails {...props} includeQuestions={!isAnswerNeeded} />
