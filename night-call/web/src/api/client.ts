@@ -9,7 +9,7 @@ export class RequestFailed extends Error {
   }
 }
 
-async function readJson<T>(response: Response): Promise<T> {
+export async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) throw new RequestFailed(response.status);
   return (await response.json()) as T;
 }

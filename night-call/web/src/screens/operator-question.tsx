@@ -1,14 +1,31 @@
 import type { SubmitAnswer } from '../api/client';
-import type { Question } from '../api/contract';
+import type { Question, SuppliedContext } from '../api/contract';
+import { acceptsAnotherAnswer, latestAnswer } from '../format/next-step';
 import { formatAgo } from '../format/time';
 import { useNow } from '../format/use-now';
 import { Badge, RoleTag } from '../kit';
+import { AcceptedAnswer } from './accepted-answer';
 import { AnswerComposer } from './answer-composer';
 
-export function OperatorQuestion({ question, submitAnswer }: { question: Question; submitAnswer: SubmitAnswer }) {
+type OperatorQuestionProps = { question: Question; context: SuppliedContext[]; submitAnswer: SubmitAnswer };
+
+export function OperatorQuestion({ question, context, submitAnswer }: OperatorQuestionProps) {
+  const answer = latestAnswer(question, context);
+  return (
+    <article className="question-card" data-answered={Boolean(answer)} data-question={question.id}>
+      <QuestionText question={question} />
+      {answer && <AcceptedAnswer questionId={question.id} text={answer.text} />}
+      {acceptsAnotherAnswer(answer) && (
+        <AnswerComposer key={answer?.suppliedAt ?? 'first'} questionId={question.id} submitAnswer={submitAnswer} />
+      )}
+    </article>
+  );
+}
+
+function QuestionText({ question }: { question: Question }) {
   const now = useNow();
   return (
-    <article className="question-card" data-answered={Boolean(question.answer)}>
+    <>
       <div className="question-meta">
         <RoleTag role="lead" />
         <span className="meta">asked {formatAgo(question.askedAt, now)}</span>
@@ -17,20 +34,6 @@ export function OperatorQuestion({ question, submitAnswer }: { question: Questio
       <p className="question-text">{question.text}</p>
       <p className="question-why">{question.whyItMatters}</p>
       <p className="meta">Meanwhile: {question.meanwhile}</p>
-      {question.answer ? (
-        <AcceptedAnswer text={question.answer.text} />
-      ) : (
-        <AnswerComposer questionId={question.id} submitAnswer={submitAnswer} />
-      )}
-    </article>
-  );
-}
-
-export function AcceptedAnswer({ text }: { text: string }) {
-  return (
-    <div className="answer-accepted" role="status">
-      <Badge tone="verified" icon="check">Answer accepted</Badge>
-      {text && <p className="answer-text">{text}</p>}
-    </div>
+    </>
   );
 }

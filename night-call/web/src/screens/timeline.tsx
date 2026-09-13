@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import type { Actor, IncidentEvent } from '../api/contract';
 import { formatAbsolute, formatAgo } from '../format/time';
 import { useNow } from '../format/use-now';
-import { Card, Icon, Tooltip } from '../kit';
+import { Button, Card, Icon, Tooltip } from '../kit';
 
 type ActorLook = { label: string; icon: string; color: string };
+
+const LATEST_EVENTS_SHOWN = 12;
 
 const ACTOR_LOOK: Record<Actor, ActorLook> = {
   lead: { label: 'Lead', icon: 'compass', color: 'var(--beacon-300)' },
@@ -16,23 +19,36 @@ const ACTOR_LOOK: Record<Actor, ActorLook> = {
 
 export function Timeline({ events }: { events: IncidentEvent[] }) {
   const now = useNow();
+  const [isShowingAll, setShowingAll] = useState(false);
   const newestFirst = [...events].reverse();
+  const shown = isShowingAll ? newestFirst : newestFirst.slice(0, LATEST_EVENTS_SHOWN);
   return (
-    <Card eyebrow="Record" title="Timeline" actions={<span className="meta">{events.length} events</span>}>
+    <Card eyebrow="Record" title="Latest activity" actions={<span className="meta">{events.length} events</span>} className="section-timeline">
       {events.length === 0 && <p className="muted">No events received yet.</p>}
       <ol className="timeline">
-        {newestFirst.map((event) => (
+        {shown.map((event) => (
           <TimelineRow key={event.sequence} event={event} now={now} />
         ))}
       </ol>
+      {events.length > LATEST_EVENTS_SHOWN && (
+        <ShowAllToggle isShowingAll={isShowingAll} total={events.length} onToggle={() => setShowingAll(!isShowingAll)} />
+      )}
     </Card>
+  );
+}
+
+function ShowAllToggle({ isShowingAll, total, onToggle }: { isShowingAll: boolean; total: number; onToggle: () => void }) {
+  return (
+    <Button size="sm" variant="ghost" style={{ marginTop: 'var(--sp-3)' }} onClick={onToggle}>
+      {isShowingAll ? 'Show the latest only' : `Show all ${total} events`}
+    </Button>
   );
 }
 
 function TimelineRow({ event, now }: { event: IncidentEvent; now: number }) {
   const look = ACTOR_LOOK[event.actor] ?? ACTOR_LOOK.system;
   return (
-    <li className="timeline-row" data-actor={event.actor} data-type={event.type}>
+    <li className="timeline-row" data-actor={event.actor} data-type={event.type} data-sequence={event.sequence}>
       <span className="timeline-avatar" style={{ color: look.color }}>
         <Icon name={look.icon} size={14} />
       </span>

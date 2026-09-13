@@ -19,26 +19,30 @@ export type Incident = {
 };
 
 export type Brief = { summary: string; knownFacts: KnownFact[]; unknowns: string[]; nextStep: string; updatedAt: string };
-export type RoleState = { status: RoleStatus; assignment: string; updatedAt: string };
+export type RoleState = { status: RoleStatus; assignment: string; updatedAt: string | null };
+export type Answer = { text: string; suppliedAt: string };
 export type Evidence = { kind: EvidenceKind; source: string; summary: string; observedAt: string; excerpt: string };
 
 export type Hypothesis = {
   id: string; claim: string; status: 'proposed' | HypothesisStatus; supportingEvidenceIds: string[];
-  contradictingEvidenceIds: string[]; predicted: string; reason: string;
+  contradictingEvidenceIds: string[]; predicted: string; reason: string | null;
 };
 
 export type Question = {
   id: string; text: string; whyItMatters: string; meanwhile: string; blocks: 'none' | 'mitigation';
-  askedAt: string; answer: null | { text: string; suppliedAt: string };
+  askedAt: string; answer: Answer | null;
 };
 
 export type SuppliedContext = { questionId: string | null; text: string; suppliedAt: string };
 
 export type Experiment = {
   id: string; kind: 'reproduction' | 'mitigation'; hypothesisId: string; contractId: string; purpose: string;
-  recipe: Recipe; startedAt: string; finishedAt: string | null; progress: unknown; verdict: Verdict | null;
-  checks: CheckResult[]; review: unknown; seriesRef: string | null;
+  recipe: Recipe; startedAt: string; finishedAt: string | null; progress: ExperimentProgress | null;
+  verdict: Verdict | null; checks: CheckResult[]; review: { accepted: boolean; reasons: string[] } | null;
+  seriesRef: string | null;
 };
+
+export type ExperimentProgress = { requests: number; errors: number; peakMemoryBytes: number; peakCpuPercent: number };
 
 export type Mitigation = {
   id: string; explanation: string; diff: string; caveats: string[]; notFixed: string;

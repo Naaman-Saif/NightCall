@@ -1,14 +1,15 @@
 import type { SubmitAnswer } from '../api/client';
+import { I_DO_NOT_KNOW } from '../format/next-step';
 import { Button, Textarea } from '../kit';
-import { AcceptedAnswer } from './operator-question';
-import { I_DO_NOT_KNOW, useAnswerComposer, type AnswerComposerState } from './use-answer-composer';
+import { AcceptedAnswer } from './accepted-answer';
+import { useAnswerComposer, type AnswerComposerState } from './use-answer-composer';
 
 const NOT_SAVED_MESSAGE = 'Not saved. Your draft is kept. Retry sends the same answer with the same key.';
 const PUBLIC_ANSWER_HINT = 'Answers are shown on the public incident page.';
 
 export function AnswerComposer({ questionId, submitAnswer }: { questionId: string; submitAnswer: SubmitAnswer }) {
   const composer = useAnswerComposer({ questionId, submitAnswer });
-  if (composer.status === 'accepted') return <AcceptedAnswer text={composer.sentText} />;
+  if (composer.status === 'accepted') return <AcceptedAnswer questionId={questionId} text={composer.sentText} />;
   return (
     <div className="answer-composer">
       <Textarea

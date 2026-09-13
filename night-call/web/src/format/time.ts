@@ -15,8 +15,12 @@ export function formatAbsolute(isoTime: string): string {
   return `${new Date(isoTime).toISOString().replace('T', ' ').slice(0, 19)} UTC`;
 }
 
+export function formatTimeOfDay(isoTime: string): string {
+  return new Date(isoTime).toISOString().slice(11, 19);
+}
+
 export function formatClock(isoTime: string): string {
-  return `${new Date(isoTime).toISOString().slice(11, 19)} UTC`;
+  return `${formatTimeOfDay(isoTime)} UTC`;
 }
 
 export function formatAgo(isoTime: string, now: number): string {

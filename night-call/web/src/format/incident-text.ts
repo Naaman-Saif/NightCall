@@ -28,7 +28,7 @@ const ATTENTION_TEXT: Record<Attention, string> = {
 };
 
 export function describePhase(facts: PhaseFacts): string {
-  if (facts.lifecycle === 'active') return PHASE_TEXT[facts.phase];
+  if (facts.lifecycle === 'active') return PHASE_TEXT[facts.phase] ?? facts.phase;
   if (!facts.completionReason) return 'Finished';
   return `Finished, ${COMPLETION_TEXT[facts.completionReason]}`;
 }
