@@ -16,7 +16,7 @@ export function impactQuestionEvent(readings: ImpactReadings): ProgressEvent {
   const payload = {
     questionId: IMPACT_QUESTION_ID,
     text,
-    whyItMatters: 'If it is urgent, I go straight to the safest mitigation and verify it. If it is tolerable, I finish checking the other explanation before choosing.',
+    whyItMatters: 'Your answer is recorded in the report as the urgency for choosing a fix.',
     meanwhile: 'I keep gathering evidence.',
     blocks: 'none',
   };
@@ -29,9 +29,9 @@ export async function decideUrgency(answer: Answer | null, classify: Classify): 
   return { ...(await classify(answer.text)), impactConfirmed: true };
 }
 
+export const STOPS_HERE = 'This run stops here: no further checks, mitigation or verification run in this version.';
+
 export function pathSentence(decision: UrgencyDecision): string {
-  if (decision.urgency === 'tolerable') {
-    return 'The failures are tolerable for now, so next I finish checking the other explanation, then choose and verify the safest mitigation.';
-  }
-  return 'This is treated as urgent, so next I go straight to the safest mitigation and verify it before anything else.';
+  const choice = decision.urgency === 'tolerable' ? 'Treated as tolerable for now.' : 'Treated as urgent.';
+  return `${choice} ${STOPS_HERE}`;
 }

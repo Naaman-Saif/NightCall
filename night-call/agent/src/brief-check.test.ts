@@ -27,6 +27,13 @@ test('with measured failures the text is left alone', () => {
   assert.equal(honestText(text, impact(0.05)), text);
 });
 
+test('no posted text promises a next step that no code performs', async () => {
+  const run = stubInvestigation('We can live with it for an hour');
+  await investigate(run.parts);
+  const texts = run.events.map((event) => JSON.stringify(event));
+  assert.equal(texts.some((text) => /next I|I go straight|I finish checking|verify the safest|verify it/i.test(text)), false);
+});
+
 test('a model-written brief is corrected against a 0% reading before it is posted', async () => {
   const draft = { ...GOOD_DRAFT, summary: 'Recommendations fail while memory climbs. Memory hits the limit.' };
   const run = stubInvestigation('Rush it', { errorShare: 0, draft });

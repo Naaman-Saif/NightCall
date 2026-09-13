@@ -7,6 +7,7 @@ import { readImpact } from './impact-readings.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import { logProgress } from './progress.js';
 import { describeError } from './retry.js';
+import { postStopped } from './stop-report.js';
 import { decideUrgency, impactQuestionEvent, pathSentence, type Classification, type UrgencyDecision } from './urgency.js';
 
 export type InvestigationParts = BriefParts & { waitForAnswer?: (api: IncidentApi) => Promise<Answer | null> };
@@ -61,7 +62,7 @@ function classifyOrRush(parts: InvestigationParts) {
   return (answer: string) => parts.lead.classify(answer).catch(() => UNREADABLE_ANSWER);
 }
 
-export async function investigate(parts: InvestigationParts): Promise<UrgencyDecision> {
+async function investigationSteps(parts: InvestigationParts): Promise<{ answer: Answer | null; decision: UrgencyDecision }> {
   await announce(parts, { status: 'working', assignment: 'Reading the failure rate and crashes before asking about customer impact' });
   await askImpact(parts);
   await announce(parts, { status: 'waiting_for_context', assignment: 'Asked about customer impact; writing the first brief meanwhile' });
@@ -69,5 +70,16 @@ export async function investigate(parts: InvestigationParts): Promise<UrgencyDec
   const decision = await decideUrgency(answer, classifyOrRush(parts));
   await postAnswerBrief(parts, { answer, decision });
   await announce(parts, { status: 'finished', assignment: pathSentence(decision) });
-  return decision;
+  return { answer, decision };
+}
+
+export async function investigate(parts: InvestigationParts): Promise<UrgencyDecision> {
+  try {
+    const { answer, decision } = await investigationSteps(parts);
+    await postStopped(parts.api, { ledger: parts.ledger, answer, reason: answer ? 'answer_recorded' : 'no_answer' });
+    return decision;
+  } catch (error) {
+    await postStopped(parts.api, { ledger: parts.ledger, answer: null, reason: 'error' });
+    throw error;
+  }
 }
