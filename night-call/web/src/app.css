@@ -50,6 +50,14 @@
 .source-link[data-rank='secondary'] { color: var(--text-muted); }
 .incident-headline { margin: 0; max-width: 80ch; font: var(--type-body); color: var(--text-title); }
 .investigation-progress { margin-bottom: var(--sp-3); }
+.run-report { display: grid; gap: var(--sp-4); max-width: 80ch; }
+.now-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: 0; font: var(--type-subheading); color: var(--text-title); }
+.now-dot { display: inline-flex; }
+.run-note { margin-top: var(--sp-1); }
+.report-list { margin: var(--sp-2) 0 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-1); font: var(--type-body-sm); color: var(--text-body); }
+.report-list[data-tone='muted'] { color: var(--text-muted); }
+.details { display: grid; gap: var(--sp-4); justify-items: start; }
+.details-body { display: grid; gap: var(--sp-5); width: 100%; }
 .evidence-line { overflow-wrap: anywhere; }
 .section-head { display: flex; align-items: center; gap: var(--sp-2); }
 

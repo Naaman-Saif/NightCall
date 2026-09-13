@@ -34,6 +34,16 @@ function createSnapshotLoader(incidentId: string, handlers: SnapshotHandlers) {
   };
 }
 
+export const REFRESH_SNAPSHOT_EVERY_MS = 30_000;
+
+function withSnapshotRefresh(loadSnapshot: () => void, stopUpdates: () => void): () => void {
+  const timer = window.setInterval(loadSnapshot, REFRESH_SNAPSHOT_EVERY_MS);
+  return () => {
+    window.clearInterval(timer);
+    stopUpdates();
+  };
+}
+
 export function useIncidentStream(incidentId: string): IncidentView {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -50,7 +60,7 @@ export function useIncidentStream(incidentId: string): IncidentView {
       loadSnapshot();
     };
     loadSnapshot();
-    return startIncidentUpdates(incidentId, { onEvent, onSnapshot: setSnapshot, onOpen, onLost: markLost });
+    return withSnapshotRefresh(loadSnapshot, startIncidentUpdates(incidentId, { onEvent, onSnapshot: setSnapshot, onOpen, onLost: markLost }));
   }, [incidentId, markOpen, markLost]);
   return { snapshot, events, connection: state, loadFailed: loadFailed && !snapshot };
 }
