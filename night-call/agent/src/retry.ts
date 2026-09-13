@@ -28,12 +28,16 @@ export function isRetryable(error: unknown): boolean {
   return errorChain(error).some(linkIsRetryable);
 }
 
+export function describeError(error: unknown): string {
+  return errorChain(error).map((link) => String(link.message ?? link)).join(' <- ').slice(0, 400);
+}
+
 async function attemptFrom<Result>(plan: RetryPlan<Result>, index: number): Promise<Result> {
   try {
     return await plan.attempt(index + 1);
   } catch (error) {
     if (index >= RETRY_PAUSES_MS.length || plan.signal?.aborted || !isRetryable(error)) throw error;
-    logProgress({ retrying: index + 2, reason: String(error).slice(0, 200) });
+    logProgress({ retrying: index + 2, reason: describeError(error) });
     await plan.pause(RETRY_PAUSES_MS[index]);
     return attemptFrom(plan, index + 1);
   }
