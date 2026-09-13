@@ -10,6 +10,7 @@ import {
   type SpanTarget,
 } from './failure-rate-query';
 import { excerptOf, type Reading } from './reading';
+import { grafanaExploreLink, rangeOfMinutes, type SourceLink } from './source-links';
 
 type PrometheusVector = { data?: { result?: { value?: [number, string] }[] } };
 
@@ -35,6 +36,16 @@ function canaryLine(canary: number | null): string {
   return `canary /api/recommendations: ${percentText(canary)} of checks healthy`;
 }
 
+function failureLinks(minutes: number): SourceLink[] {
+  const range = rangeOfMinutes(rateWindowMinutes(minutes));
+  const spanLinks = RECOMMENDATION_SPANS.flatMap((target) => {
+    const queries = spanQueries(target, minutes);
+    const errors = grafanaExploreLink({ label: `Grafana: ${target.service} error calls per second`, expr: queries.errors }, range);
+    return [errors, grafanaExploreLink({ label: `Grafana: ${target.service} calls per second`, expr: queries.total }, range)];
+  });
+  return [...spanLinks, grafanaExploreLink({ label: 'Grafana: recommendations canary', expr: canaryQuery(minutes) }, range)];
+}
+
 export async function readFailureRate(query: { minutes: number }): Promise<Reading> {
   const spans = await Promise.all(RECOMMENDATION_SPANS.map((target) => spanRate(target, query.minutes)));
   const canary = await prometheusScalar(canaryQuery(query.minutes));
@@ -44,5 +55,6 @@ export async function readFailureRate(query: { minutes: number }): Promise<Readi
   const window = rateWindowMinutes(query.minutes);
   const summary = `Recommendation requests failing: ${percentText(spans[0].errorShare)} over the last ${window} minutes`;
   const source = 'span metrics and canary: recommendation';
-  return { kind: 'logs', source, summary, excerpt: excerptOf([...spanLines, canaryLine(canary)]), data: { spans, canary } };
+  const excerpt = excerptOf([...spanLines, canaryLine(canary)]);
+  return { kind: 'logs', source, summary, excerpt, data: { spans, canary }, sourceLinks: failureLinks(query.minutes) };
 }
