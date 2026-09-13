@@ -34,7 +34,7 @@ describe('run report', () => {
         { text: 'Read crashes', value: '2 out-of-memory kills, 2 restarts in 10 min', evidenceId: 'ev-oom', questionId: null },
         { text: 'Read memory', value: 'latest 96 MiB, peak 200 MiB in 15 min', evidenceId: 'ev-memory', questionId: null },
         { text: 'Read deploy history', value: 'no changes', evidenceId: 'ev-deploy', questionId: null },
-        { text: 'Asked about customer impact', value: 'Answer: Tolerable', evidenceId: null, questionId: 'q-impact' },
+        { text: 'Asked about customer impact', value: 'Tolerable', evidenceId: null, questionId: 'q-impact' },
       ],
       found: [RATE_SUMMARY, crashSummary(2), MEMORY_SUMMARY, DEPLOY_SUMMARY],
       notDone: NOT_DONE,
@@ -65,6 +65,6 @@ describe('run report', () => {
     const { writer, incidentId } = await recordedRun([]);
     await supplyContext(writer, { incidentId, body: { questionId: null, text: 'Deploy froze at 17:00', idempotencyKey: 'k2' } });
     const did = snapshotOf(writer, incidentId).runReport.did;
-    expect(did.at(-1)).toEqual({ text: 'Operator added context', value: 'Answer: Deploy froze at 17:00', evidenceId: null, questionId: null });
+    expect(did.at(-1)).toEqual({ text: 'Operator added context', value: 'Deploy froze at 17:00', evidenceId: null, questionId: null });
   });
 });

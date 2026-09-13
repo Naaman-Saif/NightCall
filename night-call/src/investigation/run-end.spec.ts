@@ -22,6 +22,7 @@ describe('run end without investigation_stopped', () => {
     expect(liveSnapshot(stored, lastMs + RUN_END_QUIET_MS - 1000).runReport.status).toBe('running');
     const stopped = liveSnapshot(stored, lastMs + RUN_END_QUIET_MS);
     expect(stopped.runReport).toMatchObject({ status: 'stopped', statusAt: finishedAt, note: INFERRED_STOP_NOTE, nowDoing: null });
+    expect(INFERRED_STOP_NOTE).toBe('The run reported finished and nothing followed for 2 minutes, so NightCall shows it as stopped.');
     expect(stopped.headline).toBe(
       'Recommendation ran out of memory and restarted 2 times since 16:56 UTC. NightCall read 2 signals, asked one question, and stopped. The cause is not established.',
     );

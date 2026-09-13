@@ -3,7 +3,7 @@ import type { EvidenceItem, InvestigationState, Snapshot } from './snapshot';
 
 export const NOT_DONE = ['Looking for the cause', 'Reproducing the crash in a test copy', 'Testing a fix'];
 export const ERROR_NOTE = 'The run stopped because of an error.';
-export const INFERRED_STOP_NOTE = 'The lead reported finished and no agent activity followed for 2 minutes, so NightCall shows the run as stopped.';
+export const INFERRED_STOP_NOTE = 'The run reported finished and nothing followed for 2 minutes, so NightCall shows it as stopped.';
 
 const STATUS_BY_STATE: Record<InvestigationState, RunStatus> = {
   not_started: 'not_started',
