@@ -4,11 +4,12 @@ import { join, resolve } from 'node:path';
 
 import { RECIPE_FILE } from '../production/capture-recipe';
 import type { TrafficRecipe } from '../production/traffic-recipe-types';
-import { cappedRecipe, REPLAY_CAP_MS, replayMinutes } from './capped-recipe';
+import { REPLAY_CAP_MS, replayMinutes, shapedRecipe, type ReplayShape } from './capped-recipe';
 
 export type TrafficChoice = 'incident_traffic' | 'fixed_fallback';
 export type TrafficSource = 'traces' | 'prometheus_rate_fallback' | 'fixed_fallback';
-export type TrafficPlan = { source: TrafficSource; recipePath: string | null; count: number; pacingMs: number; replayMinutes: number };
+export type TrafficPlan = { source: TrafficSource; recipePath: string | null; count: number; pacingMs: number; replayMinutes: number; shape: ReplayShape };
+export type TrafficRequest = { recipe: TrafficChoice; speed: number; requestCount: number | null };
 export type RecipeSummary = { present: boolean; source: TrafficSource | null; requests: number };
 
 const FIXED_COUNT = 400;
@@ -32,16 +33,21 @@ export function recipeSummaryOf(folder: string): RecipeSummary {
   return { present: recipe !== null, source: recipe?.source ?? null, requests: recipe?.requests.length ?? 0 };
 }
 
-export function trafficPlanOf(folder: string, choice: { recipe: TrafficChoice; speed: number }): TrafficPlan {
-  if (choice.recipe === 'fixed_fallback') {
-    const minutes = (FIXED_COUNT * FIXED_PACING_MS) / 60_000;
-    return { source: 'fixed_fallback', recipePath: null, count: FIXED_COUNT, pacingMs: FIXED_PACING_MS, replayMinutes: minutes };
-  }
+function fixedPlan(request: TrafficRequest): TrafficPlan {
+  const count = request.requestCount ?? FIXED_COUNT;
+  const shape = { speed: 1, capMs: null, requestCount: count };
+  return { source: 'fixed_fallback', recipePath: null, count, pacingMs: FIXED_PACING_MS, replayMinutes: (count * FIXED_PACING_MS) / 60_000, shape };
+}
+
+export function trafficPlanOf(folder: string, request: TrafficRequest): TrafficPlan {
+  if (request.recipe === 'fixed_fallback') return fixedPlan(request);
   const recipe = storedRecipe(folder);
   if (!recipe) throw new UnprocessableEntityException({ code: 'recipe_missing' });
-  const capped = cappedRecipe(recipe, { speed: choice.speed, capMs: REPLAY_CAP_MS });
+  const capMs = request.requestCount === null ? REPLAY_CAP_MS : null;
+  const shape = { speed: request.speed, capMs, requestCount: request.requestCount };
+  const shaped = shapedRecipe(recipe, shape);
   const recipePath = resolve(folder, RECIPE_FILE);
-  return { source: recipe.source, recipePath, count: capped.requests.length, pacingMs: 0, replayMinutes: replayMinutes(capped, choice.speed) };
+  return { source: recipe.source, recipePath, count: shaped.requests.length, pacingMs: 0, replayMinutes: replayMinutes(shaped, request.speed), shape };
 }
 
 export function estimatedMinutesOf(plan: TrafficPlan, warm: boolean): number {

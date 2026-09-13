@@ -15,6 +15,16 @@ export type WorkerChild = {
 type Pending = { resolve(value: unknown): void; reject(error: Error): void };
 export type ProgressListener = (progress: WorkerProgress) => void;
 
+const FORCED_STOP_MS = 300_000;
+
+function replyOf(line: string): WorkerReply | null {
+  try {
+    return JSON.parse(line) as WorkerReply;
+  } catch {
+    return null;
+  }
+}
+
 export class WorkerProcess {
   private readonly pending = new Map<number, Pending>();
   private listener: ProgressListener = () => undefined;
@@ -40,11 +50,13 @@ export class WorkerProcess {
 
   stop(): Promise<number | null> {
     this.child.kill('SIGTERM');
-    return this.exited;
+    const forced = setTimeout(() => this.child.kill('SIGKILL'), FORCED_STOP_MS);
+    return this.exited.finally(() => clearTimeout(forced));
   }
 
   private receive(line: string): void {
-    const reply = JSON.parse(line) as WorkerReply;
+    const reply = replyOf(line);
+    if (!reply) return;
     if (reply.kind === 'progress') return this.listener(reply.progress);
     const pending = this.pending.get(reply.id);
     this.pending.delete(reply.id);

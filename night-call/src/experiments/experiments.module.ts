@@ -12,5 +12,6 @@ import { spawnWorker } from './worker-process';
 @Module({
   controllers: [ContractController, ExperimentsController, JobsController],
   providers: [RoleGuard, JobRegistry, SandboxOwner, ProofTools, { provide: WORKER_FACTORY, useValue: spawnWorker }],
+  exports: [SandboxOwner],
 })
 export class ExperimentsModule {}

@@ -6,14 +6,14 @@ import { incidentFolder } from '../investigation/incident-paths';
 import { requireSnapshot } from '../investigation/require-snapshot';
 import { appendAsService } from '../investigation/service-append';
 import type { Snapshot } from '../investigation/snapshot';
-import { REPLAY_CAP_MS } from './capped-recipe';
+import { MIN_MITIGATION_REQUESTS } from './capped-recipe';
 import type { ContractCheck } from './contract-catalogue';
 import { runExperiment } from './experiment-job';
 import { startSummary, type ExperimentPlan } from './experiment-plan';
 import { experimentEndsInTime, explorationMinutesLeft } from './exploration-clock';
 import type { JobRegistry } from './job-registry';
 import type { SandboxOwner } from './sandbox-owner';
-import { estimatedMinutesOf, trafficPlanOf } from './traffic-plan';
+import { estimatedMinutesOf, trafficPlanOf, type TrafficPlan } from './traffic-plan';
 
 export type StartDeps = { writer: EventWriter; registry: JobRegistry; owner: SandboxOwner };
 export type StartRequest = { incidentId: string; body: unknown };
@@ -35,13 +35,20 @@ function parseStartBody(body: unknown): StartBody {
   throw new BadRequestException({ code: 'bad_experiment', issues: parsed.error.issues });
 }
 
-function planOf(snapshot: Snapshot, { body, folder }: { body: StartBody; folder: string }): ExperimentPlan & { replayMinutes: number } {
-  const traffic = trafficPlanOf(folder, body);
-  const experimentId = `exp-${snapshot.experiments.length + 1}`;
-  const { flagVariant, restart, speed, kind } = body;
-  const round = { name: experimentId, flagVariant, restart, stopOnFailure: kind === 'reproduction', count: traffic.count, pacingMs: traffic.pacingMs, recipePath: traffic.recipePath, speed, replayCapMs: REPLAY_CAP_MS };
+function mitigationRequestCount(contract: ContractCheck[], kind: StartBody['kind']): number | null {
+  if (kind === 'reproduction') return null;
+  const healthy = contract.find((check) => check.name === 'mitigated.healthy_requests')?.value ?? 0;
+  return Math.max(MIN_MITIGATION_REQUESTS, healthy);
+}
+
+function planOf(snapshot: Snapshot, { body, folder }: { body: StartBody; folder: string }): ExperimentPlan & { traffic: TrafficPlan } {
   const contract = (snapshot.contract?.checks ?? []) as ContractCheck[];
-  return { incidentId: snapshot.incident.id, experimentId, kind, round, trafficSource: traffic.source, contract, replayMinutes: traffic.replayMinutes };
+  const { flagVariant, restart, speed, kind } = body;
+  const traffic = trafficPlanOf(folder, { recipe: body.recipe, speed, requestCount: mitigationRequestCount(contract, kind) });
+  const experimentId = `exp-${snapshot.experiments.length + 1}`;
+  const replay = { recipePath: traffic.recipePath, speed, replayCapMs: traffic.shape.capMs, requestCount: traffic.shape.requestCount };
+  const round = { name: experimentId, flagVariant, restart, stopOnFailure: kind === 'reproduction', count: traffic.count, pacingMs: traffic.pacingMs, ...replay };
+  return { incidentId: snapshot.incident.id, experimentId, kind, round, trafficSource: traffic.source, contract, traffic };
 }
 
 function startedDraft(plan: ExperimentPlan, body: StartBody & { contractId: string }) {
@@ -54,7 +61,7 @@ function startedDraft(plan: ExperimentPlan, body: StartBody & { contractId: stri
 async function recordStart(deps: StartDeps, request: { snapshot: Snapshot; body: StartBody }) {
   const { snapshot, body } = request;
   const plan = planOf(snapshot, { body, folder: incidentFolder(deps.writer.stateDir, snapshot.incident.id) });
-  const estimatedMinutes = estimatedMinutesOf({ ...plan.round, source: plan.trafficSource, replayMinutes: plan.replayMinutes }, deps.owner.isWarmFor(plan.incidentId));
+  const estimatedMinutes = estimatedMinutesOf(plan.traffic, deps.owner.isWarmFor(plan.incidentId));
   const clock = { startedAt: snapshot.incident.startedAt, nowMs: Date.now() };
   if (!experimentEndsInTime(clock, estimatedMinutes)) throw new ConflictException({ code: 'past_exploration_cutoff', minutesLeft: explorationMinutesLeft(clock) });
   const draft = startedDraft(plan, { ...body, contractId: String(snapshot.contract?.id) });

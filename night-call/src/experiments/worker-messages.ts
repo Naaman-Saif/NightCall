@@ -10,7 +10,8 @@ export type RoundRequest = {
   pacingMs: number;
   recipePath: string | null;
   speed: number;
-  replayCapMs: number;
+  replayCapMs: number | null;
+  requestCount: number | null;
 };
 
 export type WorkerCommandBody =

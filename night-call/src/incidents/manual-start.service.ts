@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 
+import { SandboxOwner } from '../experiments/sandbox-owner';
+import { warmInBackground } from '../experiments/warm-in-background';
 import { openInvestigation, type AlertFacts } from '../investigation/open-investigation';
 import { captureRecipeInBackground } from '../production/recipe-in-background';
 import { SeriesKeeper } from '../recorder/series-keeper';
@@ -24,7 +26,10 @@ export function manualFacts(service: string): AlertFacts {
 export class ManualStartService {
   private readonly log = new Logger('ManualStart');
 
-  constructor(@Inject(SeriesKeeper) private readonly keeper: SeriesKeeper) {}
+  constructor(
+    @Inject(SeriesKeeper) private readonly keeper: SeriesKeeper,
+    @Inject(SandboxOwner) private readonly owner: SandboxOwner,
+  ) {}
 
   async start(body: unknown): Promise<ManualStart> {
     const parsed = manualStartShape.safeParse(body);
@@ -36,6 +41,7 @@ export class ManualStartService {
     this.log.log(`manual investigation ${opened.incidentId} opened for ${facts.service}`);
     this.keeper.keep();
     captureRecipeInBackground(this.log, { writer, incidentId: opened.incidentId, openedAtMs: Date.parse(String(opened.payload.startedAt)) });
+    warmInBackground(this.log, { owner: this.owner, opened });
     investigateInBackground(this.log, { writer, incidentId: opened.incidentId, trigger: 'manual' });
     return { incidentId: opened.incidentId, label: String(opened.payload.label) };
   }

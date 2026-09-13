@@ -8,7 +8,7 @@ import { productionIdentity, sourceChecksum } from '../sandbox-copy/production-i
 import type { RecipeReplay } from '../sandbox-copy/round-workload';
 import { currentSandbox, runRound, startSandbox } from '../sandbox-copy/sandbox';
 import { leaveSandboxNetwork } from '../sandbox-copy/sandbox-network';
-import { cappedRecipe } from './capped-recipe';
+import { shapedRecipe } from './capped-recipe';
 import type { RoundOutcome, RoundRequest, WarmStart, WorkerCommand } from './worker-messages';
 
 async function sweepLeftovers(): Promise<void> {
@@ -30,7 +30,7 @@ async function startWarm(sweep: boolean, runId: string): Promise<WarmStart> {
 function replayOf(round: RoundRequest): RecipeReplay | null {
   if (!round.recipePath) return null;
   const recipe = JSON.parse(readFileSync(round.recipePath, 'utf8')) as TrafficRecipe;
-  const capped = cappedRecipe(recipe, { speed: round.speed, capMs: round.replayCapMs });
+  const capped = shapedRecipe(recipe, { speed: round.speed, capMs: round.replayCapMs, requestCount: round.requestCount });
   if (capped.requests.length === 0) throw new Error(`recipe ${round.recipePath} has no requests to replay`);
   return { recipe: capped, speed: round.speed, recipePath: round.recipePath };
 }
