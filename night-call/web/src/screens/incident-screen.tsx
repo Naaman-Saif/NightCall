@@ -1,37 +1,56 @@
 import type { SubmitAnswer } from '../api/client';
-import type { Snapshot } from '../api/contract';
+import type { IncidentEvent, Snapshot } from '../api/contract';
 import type { IncidentView } from '../api/use-incident-stream';
 import { Banner, EmptyState } from '../kit';
 import { BriefBlock } from './brief-block';
+import { ChartsPanel } from './charts-panel';
+import { ExperimentsPanel } from './experiments-panel';
+import { HypothesesPanel } from './hypotheses-panel';
 import { IncidentHeader } from './incident-header';
 import { QuestionColumn } from './question-column';
+import { ResultPanel } from './result-panel';
+import { RolesStrip } from './roles-strip';
 import { Timeline } from './timeline';
+import { VerificationPanel } from './verification-panel';
 
-type IncidentScreenProps = { view: IncidentView; isOperator: boolean; submitAnswer: SubmitAnswer };
+type IncidentScreenProps = { view: IncidentView; isOperator: boolean; isSample: boolean; submitAnswer: SubmitAnswer };
+type MainSectionsProps = { snapshot: Snapshot; events: IncidentEvent[]; isSample: boolean };
 
-export function IncidentScreen({ view, isOperator, submitAnswer }: IncidentScreenProps) {
-  if (view.loadFailed) {
+export function IncidentScreen(props: IncidentScreenProps) {
+  if (props.view.loadFailed) {
     return <EmptyState icon="triangle-alert" title="This incident could not be loaded">Check the link or open the incident list.</EmptyState>;
   }
-  if (!view.snapshot) return <EmptyState icon="loader-circle" title="Loading the incident" />;
-  return <IncidentLayout snapshot={view.snapshot} view={view} isOperator={isOperator} submitAnswer={submitAnswer} />;
+  if (!props.view.snapshot) return <EmptyState icon="loader-circle" title="Loading the incident" />;
+  return <IncidentLayout {...props} snapshot={props.view.snapshot} />;
 }
 
-function IncidentLayout({ snapshot, view, isOperator, submitAnswer }: IncidentScreenProps & { snapshot: Snapshot }) {
+function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: IncidentScreenProps & { snapshot: Snapshot }) {
   return (
     <div className="page">
       <IncidentHeader incident={snapshot.incident} connection={view.connection} />
       {!isOperator && <PublicBanner />}
       <div className="incident-columns">
-        <section className="incident-main">
-          <BriefBlock brief={snapshot.brief} />
-          <Timeline events={view.events} />
-        </section>
+        <MainSections snapshot={snapshot} events={view.events} isSample={isSample} />
         <aside className="incident-aside">
           <QuestionColumn questions={snapshot.questions} context={snapshot.context} isOperator={isOperator} submitAnswer={submitAnswer} />
         </aside>
       </div>
     </div>
+  );
+}
+
+function MainSections({ snapshot, events, isSample }: MainSectionsProps) {
+  return (
+    <section className="incident-main">
+      <ResultPanel snapshot={snapshot} />
+      <VerificationPanel snapshot={snapshot} />
+      <BriefBlock brief={snapshot.brief} />
+      <RolesStrip roles={snapshot.roles} />
+      <Timeline events={events} />
+      <HypothesesPanel snapshot={snapshot} />
+      <ExperimentsPanel experiments={snapshot.experiments} />
+      <ChartsPanel incident={snapshot.incident} isSample={isSample} />
+    </section>
   );
 }
 

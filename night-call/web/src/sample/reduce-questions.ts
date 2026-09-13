@@ -1,4 +1,5 @@
 import type { Attention, IncidentEvent, Question, Snapshot } from '../api/contract';
+import { reducerFrom } from './reducer-table';
 
 export function withQuestion(snapshot: Snapshot, event: IncidentEvent<'question_asked'>): Snapshot {
   const { questionId, text, whyItMatters, meanwhile, blocks } = event.payload;
@@ -14,6 +15,8 @@ export function withContext(snapshot: Snapshot, event: IncidentEvent<'context_su
   const context = [...snapshot.context, { questionId, text, suppliedAt: event.occurredAt }];
   return { ...snapshot, questions, context };
 }
+
+export const reduceQuestions = reducerFrom({ question_asked: withQuestion, context_supplied: withContext });
 
 export function attentionFor(snapshot: Snapshot): Attention {
   const openQuestions = snapshot.questions.filter((question) => !question.answer);

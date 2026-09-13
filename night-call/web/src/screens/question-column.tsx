@@ -17,7 +17,7 @@ type QuestionColumnProps = {
 export function QuestionColumn({ questions, context, isOperator, submitAnswer }: QuestionColumnProps) {
   const openCount = questions.filter((question) => !question.answer).length;
   return (
-    <div className="question-column">
+    <div className="question-column section-questions">
       <div className="section-head">
         <span className="eyebrow">Questions</span>
         <span className="meta">{openCount} open</span>

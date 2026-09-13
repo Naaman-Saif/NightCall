@@ -5,7 +5,7 @@ import { Card, Icon, RoleTag } from '../kit';
 
 export function BriefBlock({ brief }: { brief: Brief | null }) {
   return (
-    <Card eyebrow="Investigation lead" title="Incident brief" actions={<RoleTag role="lead" />}>
+    <Card eyebrow="Investigation lead" title="Incident brief" actions={<RoleTag role="lead" />} className="section-brief">
       {brief ? <BriefContent brief={brief} /> : <p className="muted">The lead has not written the brief yet.</p>}
     </Card>
   );

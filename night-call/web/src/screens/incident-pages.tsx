@@ -12,10 +12,10 @@ export function LiveIncidentPage({ incidentId, isOperator }: { incidentId: strin
     },
     [incidentId],
   );
-  return <IncidentScreen view={view} isOperator={isOperator} submitAnswer={submitAnswer} />;
+  return <IncidentScreen view={view} isOperator={isOperator} isSample={false} submitAnswer={submitAnswer} />;
 }
 
 export function SampleIncidentPage({ isOperator }: { isOperator: boolean }) {
   const { view, submitAnswer } = useSampleIncident();
-  return <IncidentScreen view={view} isOperator={isOperator} submitAnswer={submitAnswer} />;
+  return <IncidentScreen view={view} isOperator={isOperator} isSample submitAnswer={submitAnswer} />;
 }

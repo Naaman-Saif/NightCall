@@ -16,6 +16,8 @@ function phaseAfter(current: Phase, event: IncidentEvent): Phase {
       return current === 'briefing' ? 'investigating' : current;
     case 'experiment_started':
       return event.payload.kind === 'reproduction' ? 'reproducing' : current;
+    case 'experiment_finished':
+      return current === 'reproducing' ? 'investigating' : current;
     case 'mitigation_proposed':
       return 'mitigating';
     case 'verification_started':
