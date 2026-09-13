@@ -1,8 +1,8 @@
 import { clock, investigationSentence } from './investigation-sentence';
+import { acceptedReproductionOf, proofSentences, reproductionSentence } from './proof-sentence';
 import { activitySentence } from './run-activity';
 import type { CrashCounts, Snapshot } from './snapshot';
 
-const ESTABLISHED_CAUSE = 'The cause is established by an accepted reproduction.';
 const UNKNOWN_CAUSE = 'The cause is not established.';
 
 function times(count: number): string {
@@ -34,19 +34,9 @@ function openingSentence(snapshot: Snapshot): string {
   return `Alert ${alertName} fired for ${service} at ${clock(startedAt)}.`;
 }
 
-function causeIsEstablished(snapshot: Snapshot): boolean {
-  const supported = new Set(snapshot.hypotheses.filter((hypothesis) => hypothesis.status === 'supported').map((hypothesis) => hypothesis.id));
-  return snapshot.experiments.some(
-    (experiment) =>
-      experiment.kind === 'reproduction' &&
-      supported.has(experiment.hypothesisId) &&
-      experiment.verdict === 'matches' &&
-      experiment.review?.accepted === true,
-  );
-}
-
 function causeClause(snapshot: Snapshot): string {
-  if (causeIsEstablished(snapshot)) return ESTABLISHED_CAUSE;
+  const reproduced = acceptedReproductionOf(snapshot);
+  if (reproduced) return [reproductionSentence(snapshot, reproduced), ...proofSentences(snapshot)].join(' ');
   const causes = snapshot.runReport.causes;
   const supported = causes.filter((cause) => cause.status === 'supported').at(-1);
   if (supported) return `Most likely cause: ${supported.claim.trim().replace(/[.\s]+$/, '')}, not yet reproduced.`;

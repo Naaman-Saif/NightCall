@@ -41,8 +41,18 @@ function reviewVerification(snapshot: Snapshot, event: IncidentEvent): Snapshot 
   return withMitigationStatus({ ...snapshot, verification: { verificationRunId, approved, reasons } });
 }
 
+function closeRunningCycles(snapshot: Snapshot): Snapshot {
+  if (!snapshot.cycles.some((cycle) => cycle.state === 'running')) return snapshot;
+  const cycles = snapshot.cycles.map((cycle) => (cycle.state === 'running' ? { ...cycle, state: 'failed' as const } : cycle));
+  const mitigation = snapshot.mitigation?.status === 'testing' ? { ...snapshot.mitigation, status: 'proposed' as const } : snapshot.mitigation;
+  return { ...snapshot, cycles, mitigation };
+}
+
 export const reduceVerification = reducerFrom({
   cycle_started: startCycle,
   cycle_finished: finishCycle,
   verification_reviewed: reviewVerification,
+  budget_exhausted: closeRunningCycles,
+  investigation_finished: closeRunningCycles,
+  investigation_stopped: closeRunningCycles,
 });

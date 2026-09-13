@@ -2,7 +2,16 @@ import { causesOf } from './run-causes';
 import type { RunStatus } from './run-report-types';
 import type { EvidenceItem, InvestigationState, Snapshot } from './snapshot';
 
-export const NOT_DONE = ['Looking for the cause', 'Reproducing the crash in a test copy', 'Testing a fix'];
+export const NOT_DONE = ['Looking for the cause', 'Reproducing the crash in a test copy', 'Testing a fix', 'Opening a pull request'];
+
+function notDoneOf(snapshot: Snapshot, causeCount: number): string[] {
+  const done = new Set<string>();
+  if (causeCount > 0) done.add(NOT_DONE[0]);
+  if (snapshot.reproduction === 'confirmed') done.add(NOT_DONE[1]);
+  if (snapshot.mitigation?.status === 'verified') done.add(NOT_DONE[2]);
+  if (snapshot.publication.state === 'published') done.add(NOT_DONE[3]);
+  return NOT_DONE.filter((item) => !done.has(item));
+}
 export const ERROR_NOTE = 'The run stopped because of an error.';
 export const INFERRED_STOP_NOTE = 'The run reported finished and nothing followed for 2 minutes, so NightCall shows it as stopped.';
 
@@ -46,7 +55,7 @@ function noteOf(snapshot: Snapshot): string | null {
 export function withRunReport(snapshot: Snapshot): Snapshot {
   const status = STATUS_BY_STATE[snapshot.investigation];
   const causes = causesOf(snapshot);
-  const notDone = causes.length > 0 ? NOT_DONE.slice(1) : [...NOT_DONE];
+  const notDone = notDoneOf(snapshot, causes.length);
   const timing = { status, statusAt: statusAtOf(snapshot), note: noteOf(snapshot) };
   const derived = { ...timing, nowDoing: nowDoingOf(snapshot), found: foundOf(snapshot), causes, notDone };
   return { ...snapshot, runReport: { ...snapshot.runReport, ...derived } };

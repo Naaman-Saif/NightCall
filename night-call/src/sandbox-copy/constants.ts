@@ -3,7 +3,7 @@ export const shopPath = process.env.NIGHT_CALL_ASTRONOMY_SHOP_PATH ?? '/root/cod
 export const sandboxProject = 'nc-sandbox';
 export const sandboxNetwork = 'nc-sandbox-network';
 export const productionProject = 'prod';
-export const budgetMs = 30 * 60 * 1000;
+export const budgetMs = Number(process.env.NIGHT_CALL_BUDGET_MINUTES ?? '30') * 60 * 1000;
 export const cleanupMarkerPath = `${runsPath}/nc-sandbox-cleanup-failed.json`;
 
 export const productionComposeFiles = [

@@ -7,6 +7,7 @@ import { IncidentsModule } from './incidents/incidents.module';
 import { InvestigationModule } from './investigation/investigation.module';
 import { OperatorApiModule } from './operator-api/operator-api.module';
 import { PublicApiModule } from './public-api/public-api.module';
+import { PublicationModule } from './publication/publication.module';
 import { RecorderModule } from './recorder/recorder.module';
 import { ToolApiModule } from './tool-api/tool-api.module';
 
@@ -19,6 +20,7 @@ import { ToolApiModule } from './tool-api/tool-api.module';
     IncidentsModule,
     ToolApiModule,
     ExperimentsModule,
+    PublicationModule,
     PublicApiModule,
     OperatorApiModule,
   ],
