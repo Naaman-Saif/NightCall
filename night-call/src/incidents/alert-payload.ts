@@ -10,6 +10,8 @@ const alertSchema = z.object({
   fingerprint: z.string().optional(),
 });
 
+export const TEST_LABEL = 'nightcall_test';
+
 export const alertPayloadSchema = z.object({
   status: z.enum(['firing', 'resolved']),
   receiver: z.string().optional(),
@@ -36,5 +38,9 @@ export function factsOf(alert: Alert): AlertFacts {
   const service = serviceOf(alert);
   const summary = alert.annotations.summary ?? `${alertName} fired for ${service}`;
   const severity = alert.labels.severity ?? 'unknown';
-  return { alertName, service, severity, summary, labels: alert.labels, illustrative: false };
+  return { alertName, service, severity, summary, labels: alert.labels, illustrative: alertIsTest(alert) };
+}
+
+export function alertIsTest(alert: Alert): boolean {
+  return alert.labels[TEST_LABEL] === 'true';
 }
