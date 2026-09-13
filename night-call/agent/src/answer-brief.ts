@@ -1,12 +1,20 @@
-import { type Brief, failureShareOf, type EvidenceLedger } from './evidence-ledger.js';
+import { type Brief, failureShareOf, readingFacts, type EvidenceLedger } from './evidence-ledger.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import type { Lead } from './lead-steps.js';
-import { logProgress } from './progress.js';
+import { logProgress, type ProgressEvent } from './progress.js';
 import { failuresPer100, pathSentence, UNCONFIRMED_IMPACT, type UrgencyDecision } from './urgency.js';
 import { briefProblem, cleanBrief } from './write-tools.js';
 
 export type BriefParts = { api: IncidentApi; ledger: EvidenceLedger; lead: Lead };
 export type Outcome = { answer: Answer | null; decision: UrgencyDecision };
+
+export const EVIDENCE_BRIEF_SUMMARY = 'Summary from the evidence readings; analysis still running.';
+
+export function evidenceBrief(ledger: EvidenceLedger): ProgressEvent {
+  const nextStep = 'Keep reading production evidence and wait for the answer about customer impact.';
+  const brief = cleanBrief({ summary: EVIDENCE_BRIEF_SUMMARY, knownFacts: readingFacts(ledger), unknowns: ['What is behind the failures'], nextStep });
+  return { type: 'brief_updated', summary: brief.summary, payload: brief };
+}
 
 export function withDecision(brief: Brief, decision: UrgencyDecision): Brief {
   const listed = brief.unknowns.includes(UNCONFIRMED_IMPACT);
@@ -22,7 +30,7 @@ export function fallbackBrief(ledger: EvidenceLedger, outcome: Outcome): Brief {
   const earlier = ledger.lastBrief;
   const opening = earlier?.summary ?? `Recommendations are failing on about ${failuresPer100(failureShareOf(ledger))} in 100 requests.`;
   const summary = `${opening} ${answerLine(outcome)}`;
-  return { summary, knownFacts: earlier?.knownFacts ?? [], unknowns: earlier?.unknowns ?? [], nextStep: pathSentence(outcome.decision) };
+  return { summary, knownFacts: earlier?.knownFacts ?? readingFacts(ledger), unknowns: earlier?.unknowns ?? [], nextStep: pathSentence(outcome.decision) };
 }
 
 async function draftedBrief(parts: BriefParts, outcome: Outcome): Promise<Brief | null> {

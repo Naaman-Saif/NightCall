@@ -14,10 +14,11 @@ export const LEAD_SYSTEM_PROMPT = [
   'Write as the report itself: never mention agents, roles, models, tools or yourself.',
 ].join(' ');
 
-export function firstBriefTask(facts: IncidentFacts): string {
+export function firstBriefTask(facts: IncidentFacts, alreadyRead: string): string {
   return [
     `The alarm "${facts.alertName}" fired for the ${facts.service} service.`,
-    `Before writing anything, call read_failure_rate, read_memory for ${facts.service}, read_crashes for ${facts.service} and read_deploy_history.`,
+    `The failure rate is already recorded: ${alreadyRead}`,
+    `Before writing anything, call read_memory for ${facts.service}, read_crashes for ${facts.service} and read_deploy_history.`,
     'Then call update_brief once: a two sentence summary, known facts each citing evidence ids, what is still unknown, and the next step.',
     'Then call propose_hypothesis for one to three explanations, each citing supporting evidence ids and saying what a sandbox test would show.',
     'Finish with one short sentence.',

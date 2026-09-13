@@ -7,6 +7,7 @@ export type Brief = { summary: string; knownFacts: KnownFact[]; unknowns: string
 export type EvidenceLedger = {
   ids: Set<string>;
   readings: Map<ReaderName, unknown>;
+  summaries: Map<ReaderName, KnownFact>;
   hypotheses: string[];
   lastBrief: Brief | null;
 };
@@ -14,12 +15,18 @@ export type EvidenceLedger = {
 type SpanReading = { spans?: { errorShare?: number | null }[] };
 
 export function newLedger(): EvidenceLedger {
-  return { ids: new Set(), readings: new Map(), hypotheses: [], lastBrief: null };
+  return { ids: new Set(), readings: new Map(), summaries: new Map(), hypotheses: [], lastBrief: null };
 }
 
 export function noteReading(ledger: EvidenceLedger, reading: { reader: ReaderName; reply: ReaderReply }): void {
-  if (reading.reply.evidence.evidenceId) ledger.ids.add(reading.reply.evidence.evidenceId);
+  const { evidenceId, summary } = reading.reply.evidence;
+  if (evidenceId) ledger.ids.add(evidenceId);
+  if (evidenceId && summary) ledger.summaries.set(reading.reader, { text: summary, evidenceIds: [evidenceId] });
   ledger.readings.set(reading.reader, reading.reply.data);
+}
+
+export function readingFacts(ledger: EvidenceLedger): KnownFact[] {
+  return [...ledger.summaries.values()];
 }
 
 export function unknownEvidenceIds(ledger: EvidenceLedger, ids: string[]): string[] {
