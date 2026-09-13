@@ -25,7 +25,8 @@ function logInToRegistry(uri: string): void {
 }
 
 export async function pushImage(): Promise<string> {
-  const imageUri = `${await repositoryUri()}:arm64`;
+  const commit = execSync('git rev-parse --short HEAD', { cwd: packageFolder }).toString().trim();
+  const imageUri = `${await repositoryUri()}:arm64-${commit}`;
   logInToRegistry(imageUri);
   const build = `docker buildx build --platform linux/arm64 --provenance=false -t ${imageUri} --push .`;
   execSync(build, { cwd: packageFolder, stdio: 'inherit' });
