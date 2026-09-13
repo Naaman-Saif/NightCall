@@ -5,6 +5,10 @@ import { describeAttention, describePhase } from '../format/incident-text';
 import { formatAgo } from '../format/time';
 import { useNow } from '../format/use-now';
 import { Badge, Banner, DemoBadge, EmptyState } from '../kit';
+import { ManualTag } from './manual-tag';
+import { StartInvestigation } from './start-investigation';
+
+type ListProps = { showSample: boolean; isOperator: boolean };
 
 function useIncidentList() {
   const [items, setItems] = useState<IncidentListItem[] | null>(null);
@@ -15,32 +19,35 @@ function useIncidentList() {
   return { items, loadFailed };
 }
 
-export function IncidentListScreen({ showSample }: { showSample: boolean }) {
+export function IncidentListScreen({ showSample, isOperator }: ListProps) {
   const { items, loadFailed } = useIncidentList();
+  const linkPrefix = isOperator ? '/op/incidents/' : '/incidents/';
   return (
     <div className="page">
       <div>
         <h1 className="page-title">Incidents</h1>
         <p className="muted">NightCall opens an incident when monitoring fires and investigates for up to 30 minutes.</p>
       </div>
+      {isOperator && <StartInvestigation />}
       {loadFailed && <Banner tone="critical" title="The incident list could not be loaded">Try again in a moment.</Banner>}
       {items?.length === 0 && <EmptyState compact icon="moon" title="No incidents yet" />}
       <div className="incident-list">
-        {items?.map((item) => <IncidentRow key={item.id} item={item} />)}
+        {items?.map((item) => <IncidentRow key={item.id} item={item} linkPrefix={linkPrefix} />)}
         {showSample && <SampleRow />}
       </div>
     </div>
   );
 }
 
-function IncidentRow({ item }: { item: IncidentListItem }) {
+function IncidentRow({ item, linkPrefix }: { item: IncidentListItem; linkPrefix: string }) {
   const now = useNow();
   return (
-    <a className="incident-row" href={`/incidents/${encodeURIComponent(item.id)}`}>
+    <a className="incident-row" href={`${linkPrefix}${encodeURIComponent(item.id)}`}>
       <span className="meta">{item.label}</span>
       <span className="incident-row-title">
         {item.alertName} <span className="meta">{item.service}</span>
       </span>
+      <ManualTag alertName={item.alertName} />
       {item.illustrative && <DemoBadge />}
       {item.attention !== 'none' && <Badge tone="accent">{describeAttention(item.attention)}</Badge>}
       <span className="meta">{describePhase(item)}</span>
