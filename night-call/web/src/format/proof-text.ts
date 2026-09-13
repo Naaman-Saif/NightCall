@@ -1,4 +1,4 @@
-import type { Cycle, Mitigation } from '../api/contract';
+import type { Cycle, Mitigation, TrafficSource } from '../api/contract';
 import type { CycleTile } from '../kit';
 import { describeTraffic } from './traffic-text';
 
@@ -19,15 +19,15 @@ function resultOf(cycle: Cycle): string {
   return `${passedChecks} of ${total} checks passed`;
 }
 
-function tileFor(cycle: Cycle | undefined): CycleTile {
+function tileFor(cycle: Cycle | undefined, trafficSource: TrafficSource | null): CycleTile {
   if (!cycle) return { state: 'pending', detail: 'not started' };
-  const traffic = describeTraffic(cycle);
+  const traffic = describeTraffic({ trafficSource, speed: cycle.speed });
   const result = resultOf(cycle);
   return { state: cycle.state, detail: traffic ? `${result}. ${traffic}` : result };
 }
 
-export function cycleTiles(cycles: Cycle[]): CycleTile[] {
-  return ROUND_NUMBERS.map((round) => tileFor(cycles.find((cycle) => cycle.number === round)));
+export function cycleTiles(cycles: Cycle[], trafficSource: TrafficSource | null): CycleTile[] {
+  return ROUND_NUMBERS.map((round) => tileFor(cycles.find((cycle) => cycle.number === round), trafficSource));
 }
 
 export function countPassedRounds(cycles: Cycle[]): number {

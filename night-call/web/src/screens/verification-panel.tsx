@@ -1,4 +1,5 @@
 import type { Cycle, Mitigation, Snapshot } from '../api/contract';
+import { latestTrafficSourceOf } from '../format/experiment-live-text';
 import { MITIGATION_STATUS_TEXT, countPassedRounds, cycleTiles } from '../format/proof-text';
 import { Card, ClaimLabel, VerificationCycles } from '../kit';
 
@@ -11,7 +12,7 @@ export function VerificationPanel({ snapshot }: { snapshot: Snapshot }) {
       {mitigation ? (
         <div className="panel-stack" data-mitigation-status={mitigation.status}>
           <MitigationStatus mitigation={mitigation} cycles={snapshot.cycles} />
-          <VerificationCycles cycles={cycleTiles(snapshot.cycles)} conditions={RECORDED_CONDITIONS} />
+          <VerificationCycles cycles={cycleTiles(snapshot.cycles, latestTrafficSourceOf(snapshot))} conditions={RECORDED_CONDITIONS} />
         </div>
       ) : (
         <p className="muted">Verification starts once a mitigation is proposed.</p>
