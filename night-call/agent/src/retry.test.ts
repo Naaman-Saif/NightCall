@@ -45,6 +45,7 @@ test('server errors, 429 and connection resets deep in the cause chain are trans
   assert.equal(isRetryable(Object.assign(new Error('upstream'), { status: 503 })), true);
   assert.equal(isRetryable(new Error('model failed', { cause: Object.assign(new Error('read'), { code: 'ECONNRESET' }) })), true);
   assert.equal(isRetryable(new Error('Connection error.')), true);
+  assert.equal(isRetryable(new Error('Model reached maximum token limit. This is an unrecoverable state that requires intervention.')), true);
   assert.equal(isRetryable(new Error('invalid schema')), false);
 });
 

@@ -45,6 +45,7 @@ export function stubInvestigation(answerText: string | null, draft: BriefDraft =
   const recorded: Recorded = { steps: [], events: [] };
   const waitForAnswer = async () => {
     recorded.steps.push('wait for answer');
+    await new Promise((resolve) => setImmediate(resolve));
     return answerText === null ? null : { questionId: 'q-impact', text: answerText, suppliedAt: '2026-09-13T20:00:00Z' };
   };
   const parts = { api: stubApi(recorded), ledger: newLedger(), lead: stubLead(recorded, draft), waitForAnswer };

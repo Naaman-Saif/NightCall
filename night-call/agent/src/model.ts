@@ -2,10 +2,13 @@ import type { Model } from '@strands-agents/sdk';
 
 export type RoleSetting = { role: string; provider: string; modelId: string };
 
-export function readRoleSetting(role: string): RoleSetting {
-  const value = process.env[`NIGHT_CALL_${role}_MODEL`] ?? '';
+export function parseRoleSetting(role: string, value: string): RoleSetting {
   const separator = value.indexOf(':');
   return { role, provider: value.slice(0, separator), modelId: value.slice(separator + 1) };
+}
+
+export function readRoleSetting(role: string, env: NodeJS.ProcessEnv = process.env): RoleSetting {
+  return parseRoleSetting(role, env[`NIGHT_CALL_${role}_MODEL`] ?? '');
 }
 
 async function buildFeatherlessModel(modelId: string): Promise<Model> {
@@ -14,7 +17,7 @@ async function buildFeatherlessModel(modelId: string): Promise<Model> {
     api: 'chat',
     modelId,
     apiKey: process.env.FEATHERLESS_API_KEY,
-    params: { parallel_tool_calls: false, max_tokens: 12_000 },
+    params: { parallel_tool_calls: false, max_tokens: 12_000, ...(/GLM/i.test(modelId) ? { reasoning_effort: 'low' } : {}) },
     clientConfig: { baseURL: process.env.FEATHERLESS_BASE_URL, maxRetries: 0 },
   });
 }

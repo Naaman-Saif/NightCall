@@ -5,7 +5,7 @@ import { newLedger } from './evidence-ledger.js';
 import { readAndNote, REPLY_BYTE_LIMIT, type LeadSession, trimmedView } from './evidence-view.js';
 import type { IncidentApi } from './incident-api.js';
 import type { ProgressEvent } from './progress.js';
-import { briefProblem, postHypothesis } from './write-tools.js';
+import { briefProblem, cleanBrief, postHypothesis } from './write-tools.js';
 
 function recordingSession(): LeadSession & { posted: ProgressEvent[] } {
   const posted: ProgressEvent[] = [];
@@ -49,4 +49,5 @@ test('the brief never claims proof or names roles and models', () => {
   assert.equal(briefProblem(ledger, brief), null);
   assert.match(briefProblem(ledger, { ...brief, summary: 'The cause is proven.' }) ?? '', /proven/);
   assert.match(briefProblem(ledger, { ...brief, nextStep: 'The verifier checks it.' }) ?? '', /verifier/);
+  assert.equal(cleanBrief({ ...brief, summary: `Memory grows ${String.fromCharCode(0x2014)} not yet pinned.` }).summary, 'Memory grows, not yet pinned.');
 });

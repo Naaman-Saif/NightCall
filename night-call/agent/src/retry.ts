@@ -10,7 +10,7 @@ type RetryPlan<Result> = { attempt: (number: number) => Promise<Result>; pause: 
 
 type ErrorLink = { message?: string; status?: number; code?: string; cause?: unknown };
 
-const RETRYABLE_TEXT = /Stream ended without completing a message|ECONNRESET|socket hang up|Connection error|other side closed|terminated/i;
+const RETRYABLE_TEXT = /Stream ended without completing a message|ECONNRESET|socket hang up|Connection error|other side closed|terminated|maximum token limit/i;
 
 function errorChain(error: unknown): ErrorLink[] {
   const links: ErrorLink[] = [];

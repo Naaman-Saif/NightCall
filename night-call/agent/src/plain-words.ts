@@ -1,6 +1,6 @@
 const OFF_LIMITS = /\b(proven|proved|investigation lead|the lead|investigator|verifier|agents?|llm|glm|kimi|qwen|deepseek|language model|featherless|strands)\b/i;
 
-const LONG_DASH = /\u2014/g;
+const LONG_DASH = /\s*\u2014\s*/g;
 
 export function wordingProblem(texts: string[]): string | null {
   const offending = texts.map((text) => OFF_LIMITS.exec(text)?.[0]).find((word) => word !== undefined);
