@@ -1,7 +1,7 @@
 import { Agent, type AgentResult } from '@strands-agents/sdk';
 import { z } from 'zod';
 
-import { FALLBACK_ATTEMPT, promptForAttempt, settingForAttempt } from './attempt-plan.js';
+import { causeSettingForAttempt, promptForAttempt, settingForAttempt } from './attempt-plan.js';
 import type { Cause } from './cause-rules.js';
 import { causesTask, classifyTask, LEAD_SYSTEM_PROMPT, type IncidentFacts } from './lead-prompts.js';
 import { buildModel, type RoleSetting } from './model.js';
@@ -29,15 +29,15 @@ export type Lead = {
   classify(request: ClassifyRequest): Promise<Classification>;
 };
 
-type AgentPlan = { schema: z.ZodType; signal: AbortSignal; onFallback: () => void };
+type AgentPlan = { schema: z.ZodType; signal: AbortSignal; onFallback: () => void; settingFor: (attempt: number) => RoleSetting };
 
 function runAgent(plan: AgentPlan, prompt: string): Promise<AgentResult> {
   return withRetries(async (attempt) => {
-    if (attempt === FALLBACK_ATTEMPT) {
+    const setting = plan.settingFor(attempt);
+    if (setting.role === 'LEAD_FALLBACK') {
       logProgress({ fallbackModelAttempt: attempt });
       plan.onFallback();
     }
-    const setting = settingForAttempt(attempt);
     const agent = new Agent({ model: await buildModel(setting), tools: [], printer: false, systemPrompt: LEAD_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: plan.schema });
     const startedAt = Date.now();
     const result = await agent.invoke(promptForAttempt({ prompt, attempt }), { cancelSignal: plan.signal, limits: { turns: TURN_LIMIT } });
@@ -57,11 +57,13 @@ function logModelCall(call: ModelCall): void {
 export function leadFor(facts: IncidentFacts): Lead {
   return {
     proposeCauses: async (request) => {
-      const result = await runAgent({ schema: causesShape, signal: request.signal, onFallback: request.onFallback }, causesTask(facts, request.readings));
+      const plan = { schema: causesShape, signal: request.signal, onFallback: request.onFallback, settingFor: (attempt: number) => causeSettingForAttempt(attempt) };
+      const result = await runAgent(plan, causesTask(facts, request.readings));
       return causesShape.parse(result.structuredOutput).causes;
     },
     classify: async (request) => {
-      const result = await runAgent({ schema: classificationShape, signal: request.signal, onFallback: request.onFallback }, classifyTask(request.answer));
+      const plan = { schema: classificationShape, signal: request.signal, onFallback: request.onFallback, settingFor: (attempt: number) => settingForAttempt(attempt) };
+      const result = await runAgent(plan, classifyTask(request.answer));
       return classificationShape.parse(result.structuredOutput);
     },
   };

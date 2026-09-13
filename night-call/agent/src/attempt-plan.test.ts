@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { promptForAttempt, settingForAttempt, SHORT_TURN_HINT } from './attempt-plan.js';
+import { causeSettingForAttempt, promptForAttempt, settingForAttempt, SHORT_TURN_HINT } from './attempt-plan.js';
 import { featherlessParams, readRoleSetting } from './model.js';
 
 const env = { NIGHT_CALL_LEAD_MODEL: 'featherless:zai-org/GLM-5.3' };
@@ -10,6 +10,13 @@ test('the first attempt keeps the prompt and every retry asks for short turns', 
   assert.equal(promptForAttempt({ prompt: 'Read the evidence.', attempt: 1 }), 'Read the evidence.');
   assert.equal(promptForAttempt({ prompt: 'Read the evidence.', attempt: 2 }), `Read the evidence.\n${SHORT_TURN_HINT}`);
   assert.ok(promptForAttempt({ prompt: 'Read the evidence.', attempt: 3 }).endsWith('Final answer under 250 words.'));
+});
+
+test('the cause step retries on the lead model every time and never uses the fallback model', () => {
+  const configured = { ...env, NIGHT_CALL_LEAD_FALLBACK_MODEL: 'featherless:moonshotai/Kimi-K3' };
+  [1, 2, 3].forEach((attempt) => assert.equal(causeSettingForAttempt(attempt, configured).modelId, 'zai-org/GLM-5.3'));
+  assert.equal(causeSettingForAttempt(3, configured).reasoning, 'high');
+  assert.notEqual(causeSettingForAttempt(3, configured).role, 'LEAD_FALLBACK');
 });
 
 test('attempts one and two use the lead model and the third switches to the fallback', () => {

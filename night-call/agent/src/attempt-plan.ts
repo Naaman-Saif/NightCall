@@ -8,6 +8,10 @@ export function promptForAttempt(request: { prompt: string; attempt: number }): 
   return request.attempt > 1 ? `${request.prompt}\n${SHORT_TURN_HINT}` : request.prompt;
 }
 
+export function causeSettingForAttempt(attempt: number, env: NodeJS.ProcessEnv = process.env): RoleSetting {
+  return { ...readRoleSetting('LEAD', env), role: attempt > 1 ? 'LEAD_RETRY' : 'LEAD' };
+}
+
 export function settingForAttempt(attempt: number, env: NodeJS.ProcessEnv = process.env): RoleSetting {
   if (attempt < FALLBACK_ATTEMPT) return readRoleSetting('LEAD', env);
   const fallback = parseRoleSetting('LEAD_FALLBACK', env.NIGHT_CALL_LEAD_FALLBACK_MODEL || DEFAULT_LEAD_FALLBACK_MODEL);
