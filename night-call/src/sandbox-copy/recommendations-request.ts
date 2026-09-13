@@ -3,9 +3,15 @@ export interface RequestIdentity {
   traceId: string;
 }
 
+export interface RequestQuery {
+  productIds: string;
+  currencyCode: string;
+}
+
 export interface RequestTarget {
   endpoint: string;
   identity: RequestIdentity;
+  query?: RequestQuery;
 }
 
 export interface RequestResult {
@@ -28,7 +34,8 @@ function productCount(body: string): number {
 }
 
 function recommendationsUrl(target: RequestTarget): string {
-  const query = new URLSearchParams({ productIds: 'OLJCESPC7Z', currencyCode: 'USD', sessionId: target.identity.sessionId });
+  const chosen = target.query ?? { productIds: 'OLJCESPC7Z', currencyCode: 'USD' };
+  const query = new URLSearchParams({ productIds: chosen.productIds, currencyCode: chosen.currencyCode, sessionId: target.identity.sessionId });
   return `${target.endpoint}/api/recommendations?${query.toString()}`;
 }
 

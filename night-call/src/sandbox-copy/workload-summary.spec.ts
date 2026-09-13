@@ -11,7 +11,7 @@ describe('workload summary', () => {
     const summary = summarizeWorkload({ samples, before, after: observationWith({ restarts: 1 }), elapsedMs: 90_000 });
     expect(summary).toMatchObject({
       count: 3, errors: 1, emptyResponses: 1, peakMemoryBytes: 3000, peakCpuPercent: 40,
-      limitBytes: 524288000, restartsBefore: 0, restartsAfter: 1, elapsedSeconds: 90, elapsedMinutes: 1.5,
+      limitBytes: 524288000, restartsBefore: 0, restartsAfter: 1, elapsedSeconds: 90, elapsedMinutes: 1.5, firstFailureRequest: 3,
     });
     expect(workloadIsHealthy(summary, 3)).toBe(false);
   });
@@ -20,6 +20,7 @@ describe('workload summary', () => {
     const samples = [sampleWith({}), sampleWith({})];
     const summary = summarizeWorkload({ samples, before, after: before, elapsedMs: 1000 });
     expect(workloadIsHealthy(summary, 2)).toBe(true);
+    expect(summary.firstFailureRequest).toBeNull();
     expect(workloadIsHealthy(summary, 3)).toBe(false);
   });
 
