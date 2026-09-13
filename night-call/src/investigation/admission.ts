@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { matchesCurrentRun, type RunIds } from './current-run';
 import type { EventDraft, EventType, IncidentEvent } from './event-types';
@@ -27,9 +27,17 @@ function requireVerifiedBeforePublishing(snapshot: Snapshot, draft: EventDraft):
   throw new ConflictException('publication refused: the mitigation is not verified');
 }
 
+function requireSingleStop(snapshot: Snapshot, draft: EventDraft): void {
+  if (draft.type !== 'investigation_stopped') return;
+  if (snapshot.investigationStop) throw new ConflictException('investigation_stopped was already recorded for this incident');
+  if (draft.payload.summary === draft.summary) return;
+  throw new BadRequestException('investigation_stopped summary must be identical in the event and the payload');
+}
+
 export function admit(events: IncidentEvent[], draft: EventDraft): EventDraft {
   const snapshot = reduceEvents(events);
   if (snapshot?.incident.lifecycle !== 'active') throw new ConflictException('incident is not active');
+  requireSingleStop(snapshot, draft);
   requireCurrentRun(snapshot, draft);
   requireCurrentMitigation(snapshot, draft);
   requireVerifiedBeforePublishing(snapshot, draft);
