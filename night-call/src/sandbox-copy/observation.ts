@@ -3,6 +3,7 @@ import type { ContainerInspectInfo } from 'dockerode';
 import { sandboxContainerName } from './constants';
 import { cpuPercent, cpuReadingOf, isRunningReading, type CpuReading } from './cpu-percent';
 import { inspectContainer, oneShotStats } from './docker-api';
+import { memoryInUse } from '../recorder/memory-usage';
 
 export interface Observation {
   memoryBytes: number | null;
@@ -23,7 +24,7 @@ async function readRecommendation(previous: CpuReading | null): Promise<Observat
   const cpu = cpuReadingOf(stats);
   const memory = stats.memory_stats;
   return {
-    memoryBytes: memory?.usage ?? null,
+    memoryBytes: memoryInUse(stats),
     limitBytes: memory?.limit ?? null,
     cpuPercent: cpuPercent({ previous, current: cpu }),
     restarts: info.RestartCount,
