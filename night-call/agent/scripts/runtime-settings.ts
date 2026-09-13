@@ -5,8 +5,9 @@ const DEFAULTS: Record<string, string> = {
   NIGHT_CALL_VERIFIER_MODEL: 'featherless:moonshotai/Kimi-K3',
 };
 
-const REQUIRED = ['TOOL_API_URL', 'NIGHT_CALL_TOOL_TOKEN', 'FEATHERLESS_API_KEY'];
-const SECRET = new Set(['NIGHT_CALL_TOOL_TOKEN', 'FEATHERLESS_API_KEY']);
+const TOKENS = ['NIGHT_CALL_TOOL_TOKEN_LEAD', 'NIGHT_CALL_TOOL_TOKEN_INVESTIGATOR', 'NIGHT_CALL_TOOL_TOKEN_VERIFIER'];
+const SECRET = new Set([...TOKENS, 'FEATHERLESS_API_KEY']);
+const REQUIRED = ['TOOL_API_URL', ...SECRET];
 
 export function runtimeEnvironment(): Record<string, string> {
   const missing = REQUIRED.filter((name) => (process.env[name] ?? '') === '');
@@ -27,6 +28,7 @@ export function runtimeShape(imageUri: string, roleArn: string) {
     networkConfiguration: { networkMode: 'PUBLIC' as const },
     protocolConfiguration: { serverProtocol: 'HTTP' as const },
     lifecycleConfiguration: { idleRuntimeSessionTimeout: 1200, maxLifetime: 3600 },
+    metadataConfiguration: { requireMMDSV2: true },
     environmentVariables: runtimeEnvironment(),
   };
 }

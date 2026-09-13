@@ -49,15 +49,10 @@ export async function waitUntilReady(agentRuntimeId: string) {
   throw new Error('runtime did not become READY in 20 minutes');
 }
 
-export async function createOrFindRuntime(shape: RuntimeShape): Promise<string> {
+export async function createOrUpdateRuntime(shape: RuntimeShape) {
   const found = await existingRuntimeId();
-  const agentRuntimeId = found === '' ? await createWithRetry(shape) : found;
-  await waitUntilReady(agentRuntimeId);
-  return agentRuntimeId;
-}
-
-export async function updateWithMetadataV2(agentRuntimeId: string, shape: RuntimeShape) {
-  const metadataConfiguration = { requireMMDSV2: true };
-  await agentCore.send(new UpdateAgentRuntimeCommand({ agentRuntimeId, ...shape, metadataConfiguration }));
-  return waitUntilReady(agentRuntimeId);
+  if (found === '') return waitUntilReady(await createWithRetry(shape));
+  await waitUntilReady(found);
+  await agentCore.send(new UpdateAgentRuntimeCommand({ agentRuntimeId: found, ...shape }));
+  return waitUntilReady(found);
 }
