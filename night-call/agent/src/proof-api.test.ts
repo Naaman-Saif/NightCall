@@ -34,6 +34,16 @@ test('job replies are read from the result, and queued counts as running', async
   assert.equal(calls[1].path, '/tool/incidents/inc-1/jobs/job-2?waitSeconds=60');
 });
 
+test('the pull request state is read from the tool case route, and a case without it reads as nothing yet', async () => {
+  const calls: Call[] = [];
+  const replies = [{ publication: { state: 'published', url: 'https://github.com/x/y/pull/2', failureReason: null } }, { incident: {} }];
+  const verifier = fakeClient(calls, () => replies.shift());
+  const api = proofApiFor('inc-1', { investigator: verifier, verifier });
+  assert.deepEqual(await api.readPublication(), { state: 'published', url: 'https://github.com/x/y/pull/2', failureReason: null });
+  assert.equal(await api.readPublication(), null);
+  assert.deepEqual(calls.map((call) => call.path), ['/tool/incidents/inc-1/case', '/tool/incidents/inc-1/case']);
+});
+
 test('reviews go to the frozen routes with the frozen bodies', async () => {
   const calls: Call[] = [];
   const verifier = fakeClient(calls, () => ({ eventId: 'e-1' }));

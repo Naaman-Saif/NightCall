@@ -8,6 +8,8 @@ export type ProofOptions = {
   recipeMissing?: boolean;
   stuckExperiment?: () => void;
   publication?: PublicationFacts;
+  publications?: PublicationFacts[];
+  failedPublicationReads?: number;
   onPublicationRead?: () => void;
 };
 
@@ -53,10 +55,15 @@ function jobWait(recorded: Steps, options: ProofOptions): ProofApi['waitForJob']
 }
 
 function publicationRead(recorded: Steps, options: ProofOptions): ProofApi['readPublication'] {
+  const reads = { count: 0 };
   return async () => {
     recorded.steps.push('proof read publication');
     options.onPublicationRead?.();
-    return options.publication ?? OPENED_PULL_REQUEST;
+    reads.count += 1;
+    const failures = options.failedPublicationReads ?? 0;
+    if (reads.count <= failures) throw new ToolAnswerError(404, 'Cannot GET');
+    const sequence = options.publications ?? [options.publication ?? OPENED_PULL_REQUEST];
+    return sequence[Math.min(reads.count - failures, sequence.length) - 1];
   };
 }
 

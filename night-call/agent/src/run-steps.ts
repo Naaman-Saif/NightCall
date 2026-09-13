@@ -10,7 +10,7 @@ import { ToolAnswerError } from './tool-client.js';
 
 export const BUDGET_MS = 30 * 60_000;
 
-export type RunState = { skipped: string[]; fallbacks: string[]; openedAt: number; deadline: number; now: () => number };
+export type RunState = { skipped: string[]; fallbacks: string[]; openedAt: number; deadline: number; now: () => number; pause?: (ms: number) => Promise<unknown> };
 export type RunTiming = { now?: () => number; openedAt?: number; deadline?: number };
 export type StepPlan<Result> = { nowDoing: string; skipLabel: string; work: () => Promise<Result> };
 
