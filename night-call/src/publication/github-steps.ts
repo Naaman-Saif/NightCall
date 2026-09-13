@@ -36,12 +36,17 @@ export async function writeFlagFile(github: Github, write: FileWrite): Promise<v
   await github({ path: repositoryPath(`/contents/${FLAG_FILE}`), method: 'PUT', body });
 }
 
-async function existingPull(github: Github, branch: string): Promise<PullRequest> {
+export async function findOpenPull(github: Github, branch: string): Promise<PullRequest | null> {
   const owner = settings.githubRepository.split('/')[0];
   const pulls = await github<Pull[]>({ path: repositoryPath(`/pulls?state=open&head=${owner}:${encodeURIComponent(branch)}`) });
-  const pull = pulls[0];
+  const pull = Array.isArray(pulls) ? pulls[0] : undefined;
+  return pull ? { number: pull.number, url: pull.html_url } : null;
+}
+
+async function existingPull(github: Github, branch: string): Promise<PullRequest> {
+  const pull = await findOpenPull(github, branch);
   if (!pull) throw new Error(`no open pull request found for ${branch}`);
-  return { number: pull.number, url: pull.html_url };
+  return pull;
 }
 
 export async function openPull(github: Github, open: PullOpen): Promise<PullRequest> {

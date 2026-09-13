@@ -16,7 +16,7 @@ function testFacts(labels: Record<string, string>): AlertFacts {
 const mitigation = { variant: 'off', restart: true, explanation: 'Turn the cache flag off', caveats: ['Cold cache'], notFixed: 'No size limit' };
 const encoded = Buffer.from(flagText).toString('base64');
 
-function fakeGithub(options: { branchExists: boolean; failPull: boolean }) {
+function fakeGithub(options: { branchExists: boolean; failPull: boolean; openPullNumber?: number }) {
   const calls: string[] = [];
   const bodies: unknown[] = [];
   const answer = (call: GithubCall): unknown => {
@@ -24,6 +24,7 @@ function fakeGithub(options: { branchExists: boolean; failPull: boolean }) {
     calls.push(`${method} ${call.path.split('?')[0]}`);
     bodies.push(call.body);
     if (call.path.includes('/git/ref/heads/')) return { object: { sha: 'base-sha' } };
+    if (method === 'GET' && call.path.includes('/pulls?state=open')) return options.openPullNumber ? [{ number: options.openPullNumber, html_url: `https://github.com/Naaman-Saif/opentelemetry-demo/pull/${options.openPullNumber}` }] : [];
     if (method === 'POST' && call.path.endsWith('/git/refs') && options.branchExists) throw new Error('github POST /git/refs answered 422');
     if (method === 'GET' && call.path.includes('/contents/')) return { sha: 'file-sha', content: encoded };
     if (method === 'POST' && call.path.endsWith('/pulls') && options.failPull) throw new Error('github POST /pulls answered 502');
