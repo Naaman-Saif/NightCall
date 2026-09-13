@@ -18,6 +18,22 @@ Part A turns alerts and agent events into a stored, typed incident the page can 
 
 Fixes 1 to 3 are in Part A (it owns `src/`). Fix 4 is in the shared contract and the reducer.
 
+## Codex review, second pass (2026-09-13 about 05:15 PKT)
+
+5. **Roles must be authoritative, not claimed.** Today the tool API has one shared token and takes `actor` from the request body, so a caller could claim to be the verifier. Accepted. Fix: three role tokens (`NIGHT_CALL_TOOL_TOKEN_LEAD`, `_INVESTIGATOR`, `_VERIFIER`); the server maps the token to the role and ignores any `actor` in the body. The agents' orchestrator code gives each role a tool client built with only that role's token; the model never sees or chooses a token.
+6. **Recovery after a partial write.** Skipping a broken last line is not enough: the next append would join it. Accepted. Fix: writes are serialized per incident; before the first append after start, a broken tail is moved to `events.broken-<timestamp>.jsonl` and the log truncated to the last complete valid event; if `snapshot.json` is missing or its `lastSequence` differs from the log, it is rebuilt from the log.
+7. **Keep the evidence from before the alert.** Saving the 30 minute window only at finish loses the climb before the alert, and a restart loses the memory buffer. Accepted. Fix: when an incident opens, the recorder's current window for the alerted service and its direct callers (frontend for recommendation) is written into the incident folder; while the incident is active every new sample and every production `oom`, `die` and `start` event for those containers is appended to files in the incident folder. Charts for finished or interrupted incidents read those files.
+8. **Early integration checkpoint.** Accepted, see below.
+9. **Estimate from the real start time.** Accepted, see Risks.
+
+## Integration checkpoint (before charts and proof panels)
+
+Both builders deliver the core first; Claude checks it on the box and reports before the rest continues:
+alert opens an incident, page shows it, a question appears (posted with the lead token), the operator answers on `/op/`, the answer is stored once, the page updates live, and after a page reconnect and a `night-call` restart the full record, including the answer, is still there.
+- Part A core: event log with recovery and per-incident serialization, role tokens, alert flow, reducer for incident, roles, brief and questions, stream, operator answer route, snapshot and list routes.
+- Part B core: header, question column with the answer composer, timeline, connection state, served by Caddy.
+- The sample replay is labelled illustrative everywhere; it tests the interface, not an autonomous investigation, which comes in the agents step.
+
 ## Ownership and the box
 
 - Part A owns `night-call/src/`, `night-call/scripts/`, root Jest and Docker ignore files, and the `night-call` container.
@@ -29,7 +45,7 @@ Fixes 1 to 3 are in Part A (it owns `src/`). Fix 4 is in the shared contract and
 
 ## Decided (technical)
 
-- **One source of truth.** `state/incidents/<id>/events.jsonl`. Order on every append: append the line, write `snapshot.json` to a temp file and rename, then publish to the live stream. Next sequence comes from the last valid event; a half-written last line is skipped.
+- **One source of truth.** `state/incidents/<id>/events.jsonl`. Order on every append: append the line, write `snapshot.json` to a temp file and rename, then publish to the live stream. Writes are serialized per incident. Before the first append after start, a broken tail is moved to `events.broken-<timestamp>.jsonl` and the log is truncated to the last complete valid event; a missing or stale `snapshot.json` (lastSequence differs from the log) is rebuilt from the log. Next sequence comes from the last valid event.
 - **Who may write which events.**
   - Lead (tool API): `brief_updated`, `hypothesis_proposed`, `hypothesis_status_changed`, `question_asked`, `role_status_changed`.
   - Investigator (tool API): `hypothesis_status_changed`, `mitigation_proposed`, `role_status_changed`.
@@ -37,6 +53,7 @@ Fixes 1 to 3 are in Part A (it owns `src/`). Fix 4 is in the shared contract and
   - Operator (operator API only): `context_supplied`.
   - Service only, never over HTTP: `alert_received`, `evidence_recorded` (written by the evidence readers), `contract_recorded`, `experiment_started`, `experiment_progress`, `experiment_finished`, `verification_started`, `cycle_started`, `cycle_finished`, `publication_changed`, `budget_exhausted`, `investigation_finished`.
   - So an agent can never post a passed check, a passed cycle or a published PR.
+  - The role comes from the token, never from the request: three role tokens map to lead, investigator and verifier; any `actor` field in the body is ignored.
 - **Operator writes need Caddy.** Caddy adds header `X-NightCall-Operator: <secret from env>` on `/op/api/*`; Nest rejects operator writes without it (403). Anything else on the shop network, including the agents container, cannot post operator context. Saif's hosting login gates `/op/*` in front of Caddy.
 - **Budget clock** starts when NightCall receives the alert; `deadlineAt` = received + 30 minutes.
 - **Seeded values** go into `alert_received`: `label` (`INC-001` style), `deadlineAt`, and all three roles start `ready`.
@@ -51,7 +68,7 @@ Fixes 1 to 3 are in Part A (it owns `src/`). Fix 4 is in the shared contract and
 - **Duplicate-alert block** comes from snapshots: an active incident with the same service and alert name blocks a new one. `incidents.json` is no longer consulted.
 - **Recorder.** Every container in project `prod`, one-shot stats in parallel every 10 s, a tick is skipped while the previous one runs, 5 s timeout per call, 180 samples per service in memory. Memory = usage minus `inactive_file` (same fix applied to `sandbox-copy/observation.ts`). Limit is null when a container has none (Docker reports host memory). Reuses `sandbox-copy/cpu-percent.ts`; does not use the sandbox time-budget wrappers.
 - **Production events.** Long-lived Docker events subscription for project `prod` (`oom`, `die`, `start`), reconnects with `since`, keeps 30 minutes.
-- **Charts after an incident ends.** On finish, the recorder's window for the incident's service is saved to `state/incidents/<id>/series/prod-<service>.json`; the series route reads that file for finished incidents.
+- **Evidence kept from before the alert.** When an incident opens, the recorder's current window for the alerted service and its direct callers (frontend for recommendation) is written to `state/incidents/<id>/series/prod-<service>.jsonl`; while the incident is active, each new sample and each production `oom`, `die` and `start` event for those containers is appended there (`series/prod-events.jsonl`). The series route reads the incident files, so finished and interrupted incidents keep their charts.
 - **Route safety.** `:id` checked with the existing id shape on every route. Series routes: service allow list, minutes 1 to 30.
 - **Settings.** No settings removed in this step; dead fields leave with the old code.
 - **Hygiene.** `.dockerignore` adds `**/node_modules` and `web/dist`. Root Jest roots limited to `src`.
@@ -127,12 +144,12 @@ lastSequence
 | `GET /api/incidents/:id/series?service=&minutes=` | public | `{ service, limitBytes, samples: {at, memoryBytes, cpuPercent}[] }` |
 | `GET /api/incidents/:id/experiments/:experimentId/series` | public | same shape from `seriesRef` (empty until the proof step writes it) |
 | `POST /op/api/incidents/:id/context` | operator header required | `{ questionId, text, idempotencyKey }` to 201 event; repeat key returns the same event |
-| `POST /tool/incidents/:id/events` | agents, bearer | allow list per actor above; active incident only (409 otherwise) |
+| `POST /tool/incidents/:id/events` | agents, role token | role taken from the token; allow list per role above; active incident only (409 otherwise) |
 | `GET /tool/incidents/:id/prod/{logs,traces,memory,cpu,oom-events}` | agents, bearer | bounded readers; each read also records `evidence_recorded` |
 
 ## Part A: incident data and API
 
-1. `src/investigation/`: event log (moved from tool-api), payload schemas, per-actor allow list, event reader (skips bad last line, ignores folders without `alert_received`), live stream, reducer split by area, status rules, snapshot writer (temp and rename), label counter, open-investigation, boot interruption, finish hook saving the series window.
+1. `src/investigation/`: event log (moved from tool-api), payload schemas, per-actor allow list, event reader (skips bad last line, ignores folders without `alert_received`), live stream, reducer split by area, status rules, snapshot writer (temp and rename), label counter, open-investigation, boot interruption, write serialization and tail recovery, role tokens, series freeze at open and persistence while active.
 2. `src/incidents/`: firing alert opens an investigation; duplicate block from snapshots; agent invoke only when `NIGHT_CALL_INVOKE_AGENTS_ON_ALERT=true` (default false).
 3. `src/recorder/`: parallel sampler with skip-if-busy, ring buffer, series reader, production events buffer with reconnect; memory fix in `sandbox-copy/observation.ts`.
 4. `src/public-api/` and `src/operator-api/` per the table; operator header guard.
@@ -158,6 +175,10 @@ lastSequence
 | Signal during start | SIGTERM sent to the one-off runner while `compose up` runs: exit non-zero, `cleanup.json` clean, no `nc-sandbox` containers or network left afterwards |
 | Stage traces | a new one-round run keeps traces whose ids match at least one failed fault-stage request, stored in the fault stage's evidence folder |
 | Memory limits | the same run's post-start check shows every sandbox container's memory limit equals production |
+| Roles from tokens | lead token posting `verification_reviewed` with body `actor: verifier` gets 403 |
+| Partial write | with a half-written last line planted and `night-call` restarted, an operator answer is appended; after a second restart the answer is in the log exactly once, the broken tail is in `events.broken-*.jsonl`, and the snapshot matches the log |
+| Pre-alert evidence | an incident opened after 10 minutes of recording, then interrupted by a restart, still returns series samples from before its alert time |
+| Integration checkpoint | the flow in the checkpoint section passes on the box before charts and proof panels are finished |
 | Quality | lint, tests, build pass |
 
 ## Part B: incident web page
@@ -193,4 +214,4 @@ No real agent roles or prompts, no symptom contract enforcement, no experiment o
 - Contract drift between parts: only this doc and the sample file are the interface.
 - Stream through Cloudflare later: pings; polling switch.
 - Design kit surprises: vendor first thing; tokens only, no raw colours.
-- Time: Part A about 4 to 5 hours; Part B about 5 to 6 hours with the approved cuts. Both land around 10:30 to 11:00 PKT if started by 05:00. Next gate 14:00 PKT.
+- Time, counted from the actual start (recorded when builders launch): integration checkpoint about 3 hours after start; Part A complete about 5 to 6 hours after start (the two review passes added work); Part B complete about 6 hours after start with the approved cuts. The next gate stays 14:00 PKT; if either part is not complete by then, the cut list applies.
