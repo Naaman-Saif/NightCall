@@ -30,7 +30,7 @@ describe('role appends', () => {
   it('follows the allow list for each role', () => {
     expect(roleMayWrite('lead', 'question_asked')).toBe(true);
     expect(roleMayWrite('lead', 'mitigation_proposed')).toBe(false);
-    expect(roleMayWrite('investigator', 'mitigation_proposed')).toBe(true);
+    expect(roleMayWrite('investigator', 'mitigation_proposed')).toBe(false);
     expect(roleMayWrite('investigator', 'brief_updated')).toBe(false);
     expect(roleMayWrite('verifier', 'verification_reviewed')).toBe(true);
     expect(roleMayWrite('verifier', 'hypothesis_status_changed')).toBe(false);

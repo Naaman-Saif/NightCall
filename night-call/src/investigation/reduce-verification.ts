@@ -22,7 +22,7 @@ function withMitigationStatus(snapshot: Snapshot): Snapshot {
 function startCycle(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   const payload = payloadOf(event, 'cycle_started');
   if (!matchesCurrentRun(snapshot, payload)) return snapshot;
-  return changeCycle(snapshot, { number: payload.cycle, change: { state: 'running' } });
+  return changeCycle(snapshot, { number: payload.cycle, change: { state: 'running', speed: payload.speed ?? null } });
 }
 
 function finishCycle(snapshot: Snapshot, event: IncidentEvent): Snapshot {

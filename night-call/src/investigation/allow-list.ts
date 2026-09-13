@@ -9,7 +9,7 @@ const writableByRole: Record<Role, ReadonlySet<EventType>> = {
     'role_status_changed',
     'investigation_stopped',
   ]),
-  investigator: new Set<EventType>(['hypothesis_status_changed', 'mitigation_proposed', 'role_status_changed']),
+  investigator: new Set<EventType>(['hypothesis_status_changed', 'role_status_changed']),
   verifier: new Set<EventType>(['experiment_reviewed', 'verification_reviewed', 'role_status_changed']),
 };
 

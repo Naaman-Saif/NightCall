@@ -37,7 +37,7 @@ function fakeOwner(options: { afterIdentity: typeof identity }): SandboxOwner {
     return { runFolder, name: 'exp-1', summary, oomEvents: [{ at: '2026-09-14T00:01:00.000Z' }], workload: {} };
   };
   const worker = { listen: () => undefined, request: (body: WorkerCommandBody) => Promise.resolve(answer(body)) } as unknown as WorkerProcess;
-  const owner = { workerFor: async () => worker, warmUp: async () => runFolder, isWarmFor: () => false, release: async () => undefined };
+  const owner = { workerFor: async () => worker, warmUp: async () => runFolder, stackStartMinutes: () => 50 / 60, release: async () => undefined };
   return owner as unknown as SandboxOwner;
 }
 
@@ -64,7 +64,7 @@ async function finishedRun(afterIdentity = identity) {
 describe('experiment flow', () => {
   it('runs a reproduction, records checks, evidence and series, and accepts only a passed review', async () => {
     const { writer, incidentId, started, job } = await finishedRun();
-    expect(started).toMatchObject({ experimentId: 'exp-1', recipeSource: 'fixed_fallback', estimatedMinutes: 6 });
+    expect(started).toMatchObject({ experimentId: 'exp-1', recipeSource: 'fixed_fallback', estimatedMinutes: 3, speed: 1 });
     expect(job).toMatchObject({ state: 'finished', result: { verdict: 'matches', failureReason: null } });
     const experiment = readSnapshot(writer.stateDir, incidentId)?.experiments[0];
     expect(experiment).toMatchObject({ trafficSource: 'fixed_fallback', verdict: 'matches', seriesRef: 'series/experiment-exp-1.jsonl' });

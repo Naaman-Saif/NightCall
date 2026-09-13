@@ -4,6 +4,7 @@ import { matchesCurrentRun, type RunIds } from './current-run';
 import type { EventDraft, EventType, IncidentEvent } from './event-types';
 import { requireExperimentRules } from './experiment-admission';
 import { cleanedHypothesis } from './hypothesis-admission';
+import { requireProofOrder } from './proof-order-admission';
 import { reduceEvents } from './reduce-events';
 import { hasRecordedContradiction } from './run-causes';
 import type { Snapshot } from './snapshot';
@@ -13,7 +14,7 @@ const runBoundTypes = new Set<EventType>(['cycle_started', 'cycle_finished', 've
 function requireCurrentRun(snapshot: Snapshot, draft: EventDraft): void {
   if (!runBoundTypes.has(draft.type)) return;
   if (matchesCurrentRun(snapshot, draft.payload as RunIds)) return;
-  throw new ConflictException(`${draft.type} does not match the current verification run`);
+  throw new ConflictException({ code: 'run_not_current', message: `${draft.type} does not match the current verification run` });
 }
 
 function requireCurrentMitigation(snapshot: Snapshot, draft: EventDraft): void {
@@ -21,7 +22,7 @@ function requireCurrentMitigation(snapshot: Snapshot, draft: EventDraft): void {
   const { mitigationId, contractId } = draft.payload as RunIds;
   const mitigationMatches = snapshot.mitigation?.id === mitigationId;
   if (mitigationMatches && snapshot.contract?.id === contractId) return;
-  throw new ConflictException('verification_started does not match the current mitigation and contract');
+  throw new ConflictException({ code: 'mitigation_not_current', message: 'verification_started does not match the current mitigation and contract' });
 }
 
 function requireVerifiedBeforePublishing(snapshot: Snapshot, draft: EventDraft): void {
@@ -50,6 +51,7 @@ export function admit(events: IncidentEvent[], draft: EventDraft): EventDraft {
   requireUncontradictedSupport(snapshot, draft);
   requireExperimentRules(snapshot, draft);
   requireCurrentRun(snapshot, draft);
+  requireProofOrder(snapshot, draft);
   requireCurrentMitigation(snapshot, draft);
   requireVerifiedBeforePublishing(snapshot, draft);
   return cleanedHypothesis(draft);

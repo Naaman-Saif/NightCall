@@ -38,6 +38,7 @@ export type Cycle = {
   state: 'pending' | 'running' | 'passed' | 'failed';
   checks: CheckResult[];
   verificationRunId: string;
+  speed: number | null;
 };
 
 export type Verification = { verificationRunId: string; approved: boolean; reasons: string[] };
