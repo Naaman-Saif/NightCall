@@ -62,9 +62,17 @@ export type Publication = {
 
 export type InvestigationProgress = 'not_started' | 'running' | 'interrupted' | 'finished';
 
+export type RunStatus = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted';
+export type RunStep = { text: string; value: string | null; evidenceId: string | null };
+export type RunReport = {
+  status: RunStatus; statusAt: string | null; nowDoing: string | null;
+  did: RunStep[]; found: string[]; notDone: string[];
+};
+
 export type Snapshot = {
   incident: Incident;
   headline?: string | null;
+  runReport?: RunReport | null;
   investigation?: InvestigationProgress;
   brief: Brief | null;
   roles: Record<RoleName, RoleState>;

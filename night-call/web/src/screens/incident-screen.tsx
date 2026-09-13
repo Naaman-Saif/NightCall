@@ -1,17 +1,12 @@
 import type { SubmitAnswer } from '../api/client';
-import type { Snapshot } from '../api/contract';
+import type { RunReport } from '../api/contract';
 import type { IncidentView } from '../api/use-incident-stream';
-import { Banner, EmptyState } from '../kit';
-import { BriefBlock } from './brief-block';
-import { HypothesesPanel } from './hypotheses-panel';
+import { EmptyState } from '../kit';
+import { DetailsToggle } from './details-toggle';
+import { IncidentDetails, hasOpenQuestion, type IncidentLayoutProps } from './incident-details';
 import { IncidentHeader } from './incident-header';
-import { MitigationPanel } from './mitigation-panel';
-import { ReproductionPanel } from './reproduction-panel';
-import { ResultPanel } from './result-panel';
-import { Timeline } from './timeline';
+import { RunReportSummary } from './run-report';
 import { UnresolvedQuestions } from './unresolved-questions';
-import { VerificationPanel } from './verification-panel';
-import { WhatHappenedSection } from './what-happened-section';
 
 type IncidentScreenProps = { view: IncidentView; isOperator: boolean; isSample: boolean; submitAnswer: SubmitAnswer };
 
@@ -23,36 +18,27 @@ export function IncidentScreen(props: IncidentScreenProps) {
   return <IncidentLayout {...props} snapshot={props.view.snapshot} />;
 }
 
-function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: IncidentScreenProps & { snapshot: Snapshot }) {
+function IncidentLayout(props: IncidentLayoutProps) {
+  const { snapshot, view } = props;
+  const report = snapshot.runReport;
   return (
     <div className="page">
       <IncidentHeader incident={snapshot.incident} connection={view.connection} latestSequence={view.events.at(-1)?.sequence ?? 0} />
       {snapshot.headline && <p className="incident-headline">{snapshot.headline}</p>}
-      {!isOperator && <PublicBanner />}
-      <WhatHappenedSection incident={snapshot.incident} events={view.events} isSample={isSample} />
-      <div className="report" data-layout={phoneLayoutFor(snapshot)}>
-        <BriefBlock snapshot={snapshot} />
-        <HypothesesPanel snapshot={snapshot} />
-        <ReproductionPanel snapshot={snapshot} />
-        <MitigationPanel snapshot={snapshot} />
-        <VerificationPanel snapshot={snapshot} />
-        <ResultPanel snapshot={snapshot} />
-        <UnresolvedQuestions snapshot={snapshot} isOperator={isOperator} submitAnswer={submitAnswer} />
-        <Timeline events={view.events} />
-      </div>
+      {report ? <ClearReport {...props} report={report} /> : <IncidentDetails {...props} includeQuestions />}
     </div>
   );
 }
 
-function phoneLayoutFor(snapshot: Snapshot): 'question-first' | 'story-first' {
-  const hasOpenQuestion = snapshot.questions.some((question) => !question.answer);
-  return snapshot.incident.lifecycle === 'active' && hasOpenQuestion ? 'question-first' : 'story-first';
-}
-
-function PublicBanner() {
+function ClearReport(props: IncidentLayoutProps & { report: RunReport }) {
+  const isAnswerNeeded = props.isOperator && hasOpenQuestion(props.snapshot);
   return (
-    <Banner tone="readonly" title="Public read-only view">
-      This page updates live. Answers to questions are given by the operator and shown here once recorded.
-    </Banner>
+    <>
+      <RunReportSummary report={props.report} evidence={props.snapshot.evidence} />
+      {isAnswerNeeded && <UnresolvedQuestions snapshot={props.snapshot} isOperator submitAnswer={props.submitAnswer} />}
+      <DetailsToggle>
+        <IncidentDetails {...props} includeQuestions={!isAnswerNeeded} />
+      </DetailsToggle>
+    </>
   );
 }
