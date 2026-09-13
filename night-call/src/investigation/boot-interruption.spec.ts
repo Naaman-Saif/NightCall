@@ -22,6 +22,14 @@ describe('boot interruption', () => {
     expect(readLog(incidentFolder(writer.stateDir, finished)).events).toHaveLength(2);
   });
 
+  it('reports nothing on a second boot for an incident that was already interrupted', async () => {
+    const writer = freshWriter();
+    const incidentId = await openIncident(writer);
+    expect((await recoverAndInterrupt(writer)).map((event) => event.incidentId)).toEqual([incidentId]);
+    expect(await recoverAndInterrupt(writer)).toEqual([]);
+    expect(readLog(incidentFolder(writer.stateDir, incidentId)).events).toHaveLength(2);
+  });
+
   it('ignores folders without alert_received', async () => {
     const writer = freshWriter();
     const folder = incidentFolder(writer.stateDir, 'hello-01');

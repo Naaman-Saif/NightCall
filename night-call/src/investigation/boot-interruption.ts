@@ -19,13 +19,19 @@ function recoverFolder(folder: string): void {
   if (!snapshotMatchesLog(readSnapshotFile(folder), events)) writeSnapshot(folder, events);
 }
 
-function interruptionPlan(events: IncidentEvent[]): EventDraft | IncidentEvent {
-  return incidentIsActive(events) ? interruption : events[events.length - 1];
+async function interruptIfActive(writer: EventWriter, incidentId: string): Promise<IncidentEvent | null> {
+  let appended = false;
+  const event = await writer.update(incidentId, (events) => {
+    if (!incidentIsActive(events)) return events[events.length - 1];
+    appended = true;
+    return interruption;
+  });
+  return appended ? event : null;
 }
 
 export async function recoverAndInterrupt(writer: EventWriter): Promise<IncidentEvent[]> {
   const ids = incidentIds(writer.stateDir);
   ids.forEach((id) => recoverFolder(incidentFolder(writer.stateDir, id)));
-  const outcomes = await Promise.all(ids.map((id) => writer.update(id, interruptionPlan)));
-  return outcomes.filter((event) => event.type === 'investigation_finished' && event.payload.reason === 'interrupted');
+  const outcomes = await Promise.all(ids.map((id) => interruptIfActive(writer, id)));
+  return outcomes.filter((event): event is IncidentEvent => event !== null);
 }
