@@ -3,7 +3,8 @@ import type { Evidence, SourceLink } from '../api/contract';
 const SEPARATE_MEASUREMENT = /separate measurement/i;
 
 function isWebLink(link: SourceLink): boolean {
-  return /^https?:\/\//i.test(link.url);
+  const isSameHostPath = link.url.startsWith('/') && !link.url.startsWith('//');
+  return isSameHostPath || /^https?:\/\//i.test(link.url);
 }
 
 export function SourceLinks({ links }: { links?: SourceLink[] }) {
