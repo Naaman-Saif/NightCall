@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { settings } from '../config/settings';
 import { openInvestigation } from '../investigation/open-investigation';
 import { SeriesKeeper } from '../recorder/series-keeper';
-import { invokeAgents } from '../runtime/runtime-invoker';
+import { investigateInBackground } from '../runtime/background-invoke';
 import { alertIsFiring, alertNameOf, factsOf, type AlertPayload } from './alert-payload';
 
 @Injectable()
@@ -22,13 +22,7 @@ export class IncidentsService {
     const names = firing.map(alertNameOf).join(', ');
     this.log.log(`alerts received ${payload.alerts.length}, firing [${names}], opened [${opened.join(', ')}]`);
     if (opened.length > 0) this.keeper.keep();
-    if (settings.invokeAgentsOnAlert) opened.forEach((incidentId) => this.invoke(incidentId));
+    if (settings.invokeAgentsOnAlert) opened.forEach((incidentId) => investigateInBackground(this.log, incidentId));
     return opened;
-  }
-
-  private invoke(incidentId: string): void {
-    invokeAgents({ incidentId, mode: 'investigate' })
-      .then((outcome) => this.log.log(`agents invoked for ${incidentId}: ${outcome.statusCode}`))
-      .catch((error: unknown) => this.log.error(`agent invoke failed for ${incidentId}: ${String(error)}`));
   }
 }
