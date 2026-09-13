@@ -17,14 +17,17 @@ function formatted(value: number | null, measure: UsageQuery['measure']): string
   return measure === 'memory' ? `${Math.round(value / MEBIBYTE)} MiB` : `${value.toFixed(1)}%`;
 }
 
-function summaryOf(query: UsageQuery, samples: SeriesSample[]): string {
+function latestAndPeak(query: UsageQuery, samples: SeriesSample[]): string {
   const values = samples.map((sample) => valueOf(sample, query.measure)).filter((value): value is number => value !== null);
   const peak = values.length > 0 ? Math.max(...values) : null;
-  const latest = formatted(values.at(-1) ?? null, query.measure);
+  return `latest ${formatted(values.at(-1) ?? null, query.measure)}, peak ${formatted(peak, query.measure)}`;
+}
+
+function summaryOf(query: UsageQuery, samples: SeriesSample[]): string {
   const limit = samples.at(-1)?.limitBytes ?? null;
   const limitText = query.measure === 'memory' ? `, limit ${limit === null ? 'none' : formatted(limit, 'memory')}` : '';
   const counted = `${samples.length} samples over ${query.minutes} minutes`;
-  return `${query.service} ${query.measure} latest ${latest}, peak ${formatted(peak, query.measure)}${limitText} (${counted})`;
+  return `${query.service} ${query.measure} ${latestAndPeak(query, samples)}${limitText} (${counted})`;
 }
 
 function compareLink(query: UsageQuery, range: TimeRange): SourceLink {
@@ -41,5 +44,6 @@ export function readUsage(tracks: ServiceTracks, query: UsageQuery): Reading {
   const data = { limitBytes: samples.at(-1)?.limitBytes ?? null, samples };
   const exactSource = { kind: 'recorder' as const, service: query.service, range };
   const reading = { kind, source: `recorder: ${query.service}`, summary: summaryOf(query, samples), excerpt: excerptOf(lines), data } as const;
-  return { ...reading, exactSource, sourceLinks: [compareLink(query, range)] };
+  const value = `${latestAndPeak(query, samples)} in ${query.minutes} min`;
+  return { ...reading, value, exactSource, sourceLinks: [compareLink(query, range)] };
 }

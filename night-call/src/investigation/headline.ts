@@ -1,22 +1,12 @@
-import type { CrashCounts, InvestigationState, Snapshot } from './snapshot';
-
-const INVESTIGATION_SENTENCES: Record<InvestigationState, string> = {
-  not_started: 'Investigation has not started.',
-  running: 'Investigation is running.',
-  interrupted: 'Investigation was interrupted before analysis completed.',
-  finished: 'Investigation finished.',
-};
+import { clock, investigationSentence } from './investigation-sentence';
+import { activitySentence } from './run-activity';
+import type { CrashCounts, Snapshot } from './snapshot';
 
 const ESTABLISHED_CAUSE = 'The cause is established by an accepted reproduction.';
 const UNKNOWN_CAUSE = 'The cause is not established.';
 
 function times(count: number): string {
   return count === 1 ? 'once' : `${count} times`;
-}
-
-function clock(iso: string): string {
-  const moment = Date.parse(iso);
-  return Number.isNaN(moment) ? 'an unknown time' : `${new Date(moment).toISOString().slice(11, 16)} UTC`;
 }
 
 function serviceName(service: string): string {
@@ -57,7 +47,8 @@ function causeIsEstablished(snapshot: Snapshot): boolean {
 
 export function headlineOf(snapshot: Snapshot): string {
   const cause = causeIsEstablished(snapshot) ? ESTABLISHED_CAUSE : UNKNOWN_CAUSE;
-  return `${openingSentence(snapshot)} ${cause} ${INVESTIGATION_SENTENCES[snapshot.investigation]}`;
+  if (snapshot.investigation === 'stopped') return `${openingSentence(snapshot)} ${activitySentence(snapshot)} ${cause}`;
+  return `${openingSentence(snapshot)} ${cause} ${investigationSentence(snapshot)}`;
 }
 
 export function withHeadline(snapshot: Snapshot): Snapshot {

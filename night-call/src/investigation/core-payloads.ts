@@ -35,6 +35,7 @@ export const corePayloads = {
       .max(20)
       .optional(),
     crashCounts: z.strictObject({ oom: count, die: count, start: count, since: moment }).optional(),
+    value: z.string().max(200).optional(),
   }),
   question_asked: payload({
     questionId: name,

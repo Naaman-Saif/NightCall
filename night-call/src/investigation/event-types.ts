@@ -22,6 +22,7 @@ export const EVENT_TYPES = [
   'investigation_finished',
   'investigation_started',
   'investigation_invoke_failed',
+  'investigation_stopped',
 ] as const;
 
 export const ROLES = ['lead', 'investigator', 'verifier'] as const;

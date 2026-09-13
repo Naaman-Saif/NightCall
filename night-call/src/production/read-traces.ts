@@ -43,5 +43,6 @@ export async function readProductionTraces(query: TracesQuery): Promise<Reading>
   const summary = summaryOf(query, { traces: traces.length, errors: errors.length });
   const data = { traceIds: traces.map((trace) => trace.traceID), errors };
   const sourceLinks = traceLinks(query, range);
-  return { kind: 'traces', source: `jaeger: ${query.service}`, summary, excerpt: excerptOf(lines), data, sourceLinks };
+  const value = `${errors.length} error spans in ${traces.length} traces in ${query.minutes} min`;
+  return { kind: 'traces', source: `jaeger: ${query.service}`, summary, excerpt: excerptOf(lines), value, data, sourceLinks };
 }
