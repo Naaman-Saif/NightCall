@@ -20,7 +20,7 @@ function startInvestigation(snapshot: Snapshot): Snapshot {
 }
 
 function stopInvestigation(snapshot: Snapshot, event: IncidentEvent): Snapshot {
-  if (snapshot.incident.lifecycle === 'finished') return snapshot;
+  if (snapshot.investigationStop) return snapshot;
   const investigationStop = { ...plainPayload(payloadOf(event, 'investigation_stopped')), stoppedAt: event.occurredAt };
   return { ...snapshot, investigation: 'stopped', investigationStop };
 }
