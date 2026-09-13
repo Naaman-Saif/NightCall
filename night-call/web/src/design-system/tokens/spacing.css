@@ -1,0 +1,17 @@
+:root{
+  /* 4px base, with a 2px half-step for control interiors */
+  --sp-0:0; /* @kind spacing */
+  --sp-05:2px; --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+  --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px; --sp-16:64px; --sp-20:80px; --sp-24:96px;
+
+  --radius-xs:3px; --radius-sm:5px; --radius-md:8px; --radius-lg:12px; --radius-xl:16px;
+  --radius-pill:999px;
+
+  --border-hairline:1px; /* @kind spacing */
+  --border:1px; /* @kind spacing */
+  --border-emphasis:2px; /* @kind spacing */
+
+  /* layout frame */
+  --rail-w:56px; --sidebar-w:264px; --context-w:380px; --topbar-h:52px;
+  --content-max:1200px; --gutter:24px; --panel-pad:20px; --card-pad:16px;
+}
