@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 
-import { IncidentsService } from '../incidents/incidents.service';
+import { LegacyIncidentQueue as IncidentsService } from '../incidents/legacy-incident-queue';
 import { PipelineService } from './pipeline.service';
 
 @Injectable()

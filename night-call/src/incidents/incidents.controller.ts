@@ -9,10 +9,9 @@ export class IncidentsController {
 
   @Post()
   @HttpCode(202)
-  receive(@Body() body: unknown): { opened: string[] } {
+  async receive(@Body() body: unknown): Promise<{ opened: string[] }> {
     const parsed = alertPayloadSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException(parsed.error.issues);
-    const opened = this.incidents.receive(parsed.data);
-    return { opened: opened.map((incident) => incident.id) };
+    return { opened: await this.incidents.receive(parsed.data) };
   }
 }

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { AlertFacts } from '../investigation/open-investigation';
+
 const alertSchema = z.object({
   status: z.enum(['firing', 'resolved']),
   labels: z.record(z.string(), z.string()),
@@ -27,4 +29,12 @@ export function alertNameOf(alert: Alert): string {
 
 export function serviceOf(alert: Alert): string {
   return alert.labels.service ?? alert.labels.service_name ?? 'unknown';
+}
+
+export function factsOf(alert: Alert): AlertFacts {
+  const alertName = alertNameOf(alert);
+  const service = serviceOf(alert);
+  const summary = alert.annotations.summary ?? `${alertName} fired for ${service}`;
+  const severity = alert.labels.severity ?? 'unknown';
+  return { alertName, service, severity, summary, labels: alert.labels, illustrative: false };
 }
