@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { matchesCurrentRun, type RunIds } from './current-run';
 import type { EventDraft, EventType, IncidentEvent } from './event-types';
+import { cleanedHypothesis } from './hypothesis-admission';
 import { reduceEvents } from './reduce-events';
 import { hasRecordedContradiction } from './run-causes';
 import type { Snapshot } from './snapshot';
@@ -49,5 +50,5 @@ export function admit(events: IncidentEvent[], draft: EventDraft): EventDraft {
   requireCurrentRun(snapshot, draft);
   requireCurrentMitigation(snapshot, draft);
   requireVerifiedBeforePublishing(snapshot, draft);
-  return draft;
+  return cleanedHypothesis(draft);
 }

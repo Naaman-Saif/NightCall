@@ -41,9 +41,15 @@ function agentActed(event: IncidentEvent): boolean {
   return AGENT_ACTORS.has(event.actor) || AGENT_DRIVEN_TYPES.has(event.type);
 }
 
+function startedByAgentWork(snapshot: Snapshot, event: IncidentEvent): Snapshot {
+  const agentWork = AGENT_ACTORS.has(event.actor) && event.type !== 'investigation_stopped';
+  if (!agentWork || snapshot.investigation !== 'not_started' || snapshot.incident.lifecycle === 'finished') return snapshot;
+  return withInvestigation(snapshot, 'running');
+}
+
 export function reduceInvestigation(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   const settled = ENDING_TYPES.has(event.type) ? settleEndedRun(snapshot, Date.parse(event.occurredAt)) : snapshot;
-  const handled = handleEvent(settled, event);
+  const handled = startedByAgentWork(handleEvent(settled, event), event);
   const changedAt = handled.investigation === settled.investigation ? handled.investigationChangedAt : event.occurredAt;
   const lastAgentActivityAt = agentActed(event) ? event.occurredAt : handled.lastAgentActivityAt;
   return { ...handled, investigationChangedAt: changedAt, lastAgentActivityAt };
