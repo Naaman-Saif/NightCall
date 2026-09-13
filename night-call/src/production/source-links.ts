@@ -6,7 +6,7 @@ export type TimeRange = { fromMs: number; toMs: number };
 
 export type PrometheusQuery = { label: string; expr: string };
 
-export type TraceSearch = { service: string; range: TimeRange; errorsOnly: boolean };
+export type TraceSearch = { service: string; range: TimeRange; errorsOnly: boolean; operation?: string };
 
 export const GRAFANA_PROMETHEUS_UID = 'webstore-metrics';
 
@@ -31,6 +31,7 @@ export function jaegerSearchLink(search: TraceSearch): SourceLink {
   const end = String(search.range.toMs * 1000);
   const params = new URLSearchParams({ service: search.service, start, end, limit: '20' });
   if (search.errorsOnly) params.set('tags', JSON.stringify({ error: 'true' }));
+  if (search.operation) params.set('operation', search.operation);
   return { label: `Jaeger: ${search.service} traces`, url: `${settings.jaegerBaseUrl}/search?${params.toString()}` };
 }
 

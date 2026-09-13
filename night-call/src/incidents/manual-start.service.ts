@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, Logger } fr
 import { z } from 'zod';
 
 import { openInvestigation, type AlertFacts } from '../investigation/open-investigation';
+import { captureRecipeInBackground } from '../production/recipe-in-background';
 import { SeriesKeeper } from '../recorder/series-keeper';
 import { investigateInBackground } from '../runtime/background-invoke';
 
@@ -34,6 +35,7 @@ export class ManualStartService {
     if (!opened) throw new ConflictException(`a real incident is already active for ${facts.service}`);
     this.log.log(`manual investigation ${opened.incidentId} opened for ${facts.service}`);
     this.keeper.keep();
+    captureRecipeInBackground(this.log, { writer, incidentId: opened.incidentId, openedAtMs: Date.parse(String(opened.payload.startedAt)) });
     investigateInBackground(this.log, { writer, incidentId: opened.incidentId, trigger: 'manual' });
     return { incidentId: opened.incidentId, label: String(opened.payload.label) };
   }

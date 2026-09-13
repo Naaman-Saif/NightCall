@@ -9,6 +9,8 @@ import { FakeSource } from '../recorder/recorder.fixture';
 import { SeriesKeeper } from '../recorder/series-keeper';
 import { IncidentsService } from './incidents.service';
 
+jest.mock('../production/recipe-in-background', () => ({ captureRecipeInBackground: jest.fn() }));
+
 function serviceFor(writer: EventWriter): IncidentsService {
   return new IncidentsService(new SeriesKeeper(writer, new ProductionWatch(new FakeSource())));
 }

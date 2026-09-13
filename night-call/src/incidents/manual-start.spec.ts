@@ -12,6 +12,8 @@ import { SeriesKeeper } from '../recorder/series-keeper';
 import { invokeAgents } from '../runtime/runtime-invoker';
 import { manualFacts, ManualStartService } from './manual-start.service';
 
+jest.mock('../production/recipe-in-background', () => ({ captureRecipeInBackground: jest.fn() }));
+
 jest.mock('../runtime/runtime-invoker', () => ({
   invokeAgents: jest.fn().mockResolvedValue({ runtimeSessionId: 's', statusCode: 200, reply: '', elapsedMs: 1 }),
 }));
