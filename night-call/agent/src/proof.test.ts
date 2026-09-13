@@ -3,6 +3,8 @@ import { test } from 'node:test';
 
 import { investigate } from './investigation.js';
 import { stubInvestigation } from './investigation-stubs.test.js';
+import { OPENED_PULL_REQUEST } from './proof-stub.test.js';
+import { newRun } from './run-steps.js';
 
 type Run = ReturnType<typeof stubInvestigation>;
 
@@ -30,6 +32,18 @@ test('a test incident without publishing gets no pull request, said plainly', as
   await investigate(run.parts);
   assert.match(stopSummary(run), /its review was accepted\. Test incident: no pull request was opened\.$/);
   assert.equal(lastBrief(run).nextStep, 'Treated as urgent. The mitigation is verified; this is a test incident, so no pull request was opened.');
+});
+
+test('an unreadable, not eligible or publishing state keeps the poll going every 10 s until the pull request is published', async () => {
+  const pauses: number[] = [];
+  const states = ['not_eligible', 'publishing', 'publishing'].map((state) => ({ state, url: null, failureReason: null }));
+  const run = stubInvestigation("I don't know", { publications: [...states, OPENED_PULL_REQUEST], failedPublicationReads: 1 });
+  run.parts.run = { ...newRun(), pause: async (ms) => pauses.push(ms) };
+  await investigate(run.parts);
+  assert.equal(proofSteps(run).filter((step) => step === 'proof read publication').length, 5);
+  assert.deepEqual(pauses, [10_000, 10_000, 10_000, 10_000]);
+  assert.match(stopSummary(run), /Pull request opened for review: https:\/\/github\.com\/NaamanSaif\/nightcall-demo\/pull\/7\.$/);
+  assert.equal(lastBrief(run).nextStep, 'Treated as urgent. The verified mitigation waits in a pull request for a person to review and merge.');
 });
 
 test('a pull request still opening at minute 24 is recorded as skipped and never claimed', async () => {

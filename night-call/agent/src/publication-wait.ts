@@ -1,10 +1,12 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import { logProgress } from './progress.js';
 import type { PublicationFacts } from './proof-types.js';
+import { describeError } from './retry.js';
 import { NotReady, runStep, type RunContext } from './run-steps.js';
 
 export const PUBLICATION_BY_MINUTE = 24;
-const POLL_PAUSE_MS = 10_000;
+export const POLL_PAUSE_MS = 10_000;
 
 export function isTestIncident(publication: PublicationFacts | null): boolean {
   return /test incident/i.test(publication?.failureReason ?? '');
@@ -16,11 +18,20 @@ export function publicationIsFinal(publication: PublicationFacts | null): public
   return publication.state === 'failed' || isTestIncident(publication);
 }
 
+async function readOnce(context: RunContext): Promise<PublicationFacts | null> {
+  try {
+    return await context.proof.readPublication();
+  } catch (error) {
+    logProgress({ publicationUnread: describeError(error) });
+    return null;
+  }
+}
+
 async function pollPublication(context: RunContext, until: number): Promise<PublicationFacts> {
-  const publication = await context.proof.readPublication();
+  const publication = await readOnce(context);
   if (publicationIsFinal(publication)) return publication;
   if (context.run.now() >= until) throw new NotReady(`minute ${PUBLICATION_BY_MINUTE} was reached`);
-  await sleep(POLL_PAUSE_MS);
+  await (context.run.pause ?? sleep)(POLL_PAUSE_MS);
   return pollPublication(context, until);
 }
 
