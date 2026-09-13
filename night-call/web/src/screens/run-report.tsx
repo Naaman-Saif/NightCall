@@ -1,14 +1,16 @@
-import type { Evidence, Incident, RunReport, RunStep } from '../api/contract';
+import type { Evidence, RunReport, RunStep, Snapshot } from '../api/contract';
 import { describeIncidentClosing, describeRunStatus } from '../format/run-status-text';
 import { PossibleCauses } from './possible-causes';
+import { ProofSummary } from './proof-summary';
 import { SourceLinks } from './source-links';
 
 type EvidenceById = Record<string, Evidence>;
-type SummaryProps = { report: RunReport; evidence: EvidenceById; incident: Incident };
+type SummaryProps = { report: RunReport; snapshot: Snapshot };
 type ListProps = { title: string; emptyText: string; items: string[]; isMuted?: boolean };
 
-export function RunReportSummary({ report, evidence, incident }: SummaryProps) {
-  const closing = describeIncidentClosing(incident, report);
+export function RunReportSummary({ report, snapshot }: SummaryProps) {
+  const { evidence } = snapshot;
+  const closing = describeIncidentClosing(snapshot.incident, report);
   return (
     <section className="run-report" data-run-status={report.status}>
       <div>
@@ -19,6 +21,7 @@ export function RunReportSummary({ report, evidence, incident }: SummaryProps) {
       <DidList steps={report.did} evidence={evidence} />
       <ReportList title="What it found" emptyText="Nothing established yet." items={report.found} />
       <PossibleCauses causes={report.causes} status={report.status} evidence={evidence} />
+      <ProofSummary snapshot={snapshot} />
       {report.notDone.length > 0 && <ReportList title="Not done yet" emptyText="" items={report.notDone} isMuted />}
     </section>
   );

@@ -1,7 +1,8 @@
 export type Actor = 'system' | 'runner' | 'lead' | 'investigator' | 'verifier' | 'operator';
 export type RoleName = 'lead' | 'investigator' | 'verifier';
 export type RoleStatus = 'ready' | 'working' | 'waiting_for_evidence' | 'waiting_for_context' | 'reviewing' | 'finished';
-export type EvidenceKind = 'logs' | 'traces' | 'memory' | 'cpu' | 'oom_events' | 'deploy_history' | 'sandbox';
+export type EvidenceKind =
+  | 'logs' | 'traces' | 'memory' | 'cpu' | 'oom_events' | 'deploy_history' | 'sandbox' | 'flag_state' | 'traffic_recipe';
 export type HypothesisStatus = 'testing' | 'supported' | 'contradicted' | 'inconclusive' | 'superseded';
 export type Verdict = 'matches' | 'differs' | 'inconclusive' | 'failed';
 export type CompletionReason = 'completed' | 'insufficient_evidence' | 'infrastructure_failure' | 'interrupted';
