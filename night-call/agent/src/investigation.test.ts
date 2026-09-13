@@ -53,11 +53,11 @@ test('the question is still asked when the first brief fails', async () => {
   assert.ok(run.steps.includes('post question_asked'));
 });
 
-test('a drafted brief citing made-up evidence is replaced by a plain brief with the chosen path', async () => {
+test('a drafted brief citing made-up evidence is replaced by one built from the real readings', async () => {
   const run = stubInvestigation("I don't know", { ...GOOD_DRAFT, knownFacts: [{ text: 'Invented', evidenceIds: ['ev-invented'] }] });
   await investigate(run.parts);
   const brief = payloadOf(run, 'brief_updated') as { summary: string; knownFacts: unknown[]; nextStep: string };
-  assert.deepEqual(brief.knownFacts, []);
+  assert.deepEqual(brief.knownFacts, [{ text: 'failing', evidenceIds: ['ev-logs-1'] }]);
   assert.match(brief.summary, /Answer about customer impact: "I don't know"/);
   assert.match(brief.nextStep, /treated as urgent/);
 });

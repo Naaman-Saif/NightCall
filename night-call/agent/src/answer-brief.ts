@@ -1,4 +1,4 @@
-import { type Brief, failureShareOf, type EvidenceLedger } from './evidence-ledger.js';
+import { type Brief, failureShareOf, readingFacts, type EvidenceLedger } from './evidence-ledger.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import type { Lead } from './lead-steps.js';
 import { logProgress } from './progress.js';
@@ -22,7 +22,7 @@ export function fallbackBrief(ledger: EvidenceLedger, outcome: Outcome): Brief {
   const earlier = ledger.lastBrief;
   const opening = earlier?.summary ?? `Recommendations are failing on about ${failuresPer100(failureShareOf(ledger))} in 100 requests.`;
   const summary = `${opening} ${answerLine(outcome)}`;
-  return { summary, knownFacts: earlier?.knownFacts ?? [], unknowns: earlier?.unknowns ?? [], nextStep: pathSentence(outcome.decision) };
+  return { summary, knownFacts: earlier?.knownFacts ?? readingFacts(ledger), unknowns: earlier?.unknowns ?? [], nextStep: pathSentence(outcome.decision) };
 }
 
 async function draftedBrief(parts: BriefParts, outcome: Outcome): Promise<Brief | null> {
