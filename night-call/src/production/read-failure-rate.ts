@@ -9,6 +9,7 @@ import {
   spanQueries,
   type SpanTarget,
 } from './failure-rate-query';
+import { failureData, failureFactsOf, failureSummary, failureValue } from './failure-rate-summary';
 import { excerptOf, type Reading } from './reading';
 import { grafanaExploreLink, rangeOfMinutes, type SourceLink } from './source-links';
 
@@ -52,10 +53,10 @@ export async function readFailureRate(query: { minutes: number }): Promise<Readi
   const spanLines = spans.map(
     (span) => `${span.service} ${span.span}: errors ${percentText(span.errorShare)} of ${span.callsPerSecond ?? 0} calls per second`,
   );
-  const window = rateWindowMinutes(query.minutes);
-  const summary = `Recommendation requests failing: ${percentText(spans[0].errorShare)} over the last ${window} minutes`;
+  const facts = failureFactsOf(spans, rateWindowMinutes(query.minutes));
   const source = 'span metrics and canary: recommendation';
   const excerpt = excerptOf([...spanLines, canaryLine(canary)]);
-  const value = `${percentText(spans[0].errorShare)} over ${window} min`;
-  return { kind: 'logs', source, summary, excerpt, value, data: { spans, canary }, sourceLinks: failureLinks(query.minutes) };
+  const data = { ...failureData(facts), spans, canary };
+  const reading = { kind: 'logs', source, summary: failureSummary(facts), excerpt, value: failureValue(facts), data } as const;
+  return { ...reading, sourceLinks: failureLinks(query.minutes) };
 }

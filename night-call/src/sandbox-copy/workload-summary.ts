@@ -1,5 +1,5 @@
 import type { Observation } from './observation';
-import type { WorkloadSample } from './stop-rules';
+import { sampleShowsFailure, type WorkloadSample } from './stop-rules';
 
 export interface SummaryInput {
   samples: WorkloadSample[];
@@ -20,6 +20,7 @@ export interface WorkloadSummary {
   restartsAfter: number;
   elapsedSeconds: number;
   elapsedMinutes: number;
+  firstFailureRequest: number | null;
 }
 
 function peak(values: (number | null)[]): number | null {
@@ -29,7 +30,9 @@ function peak(values: (number | null)[]): number | null {
 
 export function summarizeWorkload(input: SummaryInput): WorkloadSummary {
   const { samples } = input;
+  const failing = samples.findIndex((sample) => sampleShowsFailure({ sample, before: input.before }));
   return {
+    firstFailureRequest: failing === -1 ? null : failing + 1,
     startedAt: samples[0]?.at ?? null,
     count: samples.length,
     errors: samples.filter((sample) => sample.response.status !== 200).length,

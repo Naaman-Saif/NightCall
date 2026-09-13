@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { createObserver } from './observation';
 import { requestRecommendations } from './recommendations-request';
 import { restartRecommendation } from './restart-recommendation';
+import { activeRecipeReplay } from './round-workload';
 import { writeJson } from './run-files';
 import { currentSandbox, runRound, type RoundResult } from './sandbox';
 import { setSandboxFlag } from './sandbox-flag';
@@ -41,7 +42,8 @@ export async function reproduceStage(): Promise<RoundResult> {
   setSandboxFlag({ runFolder, variant: 'on' });
   await restartRecommendation(runFolder);
   await coldCheck();
-  const round = await runRound({ name: 'fault', restart: false, count: requestCount, pacingMs, stopOnFailure: true });
+  const replay = activeRecipeReplay();
+  const round = await runRound({ name: 'fault', restart: false, count: requestCount, pacingMs, stopOnFailure: true, replay });
   const reproduced = round.oomEvents.length > 0 && round.summary.errors > 0;
   requireStage(reproduced, 'fault did not establish both recommendation OOM and an HTTP failure');
   return round;

@@ -4,6 +4,7 @@ import { stopSandbox } from './cleanup';
 import { snapshotContainers } from './container-snapshot';
 import { productionIdentity, sourceChecksum, type ProductionIdentity } from './production-identity';
 import { checkProductionAfter, newResult, timed, writeResult, type OneRoundResult } from './round-result';
+import { recipeReplayFromArgs, useRecipeReplay } from './round-workload';
 import { writeJson } from './run-files';
 import { currentSandbox, prepareSandbox, preparedRunFolder, sandboxIsStarted, startSandbox } from './sandbox';
 import { requireProductionMemoryLimits } from './memory-limits';
@@ -51,6 +52,7 @@ async function finish(result: OneRoundResult, before: ProductionIdentity): Promi
 async function main(runId: string): Promise<number> {
   startBudget();
   installSignalHandlers();
+  useRecipeReplay(recipeReplayFromArgs(process.argv));
   if (process.argv.includes('--render-only')) return prepareSandbox(runId).then((folder) => console.log(folder)).then(() => 0);
   const before = await productionIdentity();
   const result = newResult(runId);

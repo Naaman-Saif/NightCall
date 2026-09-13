@@ -25,7 +25,7 @@ export const corePayloads = {
   }),
   evidence_recorded: payload({
     evidenceId: name,
-    kind: z.enum(['logs', 'traces', 'memory', 'cpu', 'oom_events', 'deploy_history', 'sandbox']),
+    kind: z.enum(['logs', 'traces', 'memory', 'cpu', 'oom_events', 'deploy_history', 'sandbox', 'flag_state', 'traffic_recipe']),
     source: name,
     summary: text,
     observedAt: moment,

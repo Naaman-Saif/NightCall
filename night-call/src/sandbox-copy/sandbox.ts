@@ -10,7 +10,8 @@ import { bringStackUp } from './stack-ready';
 import { collectStageTraces } from './stage-traces';
 import { requireNotInterrupted } from './stop-request';
 import { sleep } from './time-budget';
-import { runWorkload } from './workload';
+import { roundWorkloadOf, type RecipeReplay, type RoundWorkload } from './round-workload';
+import { runWorkload, type WorkloadPlan } from './workload';
 import type { WorkloadSummary } from './workload-summary';
 
 export interface SandboxSession {
@@ -27,12 +28,14 @@ export interface RoundOptions {
   count: number;
   pacingMs: number;
   stopOnFailure: boolean;
+  replay?: RecipeReplay | null;
 }
 
 export interface RoundResult {
   name: string;
   summary: WorkloadSummary;
   oomEvents: unknown[];
+  workload: RoundWorkload;
 }
 
 const state: { session: SandboxSession | null; runFolder: string | null; rounds: number } = { session: null, runFolder: null, rounds: 0 };
@@ -82,12 +85,19 @@ export async function runRound(options: RoundOptions): Promise<RoundResult> {
   if (options.flagVariant) setSandboxFlag({ runFolder, variant: options.flagVariant });
   if (options.restart) await restartRecommendation(runFolder);
   const sinceSeconds = Math.floor(Date.now() / 1000);
-  const plan = { name, count: options.count, pacingMs: options.pacingMs, stopOnFailure: options.stopOnFailure };
-  const summary = await runWorkload(plan, { runFolder, endpoint });
+  const summary = await runWorkload(workloadPlanOf(options, name), { runFolder, endpoint });
   await sleep(2000);
   const oomEvents = recommendationOomEvents(runFolder, sinceSeconds);
   writeJson(join(runFolder, `${name}-oom-events.json`), oomEvents);
   const traces = await collectStageTraces({ runFolder, stage: name }).catch((error: unknown) => ({ error: String(error) }));
   writeJson(join(runFolder, 'evidence', name, 'traces-summary.json'), traces);
-  return { name, summary, oomEvents };
+  return { name, summary, oomEvents, workload: roundWorkloadOf(options.replay, options.count) };
+}
+
+function workloadPlanOf(options: RoundOptions, name: string): WorkloadPlan {
+  const plan = { name, count: options.count, pacingMs: options.pacingMs, stopOnFailure: options.stopOnFailure };
+  if (!options.replay) return plan;
+  const { recipe, speed } = options.replay;
+  const schedule = { requests: recipe.requests, maxConcurrency: recipe.maxConcurrency, speed };
+  return { ...plan, count: recipe.requests.length, schedule };
 }
