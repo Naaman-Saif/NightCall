@@ -1,4 +1,4 @@
-import type { CheckResult, ExperimentStarted, JobResult, Started, Verdict } from './proof-types.js';
+import type { CheckResult, ExperimentStarted, JobResult, PublicationFacts, Started, Verdict } from './proof-types.js';
 import { ToolAnswerError } from './tool-client.js';
 
 type Loose = Record<string, unknown>;
@@ -53,6 +53,13 @@ export function experimentStartedOf(reply: unknown): ExperimentStarted {
   const estimate = ((reply ?? {}) as Loose).estimatedMinutes;
   const estimatedMinutes = typeof estimate === 'number' ? estimate : null;
   return { id: requireText(reply, 'experimentId'), jobId: requireText(reply, 'jobId'), recipeSource: textOf(reply, 'recipeSource'), estimatedMinutes };
+}
+
+export function publicationOf(reply: unknown): PublicationFacts | null {
+  const publication = ((reply ?? {}) as Loose).publication;
+  const state = textOf(publication, 'state');
+  if (state === '') return null;
+  return { state, url: textOf(publication, 'url') || null, failureReason: textOf(publication, 'failureReason') || null };
 }
 
 export function jobResultOf(reply: unknown): JobResult {

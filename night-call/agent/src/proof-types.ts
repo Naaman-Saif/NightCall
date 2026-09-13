@@ -25,6 +25,7 @@ export type Started = { id: string; jobId: string };
 export type ExperimentStarted = Started & { recipeSource: string; estimatedMinutes: number | null };
 export type MitigationProposal = { variant: 'off'; restart: boolean; explanation: string; caveats: string[]; notFixed: string };
 export type Review = { id: string; accepted: boolean; reasons: string[] };
+export type PublicationFacts = { state: string; url: string | null; failureReason: string | null };
 
 export type ProofApi = {
   recordContract(checks: ContractCheck[]): Promise<string>;
@@ -34,4 +35,5 @@ export type ProofApi = {
   proposeMitigation(proposal: MitigationProposal): Promise<string>;
   startVerification(ids: { mitigationId: string; contractId: string }): Promise<Started>;
   reviewVerification(review: Review): Promise<void>;
+  readPublication(): Promise<PublicationFacts | null>;
 };

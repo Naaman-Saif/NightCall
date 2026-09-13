@@ -4,7 +4,8 @@ import { findCauses, type CauseOutcome } from './causes.js';
 import { askImpact, readEvidence } from './evidence-steps.js';
 import type { Answer } from './incident-api.js';
 import { causeReproduced, newProofRecord, outcomeSentence, proofSentences } from './proof-record.js';
-import { proveAndDecide, readPublication } from './proof-steps.js';
+import { proveAndDecide } from './proof-steps.js';
+import { waitForPublication } from './publication-wait.js';
 import { newRun, postStatus, runStep, type RunContext, type RunState } from './run-steps.js';
 import { postStopped, type StopFacts } from './stop-report.js';
 import { choiceSentence, type UrgencyDecision } from './urgency.js';
@@ -19,7 +20,7 @@ async function investigationSteps(context: RunContext): Promise<RunOutcome> {
   await readEvidence(context);
   const causes = await findCauses(context);
   const { answer, decision } = await proveAndDecide(context, { causes, pending });
-  await readPublication(context);
+  await waitForPublication(context);
   const facts = { answer, decision, ...causes, proof: context.record };
   await runStep(context, { nowDoing: 'Writing the report', skipLabel: 'writing the report', work: () => postCauseBrief(context, facts) });
   await postStatus(context, { status: 'finished', assignment: `${choiceSentence(decision)} ${outcomeSentence(context.record)}` });

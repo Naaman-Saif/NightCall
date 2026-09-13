@@ -1,4 +1,5 @@
-import type { CheckResult, Verdict } from './proof-types.js';
+import type { CheckResult, PublicationFacts, Verdict } from './proof-types.js';
+import { isTestIncident } from './publication-wait.js';
 
 export type ExperimentRecord = {
   experimentId: string;
@@ -10,7 +11,6 @@ export type ExperimentRecord = {
 };
 
 export type VerificationRecord = { verificationRunId: string; verdict: Verdict | null; approved: boolean };
-export type PublicationFacts = { state: string; url: string | null };
 
 export type ProofRecord = {
   contractId: string | null;
@@ -70,6 +70,7 @@ function verificationSentence(record: ProofRecord): string {
 function publicationSentence(record: ProofRecord): string {
   const publication = record.publication;
   if (publication?.state === 'published' && publication.url) return `Pull request opened for review: ${publication.url}.`;
+  if (isTestIncident(publication)) return 'Test incident: no pull request was opened.';
   return publication?.state === 'failed' ? 'Opening the pull request failed.' : '';
 }
 
@@ -80,13 +81,8 @@ export function proofSentences(record: ProofRecord): string[] {
 
 export function outcomeSentence(record: ProofRecord): string {
   if (record.publication?.state === 'published') return 'The verified mitigation waits in a pull request for a person to review and merge.';
+  if (record.verification?.approved && isTestIncident(record.publication)) return 'The mitigation is verified; this is a test incident, so no pull request was opened.';
   if (record.verification?.approved) return 'The mitigation is verified; no pull request is open yet.';
   if (acceptedReproductions(record).length > 0) return 'The failure was reproduced, but no mitigation was verified in this run.';
   return 'Nothing was reproduced or verified in this run.';
-}
-
-export function publicationOf(snapshot: Record<string, unknown>): PublicationFacts | null {
-  const publication = snapshot.publication as { state?: unknown; url?: unknown } | undefined;
-  if (typeof publication?.state !== 'string') return null;
-  return { state: publication.state, url: typeof publication.url === 'string' ? publication.url : null };
 }
