@@ -23,7 +23,7 @@ export function causesTask(facts: IncidentFacts, readings: string): string {
     'Propose one to three possible causes these readings point to. For each give:',
     'claim: one plain sentence a developer can act on, at most 160 characters;',
     'supportingEvidenceIds: the readings that point to it;',
-    'contradictingEvidenceIds: the readings that point against it, empty if none, never a reading already listed as supporting;',
+    'contradicting: only readings whose values go against the cause\'s own mechanism, each as evidenceId plus contradicts, one short sentence (at most 160 characters) naming the part of the mechanism it goes against; empty if none. Never list a reading already listed as supporting, a reading that is only a count of log lines or traces, or a failure rate or crash count that the cause would produce;',
     'confirmWith: the check or test that would confirm it, at most 200 characters.',
     'Look at whether memory climbs before each out-of-memory restart, at recent changes to the feature flag file in the deploy history, and at whether the live flag settings differ from what is committed and when they changed.',
   ].join('\n');

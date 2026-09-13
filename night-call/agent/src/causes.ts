@@ -54,8 +54,9 @@ async function markSupported(context: RunContext, cause: CheckedCause | null): P
 }
 
 async function postCauses(context: RunContext, proposed: Cause[]): Promise<CauseOutcome> {
-  const { accepted, dropped, rephrased } = checkCauses(proposed, context.ledger);
+  const { accepted, dropped, rephrased, droppedCitations } = checkCauses(proposed, context.ledger);
   dropped.forEach((cause) => logProgress({ causeDropped: cause.claim.slice(0, 200), failedCheck: cause.check, value: cause.value }));
+  droppedCitations.forEach((item) => logProgress({ citationDropped: item.evidenceId, citedAs: item.citedAs, cause: item.claim.slice(0, 200), failedCheck: item.check, value: item.value }));
   rephrased.forEach((cause) => logProgress({ causeRephrased: cause.claim.slice(0, 200), removed: cause.removed }));
   const causes = await postEach(context, accepted);
   context.ledger.hypotheses.push(...causes.map((cause) => cause.hypothesisId));
