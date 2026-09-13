@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import type { SubmitAnswer } from '../api/client';
 
 export type ComposerStatus = 'editing' | 'pending' | 'accepted' | 'failed';
-export const I_DO_NOT_KNOW = "I don't know";
 
 type Attempt = { text: string; idempotencyKey: string };
 type ComposerTarget = { questionId: string; submitAnswer: SubmitAnswer };
@@ -28,11 +27,9 @@ function useAnswerSender({ questionId, submitAnswer }: ComposerTarget) {
       lastAttempt.current = attempt;
       setSentText(attempt.text);
       setStatus('pending');
-      const answer = { questionId, text: attempt.text, idempotencyKey: attempt.idempotencyKey };
-      await submitAnswer(answer).then(
-        () => setStatus('accepted'),
-        () => setStatus('failed'),
-      );
+      const isAccepted = await submitAnswer({ questionId, ...attempt }).then(() => true, () => false);
+      if (isAccepted) lastAttempt.current = null;
+      setStatus(isAccepted ? 'accepted' : 'failed');
     },
     [questionId, submitAnswer],
   );

@@ -28,7 +28,7 @@ function IncidentLayout({ snapshot, view, isOperator, submitAnswer }: IncidentSc
           <Timeline events={view.events} />
         </section>
         <aside className="incident-aside">
-          <QuestionColumn questions={snapshot.questions} isOperator={isOperator} submitAnswer={submitAnswer} />
+          <QuestionColumn questions={snapshot.questions} context={snapshot.context} isOperator={isOperator} submitAnswer={submitAnswer} />
         </aside>
       </div>
     </div>

@@ -49,6 +49,7 @@
   border-left: 2px solid var(--verified-400); border-radius: var(--radius-xs); font: var(--type-body-sm); color: var(--text-body);
 }
 .composer-buttons { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.next-step-line { display: block; margin: var(--sp-2) 0 0; font: var(--type-body-sm); color: var(--text-muted); }
 
 .timeline { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-4); }
 .timeline-row { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: var(--sp-3); }
