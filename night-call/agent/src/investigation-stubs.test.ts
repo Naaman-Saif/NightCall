@@ -4,10 +4,11 @@ import type { IncidentApi, ReaderReply } from './incident-api.js';
 import type { InvestigationParts } from './investigation.js';
 import type { Lead } from './lead-steps.js';
 import type { ProgressEvent } from './progress.js';
+import { stubProof, type ProofOptions } from './proof-stub.test.js';
 import { ToolAnswerError } from './tool-client.js';
 
 export type Recorded = { steps: string[]; events: ProgressEvent[] };
-export type StubOptions = { causes?: Cause[]; errorShare?: number | null; failingReaders?: string[]; proposeFails?: boolean; fallbackOn?: string[] };
+export type StubOptions = ProofOptions & { causes?: Cause[]; errorShare?: number | null; failingReaders?: string[]; proposeFails?: boolean; fallbackOn?: string[] };
 
 export const GOOD_CAUSES: Cause[] = [
   {
@@ -73,9 +74,10 @@ export function stubInvestigation(answerText: string | null, options: StubOption
   const recorded: Recorded = { steps: [], events: [] };
   const waitForAnswer = async () => {
     recorded.steps.push('wait for answer');
-    await new Promise((resolve) => setImmediate(resolve));
+    await Promise.resolve();
     return answerText === null ? null : { questionId: 'q-impact', text: answerText, suppliedAt: '2026-09-13T20:00:00Z' };
   };
-  const parts: InvestigationParts = { api: stubApi(recorded, options), ledger: newLedger(), lead: stubLead(recorded, options), waitForAnswer };
+  const proof = stubProof(recorded, options);
+  const parts: InvestigationParts = { api: stubApi(recorded, options), ledger: newLedger(), lead: stubLead(recorded, options), proof, waitForAnswer };
   return { ...recorded, parts };
 }

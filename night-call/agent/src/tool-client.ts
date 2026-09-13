@@ -8,7 +8,10 @@ export type ToolClient = {
 };
 
 export class ToolAnswerError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly detail: string = '',
+  ) {
     super(`tool answered ${status}`);
   }
 }
@@ -19,8 +22,9 @@ function requestInit(token: string, init: RequestInit): RequestInit {
 }
 
 async function readReply(response: Response): Promise<unknown> {
-  if (!response.ok) throw new ToolAnswerError(response.status);
-  return response.json();
+  if (response.ok) return response.json();
+  const detail = await response.text().catch(() => '');
+  throw new ToolAnswerError(response.status, detail.slice(0, 500));
 }
 
 export function toolClientFor(role: ToolRole): ToolClient {
