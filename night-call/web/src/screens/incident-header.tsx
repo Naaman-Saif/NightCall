@@ -7,7 +7,9 @@ import { Badge, DemoBadge } from '../kit';
 import { ConnectionBadge } from './connection-badge';
 import { ManualTag } from './manual-tag';
 
-export function IncidentHeader({ incident, connection }: { incident: Incident; connection: ConnectionState }) {
+type IncidentHeaderProps = { incident: Incident; connection: ConnectionState; latestSequence: number };
+
+export function IncidentHeader({ incident, connection, latestSequence }: IncidentHeaderProps) {
   return (
     <header className="incident-header">
       <div className="incident-header-tags">
@@ -16,7 +18,7 @@ export function IncidentHeader({ incident, connection }: { incident: Incident; c
         <Badge numeric uppercase>{incident.service}</Badge>
         <ManualTag alertName={incident.alertName} />
         {incident.illustrative && <DemoBadge />}
-        <ConnectionBadge connection={connection} />
+        <ConnectionBadge connection={connection} latestSequence={latestSequence} lastUpdateAt={incident.lastActivityAt} />
       </div>
       <h1 className="incident-title">{incident.alertName}</h1>
       <IncidentFacts incident={incident} />

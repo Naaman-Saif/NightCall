@@ -26,7 +26,7 @@ export function IncidentScreen(props: IncidentScreenProps) {
 function IncidentLayout({ snapshot, view, isOperator, isSample, submitAnswer }: IncidentScreenProps & { snapshot: Snapshot }) {
   return (
     <div className="page">
-      <IncidentHeader incident={snapshot.incident} connection={view.connection} />
+      <IncidentHeader incident={snapshot.incident} connection={view.connection} latestSequence={view.events.at(-1)?.sequence ?? 0} />
       {!isOperator && <PublicBanner />}
       <WhatHappenedSection incident={snapshot.incident} events={view.events} isSample={isSample} />
       <div className="report" data-layout={phoneLayoutFor(snapshot)}>

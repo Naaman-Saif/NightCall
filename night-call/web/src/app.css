@@ -16,7 +16,29 @@
 
 .incident-header { display: grid; gap: var(--sp-3); }
 .incident-header-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
-.connection-badge { margin-left: auto; }
+.connection-badge {
+  margin-left: auto; display: inline-flex; align-items: center; gap: var(--sp-2); height: 22px; padding: 0 var(--sp-2);
+  background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-xs);
+  font: var(--type-meta-sm); color: var(--text-body);
+}
+.connection-dot-ring { position: relative; display: inline-flex; width: 8px; height: 8px; }
+.connection-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--night-400); }
+[data-connection='live'] .connection-dot { background: var(--verified-400); animation: connection-blip 700ms ease-out; }
+[data-connection='live'] .connection-dot-ring::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--verified-400);
+  animation: connection-pulse 2s ease-out infinite;
+}
+[data-connection='reconnecting'] .connection-dot { background: var(--beacon-400); }
+@keyframes connection-pulse { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.8); opacity: 0; } }
+@keyframes connection-blip {
+  from { transform: scale(1.7); background: var(--text-title); box-shadow: 0 0 8px 2px var(--verified-400); }
+  to { transform: scale(1); background: var(--verified-400); box-shadow: none; }
+}
+@keyframes connection-blip-color { from { background: var(--text-title); } to { background: var(--verified-400); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-connection='live'] .connection-dot-ring::after { animation: none; opacity: 0; }
+  [data-connection='live'] .connection-dot { animation: connection-blip-color 700ms steps(1, end); }
+}
 .incident-title { font: var(--type-title); letter-spacing: var(--track-tight); overflow-wrap: anywhere; }
 .incident-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-2); margin: 0; }
 .fact { padding: var(--sp-3); background: var(--surface-card); border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
