@@ -9,6 +9,15 @@ Part A turns alerts and agent events into a stored, typed incident the page can 
 - Operator answers may be public. No public projection: `/api/*` returns the full snapshot and events. Only writes live under `/op/api/*`.
 - Pre-approved cuts for the page: list filters, experiment detail drawer, separate operator screen (one screen; the answer box appears only on `/op/incidents/:id`). Phone layout stays in.
 
+## Codex review (2026-09-13 about 05:00 PKT), checked against code and the box
+
+1. **Shutdown can race sandbox start: confirmed by code path.** `prepareSandbox` registers the session before `compose up`; the signal handler calls `stopSandbox` at once, so teardown runs while `up` still creates containers, then forgets the session, and `finish` finds nothing to stop. Fix: the signal handler only records the interrupt and aborts the in-flight docker command; teardown runs once, from the main flow, after the in-flight operation has settled; a final container check catches anything created late. Test with a signal sent during `up` on the box.
+2. **Fault-stage traces are lost: confirmed on the box.** Run `20260913-ts-round-01` kept 300 traces, all from the mitigation stage; 0 of the 126 fault requests and 0 of 400 baseline requests have a trace. Fix: after each stage, fetch traces by the recorded trace ids from the sandbox Jaeger (every failed request plus up to 20 successful ones) into that stage's evidence folder, before the next stage starts.
+3. **Memory limits copied from compose, not enforced from the live containers: no drift today, fix as a guard.** All 22 sandbox services' compose limits equal the live `HostConfig.Memory` exactly. Fix: write each service's limit from the inspected live value into the sandbox compose, and after `up` verify every sandbox container's `HostConfig.Memory` equals production; a mismatch fails the run.
+4. **Proof is not tied to the mitigation it verifies: accepted.** Contract changes below: every cycle and verifier event carries `verificationRunId`, `mitigationId` and `contractId`; a new `mitigation_proposed` supersedes earlier proof; events for a run that is not the current one are refused.
+
+Fixes 1 to 3 are in Part A (it owns `src/`). Fix 4 is in the shared contract and the reducer.
+
 ## Ownership and the box
 
 - Part A owns `night-call/src/`, `night-call/scripts/`, root Jest and Docker ignore files, and the `night-call` container.
@@ -26,14 +35,15 @@ Part A turns alerts and agent events into a stored, typed incident the page can 
   - Investigator (tool API): `hypothesis_status_changed`, `mitigation_proposed`, `role_status_changed`.
   - Verifier (tool API): `experiment_reviewed`, `verification_reviewed`, `role_status_changed`.
   - Operator (operator API only): `context_supplied`.
-  - Service only, never over HTTP: `alert_received`, `evidence_recorded` (written by the evidence readers), `contract_recorded`, `experiment_started`, `experiment_progress`, `experiment_finished`, `cycle_started`, `cycle_finished`, `publication_changed`, `budget_exhausted`, `investigation_finished`.
+  - Service only, never over HTTP: `alert_received`, `evidence_recorded` (written by the evidence readers), `contract_recorded`, `experiment_started`, `experiment_progress`, `experiment_finished`, `verification_started`, `cycle_started`, `cycle_finished`, `publication_changed`, `budget_exhausted`, `investigation_finished`.
   - So an agent can never post a passed check, a passed cycle or a published PR.
 - **Operator writes need Caddy.** Caddy adds header `X-NightCall-Operator: <secret from env>` on `/op/api/*`; Nest rejects operator writes without it (403). Anything else on the shop network, including the agents container, cannot post operator context. Saif's hosting login gates `/op/*` in front of Caddy.
 - **Budget clock** starts when NightCall receives the alert; `deadlineAt` = received + 30 minutes.
 - **Seeded values** go into `alert_received`: `label` (`INC-001` style), `deadlineAt`, and all three roles start `ready`.
 - **Status rules live in the reducer only.** The page never recomputes them:
   - reproduction: `testing` on a reproduction `experiment_started`; `confirmed` on `experiment_reviewed` accepted for an experiment whose verdict is `matches`; `not_reproduced` when accepted with verdict `differs`; `inconclusive` for accepted `inconclusive`; a rejected review returns to `testing`.
-  - mitigation status: `proposed` on `mitigation_proposed`; `testing` on first `cycle_started`; `failed` on any `cycle_finished` not passed; `verified` only when 3 cycles passed and `verification_reviewed` approved.
+  - mitigation status: `proposed` on `mitigation_proposed`; `testing` on `verification_started` for that mitigation; `failed` on any `cycle_finished` not passed in the current run; `verified` only when cycles 1, 2 and 3 all passed with the same `verificationRunId`, `mitigationId` and `contractId` as the current run, and `verification_reviewed` approved that same run.
+  - proof is tied to one run: `verification_started` opens a new current run and clears `cycles` and `verification`; a new `mitigation_proposed` supersedes the current mitigation, clears its cycles and verification, and records the old one as superseded. Cycle or verifier events whose ids do not match the current run are refused on append (409) and never counted by the reducer. `publication_changed` publishing is refused unless the mitigation is `verified`.
   - attention: `context_requested` while a question with `blocks: none` is open; `blocked` while one with `blocks: mitigation` is open.
   - phase: briefing until the first hypothesis; investigating; reproducing while a reproduction experiment runs; mitigating after `mitigation_proposed`; verifying during cycles; publishing on `publication_changed` publishing; handoff when finished.
   - lifecycle `finished` on `investigation_finished` or `budget_exhausted`.
@@ -71,9 +81,10 @@ Part A turns alerts and agent events into a stored, typed incident the page can 
 | experiment_finished | `{ experimentId, verdict: 'matches'|'differs'|'inconclusive'|'failed', checks: {name, passed, observed}[], seriesRef }` |
 | experiment_reviewed | `{ experimentId, accepted, reasons }` |
 | mitigation_proposed | `{ mitigationId, explanation, diff, caveats, notFixed }` |
-| cycle_started | `{ cycle }` |
-| cycle_finished | `{ cycle, passed, checks: {name, passed, observed}[] }` |
-| verification_reviewed | `{ approved, reasons }` |
+| verification_started | `{ verificationRunId, mitigationId, contractId }` (service only) |
+| cycle_started | `{ verificationRunId, mitigationId, contractId, cycle }` |
+| cycle_finished | `{ verificationRunId, mitigationId, contractId, cycle, passed, checks: {name, passed, observed}[] }` |
+| verification_reviewed | `{ verificationRunId, mitigationId, contractId, approved, reasons }` |
 | publication_changed | `{ state: 'publishing'|'published'|'failed', repository, baseBranch, number, url, diff, failureReason }` |
 | role_status_changed | `{ role, status: 'ready'|'working'|'waiting_for_evidence'|'waiting_for_context'|'reviewing'|'finished', assignment }` |
 | budget_exhausted | `{ deadlineAt }` |
@@ -97,8 +108,10 @@ contract: null | { id, checks }
 experiments: { id, kind, hypothesisId, contractId, purpose, recipe, startedAt, finishedAt, progress, verdict, checks, review, seriesRef }[]
 reproduction: 'untested'|'testing'|'confirmed'|'not_reproduced'|'inconclusive'
 mitigation: null | { id, explanation, diff, caveats, notFixed, status: 'proposed'|'testing'|'verified'|'failed' }
-cycles: { number, state: 'pending'|'running'|'passed'|'failed', checks }[]
-verification: null | { approved, reasons }
+supersededMitigations: { id, explanation, supersededAt }[]
+currentVerificationRun: null | { verificationRunId, mitigationId, contractId, startedAt }
+cycles: { number, state: 'pending'|'running'|'passed'|'failed', checks, verificationRunId }[]
+verification: null | { verificationRunId, approved, reasons }
 publication: { state: 'not_eligible'|'publishing'|'published'|'failed', repository, baseBranch, number, url, diff, failureReason }
 lastSequence
 ```
@@ -126,6 +139,7 @@ lastSequence
 5. `src/tool-api/`: append through investigation with the allow list and active guard; evidence reader routes that also record evidence.
 6. `scripts/replay-sample-incident.ts`: reads the sample file and appends through the investigation service inside the container (not HTTP), with realistic spacing; run with `docker exec night-call node dist/scripts/replay-sample-incident.js`.
 7. Hygiene: `.dockerignore`, Jest roots.
+7a. Sandbox fixes from the Codex review, in `src/sandbox-copy/`: signal handler records the interrupt and aborts the in-flight docker command only; teardown runs once from the main flow after the in-flight operation settles, then a final project-container check; stage evidence fetches traces by recorded trace ids (all failed requests plus up to 20 successful) right after each stage; sandbox compose takes memory limits from the inspected live containers and a post-start check fails the run on any mismatch.
 8. Tests: reducer and status rules per area, allow list, operator header, idempotent context, stream resume without duplicates, bad last line, ring buffer and skip-if-busy, limit null, boot interruption.
 
 ### Done when (Part A, on the box)
@@ -140,6 +154,10 @@ lastSequence
 | Recorder | after 2 minutes, series for `recommendation` has at least 12 samples with non-null memory, limit and CPU; `night-call` series has limit null |
 | Interruption | restarting `night-call` with an active incident appends `investigation_finished` reason `interrupted` |
 | Old folders | archived; list shows only incidents with `alert_received` |
+| Proof tied to one run | appending a `cycle_finished` with a stale `verificationRunId` gets 409; a new `mitigation_proposed` clears cycles and verification in the snapshot; `publication_changed` publishing before `verified` gets 409 |
+| Signal during start | SIGTERM sent to the one-off runner while `compose up` runs: exit non-zero, `cleanup.json` clean, no `nc-sandbox` containers or network left afterwards |
+| Stage traces | a new one-round run keeps traces whose ids match at least one failed fault-stage request, stored in the fault stage's evidence folder |
+| Memory limits | the same run's post-start check shows every sandbox container's memory limit equals production |
 | Quality | lint, tests, build pass |
 
 ## Part B: incident web page
