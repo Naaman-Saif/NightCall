@@ -1,75 +1,75 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { EVIDENCE_BRIEF_SUMMARY } from './answer-brief.js';
 import { investigate } from './investigation.js';
-import { GOOD_DRAFT, stubInvestigation } from './investigation-stubs.test.js';
+import { stubInvestigation } from './investigation-stubs.test.js';
 import { UNCONFIRMED_IMPACT } from './urgency.js';
 
 type BriefPayload = { summary: string; knownFacts: unknown[]; unknowns: string[]; nextStep: string };
+type Run = ReturnType<typeof stubInvestigation>;
 
-const READING_FACTS = [{ text: 'failing', evidenceIds: ['ev-logs-1'] }, { text: '4 out-of-memory events', evidenceIds: ['ev-oom-events-1'] }];
-const eventsOf = (run: ReturnType<typeof stubInvestigation>, type: string) => run.events.filter((event) => event.type === type);
-const lastPayload = (run: ReturnType<typeof stubInvestigation>, type: string) => eventsOf(run, type).at(-1)?.payload ?? {};
+const eventsOf = (run: Run, type: string) => run.events.filter((event) => event.type === type);
+const lastPayload = (run: Run, type: string) => eventsOf(run, type).at(-1)?.payload ?? {};
+const NOW_STEPS = ['Reading the failure rate and crashes', 'Asking about customer impact', 'Reading memory before each crash', 'Reading deploy history', 'Comparing possible causes', 'Writing the report'];
 
-test("reads, asks, then briefs while waiting, and treats I don't know as urgent", async () => {
+test('an early answer never cuts the investigation short', async () => {
+  const run = stubInvestigation('Rush it');
+  await investigate(run.parts);
+  const reads = run.steps.filter((step) => step.startsWith('read '));
+  assert.deepEqual(reads, ['read failure-rate', 'read oom-events', 'read memory', 'read cpu', 'read logs', 'read traces', 'read deploy-history']);
+  assert.ok(run.steps.indexOf('wait for answer') < run.steps.indexOf('read memory'));
+  assert.ok(run.steps.indexOf('propose causes') > run.steps.indexOf('read deploy-history'));
+  assert.deepEqual(run.events.slice(-3).map((event) => event.type), ['brief_updated', 'role_status_changed', 'investigation_stopped']);
+});
+
+test('the Now line names each step just before it runs', async () => {
+  const run = stubInvestigation(null);
+  await investigate(run.parts);
+  NOW_STEPS.forEach((text) => assert.ok(run.steps.includes(`now: ${text}`), text));
+  assert.equal(run.steps.indexOf('now: Reading memory before each crash') + 1, run.steps.indexOf('read memory'));
+});
+
+test('checked causes are posted and the independently supported one is marked supported', async () => {
+  const run = stubInvestigation('Tolerable');
+  await investigate(run.parts);
+  assert.deepEqual(eventsOf(run, 'hypothesis_proposed').map((event) => event.payload.hypothesisId), ['h-1', 'h-2']);
+  const supported = eventsOf(run, 'hypothesis_status_changed');
+  assert.deepEqual(supported.map((event) => [event.payload.hypothesisId, event.payload.status]), [['h-1', 'supported']]);
+  assert.match(String(supported[0].payload.reason), /independent readings of memory, crashes, deploy history/);
+  const brief = lastPayload(run, 'brief_updated') as BriefPayload;
+  assert.match(brief.summary, /Possible causes: 2\. Most likely: The recommendation cache grows until memory reaches the 500 MiB limit and the service runs out of memory \(not yet reproduced\)\. Not yet reproduced in a test copy\.$/);
+  assert.match(brief.unknowns[0], /^Most likely possible cause: .* Supported by ev-memory-1, ev-oom-events-1, ev-deploy-history-1\. Would be confirmed by:/);
+  assert.match(String(lastPayload(run, 'investigation_stopped').summary), /Possible causes: 2\. Most likely: The recommendation cache grows/);
+});
+
+test('a failed reader and a failed cause step are skipped and recorded, and the run still reports', async () => {
+  const run = stubInvestigation(null, { failingReaders: ['logs'], proposeFails: true });
+  await investigate(run.parts);
+  assert.ok(run.steps.includes('read deploy-history'));
+  assert.match((lastPayload(run, 'brief_updated') as BriefPayload).summary, /No cause stands out yet\. Not yet reproduced in a test copy\.$/);
+  const stop = lastPayload(run, 'investigation_stopped');
+  assert.match(String(stop.summary), /Skipped: reading logs \(NightCall refused the call\); comparing possible causes \(the model or network kept failing\)\.$/);
+  assert.equal(stop.reason, 'no_answer');
+});
+
+test('when the run time limit is reached the remaining steps are skipped and the stop is still posted', async () => {
+  const run = stubInvestigation('Rush it');
+  run.parts.run = { skipped: [], deadline: 0, now: () => 1 };
+  await investigate(run.parts);
+  const stop = String(lastPayload(run, 'investigation_stopped').summary);
+  assert.match(stop, /Did not ask about customer impact\./);
+  assert.match(stop, /reading memory \(the run time limit was reached\)/);
+  assert.equal(run.steps.includes('wait for answer'), false);
+});
+
+test("the question quotes measured values, and I don't know leaves impact unconfirmed and urgent", async () => {
   const run = stubInvestigation("I don't know");
   const decision = await investigate(run.parts);
-  assert.deepEqual(run.steps, [
-    'post role_status_changed', 'read failure-rate', 'read oom-events', 'post question_asked', 'post role_status_changed', 'first brief',
-    'wait for answer', 'post brief_updated', 'keep reading', 'reading stopped', 'draft brief', 'post brief_updated', 'post role_status_changed',
-    'post investigation_stopped',
-  ]);
+  const question = eventsOf(run, 'question_asked')[0];
+  assert.ok(String(question.payload.text).startsWith('12.3% of recommendation requests failed in the last 10 minutes, and the service ran out of memory and restarted 4 times in the last 10 minutes.'));
+  assert.deepEqual(question.refs, ['q-impact', 'ev-failure-rate-1', 'ev-oom-events-1']);
   assert.equal(decision.urgency, 'rush');
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;
   assert.equal(brief.unknowns[0], UNCONFIRMED_IMPACT);
-  assert.equal(brief.nextStep, 'Treated as urgent. This run stops here: no further checks, mitigation or verification run in this version.');
-  assert.equal(lastPayload(run, 'role_status_changed').status, 'finished');
-});
-
-test('the question quotes the measured share and crash count and refs the readings', async () => {
-  const run = stubInvestigation(null);
-  await investigate(run.parts);
-  const question = eventsOf(run, 'question_asked')[0];
-  const expected = '12.3% of recommendation requests failed in the last 10 minutes, and the service ran out of memory and restarted 4 times in the last 10 minutes. Is that tolerable';
-  assert.ok(String(question.payload.text).startsWith(expected));
-  assert.deepEqual(question.refs, ['q-impact', 'ev-logs-1', 'ev-oom-events-1']);
-});
-
-test('without a written brief the page gets a brief built only from the readings', async () => {
-  const run = stubInvestigation(null);
-  run.parts.lead.writeFirstBrief = async () => {
-    throw new Error('Model reached maximum token limit.');
-  };
-  await investigate(run.parts);
-  const first = eventsOf(run, 'brief_updated')[0].payload as BriefPayload;
-  assert.equal(first.summary, EVIDENCE_BRIEF_SUMMARY);
-  assert.deepEqual(first.knownFacts, READING_FACTS);
-});
-
-test('an answer arriving mid-brief stops the brief and skips the evidence-only brief', async () => {
-  const run = stubInvestigation('Rush it');
-  run.parts.lead.writeFirstBrief = (request) => new Promise((_, reject) => request.signal.addEventListener('abort', () => reject(new Error('aborted'))));
-  await investigate(run.parts);
-  assert.equal(eventsOf(run, 'brief_updated').length, 1);
-  assert.equal(run.steps.includes('keep reading'), false);
-});
-
-test('a free-text answer is classified after reading stops and the path follows it', async () => {
-  const run = stubInvestigation('We can live with it for an hour');
-  const decision = await investigate(run.parts);
-  assert.ok(run.steps.indexOf('classify') > run.steps.indexOf('reading stopped'));
-  assert.equal(decision.urgency, 'tolerable');
-  const brief = lastPayload(run, 'brief_updated') as BriefPayload;
-  assert.equal(brief.unknowns.includes(UNCONFIRMED_IMPACT), false);
-  assert.match(brief.nextStep, /tolerable for now/);
-});
-
-test('a drafted brief citing made-up evidence is replaced by one built from the real readings', async () => {
-  const run = stubInvestigation("I don't know", { draft: { ...GOOD_DRAFT, knownFacts: [{ text: 'Invented', evidenceIds: ['ev-invented'] }] } });
-  await investigate(run.parts);
-  const brief = lastPayload(run, 'brief_updated') as BriefPayload;
-  assert.deepEqual(brief.knownFacts, READING_FACTS);
-  assert.equal(brief.summary, '12.3% of recommendation requests failed in the last 10 minutes. Answer about customer impact: "I don\'t know".');
-  assert.match(brief.nextStep, /^Treated as urgent\. This run stops here/);
+  assert.equal(brief.nextStep, 'Treated as urgent. This run stops here: nothing was reproduced, mitigated or verified.');
 });

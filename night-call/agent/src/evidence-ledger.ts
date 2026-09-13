@@ -5,22 +5,32 @@ export type KnownFact = { text: string; evidenceIds: string[] };
 
 export type Brief = { summary: string; knownFacts: KnownFact[]; unknowns: string[]; nextStep: string };
 
+export type RecordedReading = { reader: ReaderName; summary: string; excerpt: string };
+
 export type EvidenceLedger = {
   ids: Set<string>;
   summaries: Map<ReaderName, KnownFact>;
+  readings: Map<string, RecordedReading>;
   hypotheses: string[];
   lastBrief: Brief | null;
   impact: ImpactReadings | null;
 };
 
 export function newLedger(): EvidenceLedger {
-  return { ids: new Set(), summaries: new Map(), hypotheses: [], lastBrief: null, impact: null };
+  return { ids: new Set(), summaries: new Map(), readings: new Map(), hypotheses: [], lastBrief: null, impact: null };
 }
 
 export function noteReading(ledger: EvidenceLedger, reading: { reader: ReaderName; reply: ReaderReply }): void {
-  const { evidenceId, summary } = reading.reply.evidence;
-  if (evidenceId) ledger.ids.add(evidenceId);
-  if (evidenceId && summary) ledger.summaries.set(reading.reader, { text: summary, evidenceIds: [evidenceId] });
+  const { evidenceId, summary, excerpt } = reading.reply.evidence;
+  if (!evidenceId) return;
+  ledger.ids.add(evidenceId);
+  ledger.readings.set(evidenceId, { reader: reading.reader, summary, excerpt });
+  if (summary) ledger.summaries.set(reading.reader, { text: summary, evidenceIds: [evidenceId] });
+}
+
+export function readingText(ledger: EvidenceLedger, evidenceId: string): string {
+  const reading = ledger.readings.get(evidenceId);
+  return reading ? `${reading.summary}\n${reading.excerpt}` : '';
 }
 
 export function readingFacts(ledger: EvidenceLedger): KnownFact[] {

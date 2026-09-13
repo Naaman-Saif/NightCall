@@ -25,6 +25,6 @@ export async function runInvestigation(incidentId: string): Promise<void> {
   const ledger = newLedger();
   const snapshot = await caseOrEmpty(api);
   seedEvidenceIds(ledger, snapshot);
-  const decision = await investigate({ api, ledger, lead: leadFor({ api, ledger }, factsOf(snapshot)) });
+  const decision = await investigate({ api, ledger, lead: leadFor(factsOf(snapshot)) });
   logProgress({ incidentId, mode: 'investigate', finished: true, ...decision, evidence: [...ledger.ids], hypotheses: ledger.hypotheses });
 }

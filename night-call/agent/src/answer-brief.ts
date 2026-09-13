@@ -1,58 +1,46 @@
-import { honestBrief } from './brief-check.js';
-import { type Brief, readingFacts, type EvidenceLedger } from './evidence-ledger.js';
-import { capitalized, failureStatement } from './impact-facts.js';
+import type { CheckedCause } from './cause-rules.js';
+import { readingFacts, type Brief, type EvidenceLedger } from './evidence-ledger.js';
+import { capitalized, crashStatement, failureStatement } from './impact-facts.js';
 import type { Answer, IncidentApi } from './incident-api.js';
-import type { Lead } from './lead-steps.js';
-import { logProgress, type ProgressEvent } from './progress.js';
+import type { ProgressEvent } from './progress.js';
+import { causesLine, NOT_REPRODUCED, withoutEndMark } from './report-lines.js';
 import { pathSentence, UNCONFIRMED_IMPACT, type UrgencyDecision } from './urgency.js';
-import { briefProblem, cleanBrief } from './write-tools.js';
+import { cleanBrief } from './write-tools.js';
 
-export type BriefParts = { api: IncidentApi; ledger: EvidenceLedger; lead: Lead };
-export type Outcome = { answer: Answer | null; decision: UrgencyDecision };
+export type ReportFacts = { answer: Answer | null; decision: UrgencyDecision; causes: CheckedCause[]; mostLikely: CheckedCause | null };
 
 export const EVIDENCE_BRIEF_SUMMARY = 'Summary from the evidence readings; analysis still running.';
 
 export function evidenceBrief(ledger: EvidenceLedger): ProgressEvent {
-  const nextStep = 'Keep reading production evidence and wait for the answer about customer impact.';
+  const nextStep = 'Compare possible causes and wait for the answer about customer impact.';
   const brief = cleanBrief({ summary: EVIDENCE_BRIEF_SUMMARY, knownFacts: readingFacts(ledger), unknowns: ['What is behind the failures'], nextStep });
   return { type: 'brief_updated', summary: brief.summary, payload: brief };
 }
 
-export function withDecision(brief: Brief, decision: UrgencyDecision): Brief {
-  const listed = brief.unknowns.includes(UNCONFIRMED_IMPACT);
-  const unknowns = decision.impactConfirmed || listed ? brief.unknowns : [UNCONFIRMED_IMPACT, ...brief.unknowns];
-  return { ...brief, unknowns };
+function whatHappened(ledger: EvidenceLedger): string {
+  const impact = ledger.impact;
+  const statements = [failureStatement(impact?.failure ?? null), ...(impact?.crashes ? [crashStatement(impact.crashes)] : [])];
+  return `${capitalized(statements.join(', and '))}.`;
 }
 
-function answerLine(outcome: Outcome): string {
-  return outcome.answer ? `Answer about customer impact: "${outcome.answer.text}".` : 'No answer about customer impact arrived in time.';
+function causeUnknown(cause: CheckedCause, mostLikely: CheckedCause | null): string {
+  const label = cause === mostLikely ? 'Most likely possible cause' : 'Possible cause';
+  const against = cause.contradictingEvidenceIds.length > 0 ? `; contradicted by ${cause.contradictingEvidenceIds.join(', ')}` : '';
+  const evidence = `Supported by ${cause.supportingEvidenceIds.join(', ')}${against}.`;
+  return `${label}: ${withoutEndMark(cause.claim)}. ${evidence} Would be confirmed by: ${withoutEndMark(cause.confirmWith)}.`;
 }
 
-export function fallbackBrief(ledger: EvidenceLedger, outcome: Outcome): Brief {
-  const earlier = ledger.lastBrief;
-  const opening = earlier?.summary ?? `${capitalized(failureStatement(ledger.impact?.failure ?? null))}.`;
-  const summary = `${opening} ${answerLine(outcome)}`;
-  return { summary, knownFacts: earlier?.knownFacts ?? readingFacts(ledger), unknowns: earlier?.unknowns ?? [], nextStep: pathSentence(outcome.decision) };
+export function causeBriefOf(ledger: EvidenceLedger, facts: ReportFacts): Brief {
+  const answer = facts.answer ? `Answer about customer impact: "${facts.answer.text}".` : 'No answer about customer impact arrived.';
+  const causes = causesLine({ count: facts.causes.length, mostLikely: facts.mostLikely?.claim ?? null });
+  const summary = [whatHappened(ledger), answer, causes, NOT_REPRODUCED].join(' ');
+  const unconfirmed = facts.decision.impactConfirmed ? [] : [UNCONFIRMED_IMPACT];
+  const unknowns = [...unconfirmed, ...facts.causes.map((cause) => causeUnknown(cause, facts.mostLikely))];
+  return { summary, knownFacts: readingFacts(ledger), unknowns, nextStep: pathSentence(facts.decision) };
 }
 
-async function draftedBrief(parts: BriefParts, outcome: Outcome): Promise<Brief | null> {
-  try {
-    const request = { ...outcome, lastBrief: parts.ledger.lastBrief, evidenceIds: [...parts.ledger.ids] };
-    const draft = await parts.lead.draftBrief(request);
-    return { summary: draft.summary, knownFacts: draft.knownFacts, unknowns: draft.unknowns, nextStep: pathSentence(outcome.decision) };
-  } catch (error) {
-    logProgress({ draftBriefFailed: String(error).slice(0, 300) });
-    return null;
-  }
-}
-
-export async function postAnswerBrief(parts: BriefParts, outcome: Outcome): Promise<Brief> {
-  const drafted = await draftedBrief(parts, outcome);
-  const problem = drafted ? briefProblem(parts.ledger, withDecision(drafted, outcome.decision)) : 'no draft';
-  if (problem) logProgress({ answerBriefFallback: problem });
-  const chosen = withDecision(problem || !drafted ? fallbackBrief(parts.ledger, outcome) : drafted, outcome.decision);
-  const brief = cleanBrief(honestBrief(chosen, parts.ledger.impact));
-  await parts.api.postEvent({ type: 'brief_updated', summary: brief.summary.slice(0, 2000), payload: brief });
-  parts.ledger.lastBrief = brief;
-  return brief;
+export async function postCauseBrief(context: { api: IncidentApi; ledger: EvidenceLedger }, facts: ReportFacts): Promise<void> {
+  const brief = cleanBrief(causeBriefOf(context.ledger, facts));
+  await context.api.postEvent({ type: 'brief_updated', summary: brief.summary.slice(0, 2000), payload: brief });
+  context.ledger.lastBrief = brief;
 }

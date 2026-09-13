@@ -10,7 +10,7 @@ export function claimsFailingRequests(sentence: string): boolean {
   return FAILURE_WORDS.test(sentence) && REQUEST_WORDS.test(sentence) && !NEGATION.test(sentence);
 }
 
-function failuresMeasured(impact: ImpactReadings | null): boolean {
+export function failuresMeasured(impact: ImpactReadings | null): boolean {
   return (impact?.failure?.errorShare ?? 0) > 0;
 }
 
