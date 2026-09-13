@@ -1,4 +1,5 @@
-import { evidenceIdsOf, impactQuestionText, requireMeasured, type ImpactReadings } from './impact-facts.js';
+import { evidenceIdsOf, impactQuestionText, type ImpactReadings } from './impact-facts.js';
+import { requireMeasured } from './measured-guard.js';
 import type { Answer } from './incident-api.js';
 import type { ProgressEvent } from './progress.js';
 

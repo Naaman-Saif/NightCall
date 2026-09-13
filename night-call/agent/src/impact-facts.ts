@@ -1,24 +1,46 @@
-export type FailureReading = { evidenceId: string; errorShare: number | null; windowMinutes: number };
+export type FailureReading = {
+  evidenceId: string;
+  errorShare: number | null;
+  frontendShare?: number | null;
+  frontendCallsPerSecond?: number | null;
+  windowMinutes: number;
+};
 export type CrashReading = { evidenceId: string; outOfMemory: number; restarts: number; windowMinutes: number };
 export type ImpactReadings = { failure: FailureReading | null; crashes: CrashReading | null };
 
 export const QUESTION_ENDING = 'Is that tolerable while I test a fix, or should I rush the safest fix first?';
 
-const NUMBER = /\d+(?:\.\d+)?/g;
-
 export function capitalized(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function percentText(share: number): string {
-  const tenths = Math.floor(share * 1000 + 1e-9);
-  return tenths === 0 ? 'less than 0.1%' : `${(tenths / 10).toFixed(1)}%`;
+export function precisePercent(share: number): string {
+  const hundredths = Math.floor(share * 10000 + 1e-9);
+  return share > 0 && hundredths === 0 ? 'less than 0.01%' : `${(hundredths / 100).toFixed(2)}%`;
+}
+
+export function rateText(callsPerSecond: number): string {
+  return (Math.floor(callsPerSecond * 100 + 1e-9) / 100).toFixed(2);
+}
+
+function frontendPart(reading: FailureReading): string {
+  const share = reading.frontendShare ?? null;
+  if (share === null) return "the failure rate of shoppers' recommendation requests could not be measured";
+  const rate = reading.frontendCallsPerSecond == null ? '' : `, ${rateText(reading.frontendCallsPerSecond)} per second`;
+  return `shoppers' recommendation requests failed ${precisePercent(share)} of the time (frontend${rate})`;
+}
+
+function servicePart(reading: FailureReading): string {
+  if (reading.errorShare === null) return "the recommendation service's own error rate could not be measured";
+  return `the recommendation service itself logged ${precisePercent(reading.errorShare)} errors`;
 }
 
 export function failureStatement(reading: FailureReading | null): string {
-  if (reading === null || reading.errorShare === null) return 'the request failure rate could not be measured yet';
-  if (reading.errorShare === 0) return 'requests are not failing right now';
-  return `${percentText(reading.errorShare)} of recommendation requests failed in the last ${reading.windowMinutes} minutes`;
+  const frontend = reading?.frontendShare ?? null;
+  const service = reading?.errorShare ?? null;
+  if (reading === null || (frontend === null && service === null)) return 'the request failure rate could not be measured yet';
+  if (frontend === 0 && service === 0) return 'requests are not failing right now';
+  return `${frontendPart(reading)} while ${servicePart(reading)}`;
 }
 
 function timesText(count: number): string {
@@ -37,34 +59,6 @@ export function impactQuestionText(readings: ImpactReadings): string {
   const facts = [failureStatement(readings.failure)];
   if (readings.crashes) facts.push(crashStatement(readings.crashes));
   return `${capitalized(facts.join(', and '))}. ${QUESTION_ENDING}`;
-}
-
-export function precisePercent(share: number): string {
-  const hundredths = Math.floor(share * 10000 + 1e-9);
-  return share > 0 && hundredths === 0 ? 'less than 0.01%' : `${(hundredths / 100).toFixed(2)}%`;
-}
-
-function failureNumbers(failure: FailureReading | null): string[] {
-  if (failure === null || failure.errorShare === null) return [];
-  const shown = failure.errorShare > 0 ? [percentText(failure.errorShare), precisePercent(failure.errorShare)] : [precisePercent(0)];
-  return [...shown.map((text) => text.replace(/[^0-9.]/g, '')), String(failure.windowMinutes)];
-}
-
-function measuredNumbers(readings: ImpactReadings): Set<string> {
-  const { crashes } = readings;
-  const crashNumbers = crashes ? [String(crashes.outOfMemory), String(crashes.restarts), String(crashes.windowMinutes)] : [];
-  return new Set([...failureNumbers(readings.failure), ...crashNumbers]);
-}
-
-export function unmeasuredNumbers(text: string, readings: ImpactReadings): string[] {
-  const allowed = measuredNumbers(readings);
-  return (text.match(NUMBER) ?? []).filter((number) => !allowed.has(number));
-}
-
-export function requireMeasured(text: string, readings: ImpactReadings): string {
-  const unmeasured = unmeasuredNumbers(text, readings);
-  if (unmeasured.length > 0) throw new Error(`text quotes numbers no reading measured: ${unmeasured.join(', ')}`);
-  return text;
 }
 
 export function evidenceIdsOf(readings: ImpactReadings): string[] {

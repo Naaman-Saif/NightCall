@@ -7,7 +7,7 @@ import type { ProgressEvent } from './progress.js';
 import { ToolAnswerError } from './tool-client.js';
 
 export type Recorded = { steps: string[]; events: ProgressEvent[] };
-export type StubOptions = { causes?: Cause[]; errorShare?: number | null; failingReaders?: string[]; proposeFails?: boolean };
+export type StubOptions = { causes?: Cause[]; errorShare?: number | null; failingReaders?: string[]; proposeFails?: boolean; fallbackOn?: string[] };
 
 export const GOOD_CAUSES: Cause[] = [
   {
@@ -30,7 +30,7 @@ const SUMMARIES: Record<string, string> = {
 };
 
 function dataFor(reader: string, errorShare: number | null): unknown {
-  if (reader === 'failure-rate') return { spans: [{ errorShare }] };
+  if (reader === 'failure-rate') return { spans: [{ errorShare }, { errorShare: 0.0271, callsPerSecond: 1.7740707887577989 }] };
   if (reader === 'oom-events') return { events: [1, 2, 3, 4].flatMap(() => [{ action: 'oom' }, { action: 'die' }, { action: 'start' }]) };
   return {};
 }
@@ -54,12 +54,17 @@ function stubApi(recorded: Recorded, options: StubOptions): IncidentApi {
 
 function stubLead(recorded: Recorded, options: StubOptions): Lead {
   return {
-    proposeCauses: async () => {
+    proposeCauses: async (request) => {
       recorded.steps.push('propose causes');
+      if (options.fallbackOn?.includes('causes')) request.onFallback();
       if (options.proposeFails) throw new Error('Stream ended without completing a message');
       return options.causes ?? GOOD_CAUSES;
     },
-    classify: async () => (recorded.steps.push('classify'), { urgency: 'tolerable', reason: 'They can wait.' }),
+    classify: async (request) => {
+      recorded.steps.push('classify');
+      if (options.fallbackOn?.includes('classify')) request.onFallback();
+      return { urgency: 'tolerable', reason: 'They can wait.' };
+    },
   };
 }
 

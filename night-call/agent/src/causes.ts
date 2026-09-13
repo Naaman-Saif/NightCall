@@ -1,14 +1,19 @@
-import { checkCauses, independentReaders, mostLikelyCause, type Cause, type CheckedCause } from './cause-rules.js';
+import { checkCauses, independentReaders, mostLikelyCause, type Cause, type CheckedCause, type DroppedCause } from './cause-rules.js';
+import type { KnownFact } from './evidence-ledger.js';
 import { readingsBlock } from './lead-prompts.js';
 import { logProgress, type ProgressEvent } from './progress.js';
 import { NOT_REPRODUCED, READER_WORDS } from './report-lines.js';
 import { describeError } from './retry.js';
 import { runStep, stepSignal, type RunContext } from './run-steps.js';
 
-export type CauseOutcome = { causes: CheckedCause[]; mostLikely: CheckedCause | null };
+export type CauseOutcome = { causes: CheckedCause[]; mostLikely: CheckedCause | null; findings: KnownFact[] };
 
 const PROPOSE_CAP_MS = 4 * 60_000;
-const NO_CAUSES: CauseOutcome = { causes: [], mostLikely: null };
+const NO_CAUSES: CauseOutcome = { causes: [], mostLikely: null, findings: [] };
+
+function findingsOf(dropped: DroppedCause[]): KnownFact[] {
+  return dropped.filter((cause) => cause.check === 'effect_not_cause').map((cause) => ({ text: cause.claim, evidenceIds: cause.supportingEvidenceIds }));
+}
 
 function proposedEvent(cause: CheckedCause): ProgressEvent {
   const { hypothesisId, claim, supportingEvidenceIds, contradictingEvidenceIds, confirmWith } = cause;
@@ -49,17 +54,19 @@ async function markSupported(context: RunContext, cause: CheckedCause | null): P
 }
 
 async function postCauses(context: RunContext, proposed: Cause[]): Promise<CauseOutcome> {
-  const { accepted, dropped } = checkCauses(proposed, context.ledger);
-  dropped.forEach((cause) => logProgress({ causeDropped: cause.claim.slice(0, 200), why: cause.problem }));
+  const { accepted, dropped, rephrased } = checkCauses(proposed, context.ledger);
+  dropped.forEach((cause) => logProgress({ causeDropped: cause.claim.slice(0, 200), failedCheck: cause.check, value: cause.value }));
+  rephrased.forEach((cause) => logProgress({ causeRephrased: cause.claim.slice(0, 200), removed: cause.removed }));
   const causes = await postEach(context, accepted);
   context.ledger.hypotheses.push(...causes.map((cause) => cause.hypothesisId));
   const mostLikely = await markSupported(context, mostLikelyCause(causes, context.ledger));
-  return { causes, mostLikely };
+  return { causes, mostLikely, findings: findingsOf(dropped) };
 }
 
 export async function findCauses(context: RunContext): Promise<CauseOutcome> {
   const work = async () => {
-    const request = { readings: readingsBlock(context.ledger), signal: stepSignal(context.run, PROPOSE_CAP_MS) };
+    const onFallback = () => context.run.fallbacks.push('comparing possible causes');
+    const request = { readings: readingsBlock(context.ledger), signal: stepSignal(context.run, PROPOSE_CAP_MS), onFallback };
     return postCauses(context, await context.lead.proposeCauses(request));
   };
   return (await runStep(context, { nowDoing: 'Comparing possible causes', skipLabel: 'comparing possible causes', work })) ?? NO_CAUSES;

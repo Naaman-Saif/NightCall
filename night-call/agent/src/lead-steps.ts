@@ -21,19 +21,22 @@ const causeShape = z.object({
 });
 const causesShape = z.object({ causes: z.array(causeShape).max(3) });
 
-export type CauseRequest = { readings: string; signal: AbortSignal };
-export type ClassifyRequest = { answer: string; signal: AbortSignal };
+export type CauseRequest = { readings: string; signal: AbortSignal; onFallback: () => void };
+export type ClassifyRequest = { answer: string; signal: AbortSignal; onFallback: () => void };
 
 export type Lead = {
   proposeCauses(request: CauseRequest): Promise<Cause[]>;
   classify(request: ClassifyRequest): Promise<Classification>;
 };
 
-type AgentPlan = { schema: z.ZodType; signal: AbortSignal };
+type AgentPlan = { schema: z.ZodType; signal: AbortSignal; onFallback: () => void };
 
 function runAgent(plan: AgentPlan, prompt: string): Promise<AgentResult> {
   return withRetries(async (attempt) => {
-    if (attempt === FALLBACK_ATTEMPT) logProgress({ fallbackModelAttempt: attempt });
+    if (attempt === FALLBACK_ATTEMPT) {
+      logProgress({ fallbackModelAttempt: attempt });
+      plan.onFallback();
+    }
     const model = await buildModel(settingForAttempt(attempt));
     const agent = new Agent({ model, tools: [], printer: false, systemPrompt: LEAD_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: plan.schema });
     return agent.invoke(promptForAttempt({ prompt, attempt }), { cancelSignal: plan.signal, limits: { turns: TURN_LIMIT } });
@@ -43,11 +46,11 @@ function runAgent(plan: AgentPlan, prompt: string): Promise<AgentResult> {
 export function leadFor(facts: IncidentFacts): Lead {
   return {
     proposeCauses: async (request) => {
-      const result = await runAgent({ schema: causesShape, signal: request.signal }, causesTask(facts, request.readings));
+      const result = await runAgent({ schema: causesShape, signal: request.signal, onFallback: request.onFallback }, causesTask(facts, request.readings));
       return causesShape.parse(result.structuredOutput).causes;
     },
     classify: async (request) => {
-      const result = await runAgent({ schema: classificationShape, signal: request.signal }, classifyTask(request.answer));
+      const result = await runAgent({ schema: classificationShape, signal: request.signal, onFallback: request.onFallback }, classifyTask(request.answer));
       return classificationShape.parse(result.structuredOutput);
     },
   };
