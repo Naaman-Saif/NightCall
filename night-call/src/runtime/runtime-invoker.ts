@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 
 import { settings } from '../config/settings';
 
-export type AgentRun = { incidentId: string; mode: 'hello' | 'long' };
+export type AgentRun = { incidentId: string; mode: 'hello' | 'long' | 'investigate' };
 export type InvokeOutcome = { runtimeSessionId: string; statusCode: number; reply: string; elapsedMs: number };
 type Reply = { statusCode: number; reply: string };
 

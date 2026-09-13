@@ -42,7 +42,10 @@ export type Question = Omit<PayloadOf<'question_asked'>, 'questionId' | 'illustr
   answer: Answer | null;
 };
 export type ContextItem = { questionId: string | null; text: string; suppliedAt: string };
-export type EvidenceItem = Omit<PayloadOf<'evidence_recorded'>, 'evidenceId' | 'illustrative'>;
+type EvidencePayload = PayloadOf<'evidence_recorded'>;
+export type EvidenceItem = Omit<EvidencePayload, 'evidenceId' | 'illustrative' | 'sourceLinks'> & {
+  sourceLinks: NonNullable<EvidencePayload['sourceLinks']>;
+};
 export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' | 'illustrative'> & {
   id: string;
   status: PayloadOf<'hypothesis_status_changed'>['status'] | 'proposed';

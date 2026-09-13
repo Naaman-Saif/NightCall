@@ -1,6 +1,7 @@
 import { Controller, Get, Inject, Req, UseGuards } from '@nestjs/common';
 
 import { EventWriter } from '../investigation/event-writer';
+import { readDeployHistory } from '../production/read-deploy-history';
 import { readFailureRate } from '../production/read-failure-rate';
 import { readProductionLogs } from '../production/read-logs';
 import { readProductionTraces } from '../production/read-traces';
@@ -25,6 +26,11 @@ export class ProductionSignalsController {
   traces(@Req() request: ReaderRequest) {
     const read = () => readProductionTraces(parseQuery(tracesQueryShape, request.query));
     return answerReaderCall(this.writer, { incidentId: request.params.id, read });
+  }
+
+  @Get('deploy-history')
+  deployHistory(@Req() request: ReaderRequest) {
+    return answerReaderCall(this.writer, { incidentId: request.params.id, read: readDeployHistory });
   }
 
   @Get('failure-rate')

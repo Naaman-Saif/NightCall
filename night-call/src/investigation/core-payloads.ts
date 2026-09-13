@@ -28,6 +28,10 @@ export const corePayloads = {
     summary: text,
     observedAt: moment,
     excerpt: text,
+    sourceLinks: z
+      .array(z.strictObject({ label: name, url: z.string().max(4000).regex(/^https?:\/\//) }))
+      .max(20)
+      .optional(),
   }),
   question_asked: payload({
     questionId: name,

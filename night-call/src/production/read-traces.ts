@@ -1,7 +1,8 @@
 import { urlFor } from '../config/hosts';
 import { productionTarget } from '../config/targets';
 import { summarizeErrorSpans } from '../evidence/traces';
-import { excerptOf, momentMinutesAgo, type Reading } from './reading';
+import { excerptOf, type Reading } from './reading';
+import { jaegerSearchLink, jaegerTraceLink, rangeOfMinutes, type SourceLink, type TimeRange } from './source-links';
 
 export type TracesQuery = { service: string; minutes: number; traceIds: string[] };
 
@@ -17,11 +18,10 @@ async function jaegerTraces(path: string): Promise<JaegerTraces> {
   return ((await response.json()) as { data?: JaegerTraces }).data ?? [];
 }
 
-function recentErrorsPath(query: TracesQuery): string {
-  const end = Date.now() * 1000;
-  const start = momentMinutesAgo(query.minutes) * 1000;
+function recentErrorsPath(query: TracesQuery, range: TimeRange): string {
   const tags = encodeURIComponent(JSON.stringify({ error: 'true' }));
-  return `/traces?service=${encodeURIComponent(query.service)}&tags=${tags}&start=${start}&end=${end}&limit=20`;
+  const window = `start=${range.fromMs * 1000}&end=${range.toMs * 1000}`;
+  return `/traces?service=${encodeURIComponent(query.service)}&tags=${tags}&${window}&limit=20`;
 }
 
 function summaryOf(query: TracesQuery, counts: { traces: number; errors: number }): string {
@@ -29,12 +29,19 @@ function summaryOf(query: TracesQuery, counts: { traces: number; errors: number 
   return `${counts.errors} error spans in ${counts.traces} traces from ${query.service} in the last ${query.minutes} minutes`;
 }
 
+function traceLinks(query: TracesQuery, range: TimeRange): SourceLink[] {
+  if (query.traceIds.length > 0) return query.traceIds.map(jaegerTraceLink);
+  return [jaegerSearchLink({ service: query.service, range, errorsOnly: true })];
+}
+
 export async function readProductionTraces(query: TracesQuery): Promise<Reading> {
-  const paths = query.traceIds.length > 0 ? query.traceIds.map((id) => `/traces/${id}`) : [recentErrorsPath(query)];
+  const range = rangeOfMinutes(query.minutes);
+  const paths = query.traceIds.length > 0 ? query.traceIds.map((id) => `/traces/${id}`) : [recentErrorsPath(query, range)];
   const traces = (await Promise.all(paths.map(jaegerTraces))).flat();
   const errors = summarizeErrorSpans(traces);
   const lines = errors.map((span) => `${span.traceId} ${span.operation} ${span.durationMs} ms ${span.message}`);
   const summary = summaryOf(query, { traces: traces.length, errors: errors.length });
   const data = { traceIds: traces.map((trace) => trace.traceID), errors };
-  return { kind: 'traces', source: `jaeger: ${query.service}`, summary, excerpt: excerptOf(lines), data };
+  const sourceLinks = traceLinks(query, range);
+  return { kind: 'traces', source: `jaeger: ${query.service}`, summary, excerpt: excerptOf(lines), data, sourceLinks };
 }

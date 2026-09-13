@@ -4,7 +4,7 @@ import { settings } from '../config/settings';
 import { openInvestigation } from '../investigation/open-investigation';
 import { SeriesKeeper } from '../recorder/series-keeper';
 import { invokeAgents } from '../runtime/runtime-invoker';
-import { alertIsFiring, factsOf, type AlertPayload } from './alert-payload';
+import { alertIsFiring, alertNameOf, factsOf, type AlertPayload } from './alert-payload';
 
 @Injectable()
 export class IncidentsService {
@@ -13,18 +13,21 @@ export class IncidentsService {
   constructor(@Inject(SeriesKeeper) private readonly keeper: SeriesKeeper) {}
 
   async receive(payload: AlertPayload): Promise<string[]> {
+    const firing = payload.alerts.filter(alertIsFiring);
     const opened: string[] = [];
-    for (const alert of payload.alerts.filter(alertIsFiring)) {
+    for (const alert of firing) {
       const event = await openInvestigation(this.keeper.writer, { facts: factsOf(alert), blockDuplicates: true });
       if (event) opened.push(event.incidentId);
     }
+    const names = firing.map(alertNameOf).join(', ');
+    this.log.log(`alerts received ${payload.alerts.length}, firing [${names}], opened [${opened.join(', ')}]`);
     if (opened.length > 0) this.keeper.keep();
     if (settings.invokeAgentsOnAlert) opened.forEach((incidentId) => this.invoke(incidentId));
     return opened;
   }
 
   private invoke(incidentId: string): void {
-    invokeAgents({ incidentId, mode: 'hello' })
+    invokeAgents({ incidentId, mode: 'investigate' })
       .then((outcome) => this.log.log(`agents invoked for ${incidentId}: ${outcome.statusCode}`))
       .catch((error: unknown) => this.log.error(`agent invoke failed for ${incidentId}: ${String(error)}`));
   }
