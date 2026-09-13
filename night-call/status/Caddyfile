@@ -1,6 +1,25 @@
 :8001 {
-	root * /srv/www
-	file_server
+	handle /alerts* {
+		respond 404
+	}
+	handle /tool/* {
+		respond 404
+	}
+	handle /api/* {
+		reverse_proxy night-call:8000 {
+			flush_interval -1
+		}
+	}
+	handle /op/api/* {
+		reverse_proxy night-call:8000 {
+			header_up X-NightCall-Operator {env.NIGHT_CALL_OPERATOR_SECRET}
+		}
+	}
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
 }
 
 :8002 {

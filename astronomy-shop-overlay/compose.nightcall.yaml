@@ -47,11 +47,12 @@ services:
       - alertmanager
 
   status:
-    image: caddy:2-alpine
+    build:
+      context: ${NIGHT_CALL_PATH:-../night-call}
+      dockerfile: status/Dockerfile
     container_name: night-call-status
-    volumes:
-      - ${NIGHT_CALL_PATH:-../night-call}/status/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ${NIGHT_CALL_PATH:-../night-call}/status:/srv/www:ro
+    env_file:
+      - ${NIGHT_CALL_PATH:-../night-call}/.env
     ports:
       - "127.0.0.1:8001:8001"
       - "127.0.0.1:8002:8002"
