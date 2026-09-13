@@ -4,7 +4,11 @@ import { investigate } from './investigation.js';
 import type { IncidentFacts } from './lead-prompts.js';
 import { leadFor } from './lead-steps.js';
 import { logProgress } from './progress.js';
+import { proofApiFor } from './proof-api.js';
+import { newRun, type RunTiming } from './run-steps.js';
 import { toolClientFor } from './tool-client.js';
+
+type CaseIncident = Partial<IncidentFacts> & { startedAt?: string; deadlineAt?: string };
 
 async function caseOrEmpty(api: IncidentApi): Promise<Record<string, unknown>> {
   try {
@@ -15,9 +19,21 @@ async function caseOrEmpty(api: IncidentApi): Promise<Record<string, unknown>> {
   }
 }
 
-function factsOf(snapshot: Record<string, unknown>): IncidentFacts {
-  const incident = (snapshot.incident ?? {}) as Partial<IncidentFacts>;
+function incidentOf(snapshot: Record<string, unknown>): CaseIncident {
+  return (snapshot.incident ?? {}) as CaseIncident;
+}
+
+function factsOf(incident: CaseIncident): IncidentFacts {
   return { service: incident.service ?? 'recommendation', alertName: incident.alertName ?? 'recommendation alarm' };
+}
+
+function momentOf(text: string | undefined): number | undefined {
+  const moment = Date.parse(text ?? '');
+  return Number.isNaN(moment) ? undefined : moment;
+}
+
+function timingOf(incident: CaseIncident): RunTiming {
+  return { openedAt: momentOf(incident.startedAt), deadline: momentOf(incident.deadlineAt) };
 }
 
 export async function runInvestigation(incidentId: string): Promise<void> {
@@ -25,6 +41,8 @@ export async function runInvestigation(incidentId: string): Promise<void> {
   const ledger = newLedger();
   const snapshot = await caseOrEmpty(api);
   seedEvidenceIds(ledger, snapshot);
-  const decision = await investigate({ api, ledger, lead: leadFor(factsOf(snapshot)) });
+  const incident = incidentOf(snapshot);
+  const parts = { api, ledger, lead: leadFor(factsOf(incident)), proof: proofApiFor(incidentId), run: newRun(timingOf(incident)) };
+  const decision = await investigate(parts);
   logProgress({ incidentId, mode: 'investigate', finished: true, ...decision, evidence: [...ledger.ids], hypotheses: ledger.hypotheses });
 }

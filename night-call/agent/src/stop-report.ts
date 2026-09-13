@@ -15,6 +15,8 @@ export type StopFacts = {
   asked: boolean;
   causes: number;
   mostLikely: string | null;
+  mostLikelyReproduced: boolean;
+  proofLines: string[];
   skipped: string[];
   fallbacks: string[];
 };
@@ -66,8 +68,8 @@ function listSentence(opening: string, items: string[]): string {
 }
 
 export function stopSummary(facts: StopFacts): string {
-  const causes = causesLine({ count: facts.causes, mostLikely: facts.mostLikely });
-  const record = [listSentence('Used the fallback model for', facts.fallbacks), listSentence('Skipped', facts.skipped)];
+  const causes = causesLine({ count: facts.causes, mostLikely: facts.mostLikely, mostLikelyReproduced: facts.mostLikelyReproduced });
+  const record = [...facts.proofLines, listSentence('Used the fallback model for', facts.fallbacks), listSentence('Skipped', facts.skipped)];
   const sentences = [readingsSentence(facts.ledger.impact), otherReadingsSentence(facts.ledger), answerSentence(facts), causes, ...record];
   return sentences.filter(Boolean).join(' ').slice(0, SUMMARY_CHARACTERS);
 }

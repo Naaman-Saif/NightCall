@@ -12,7 +12,8 @@ export function withoutEndMark(text: string): string {
   return text.trim().replace(/[.!?]+$/, '');
 }
 
-export function causesLine(causes: { count: number; mostLikely: string | null }): string {
-  if (causes.mostLikely) return `Possible causes: ${causes.count}. Most likely: ${withoutEndMark(causes.mostLikely).slice(0, CLAIM_CHARACTERS)} (not yet reproduced).`;
+export function causesLine(causes: { count: number; mostLikely: string | null; mostLikelyReproduced?: boolean }): string {
+  const proof = causes.mostLikelyReproduced ? 'reproduced in a test copy' : 'not yet reproduced';
+  if (causes.mostLikely) return `Possible causes: ${causes.count}. Most likely: ${withoutEndMark(causes.mostLikely).slice(0, CLAIM_CHARACTERS)} (${proof}).`;
   return causes.count > 0 ? `Possible causes: ${causes.count}. No cause stands out yet.` : 'No cause stands out yet.';
 }

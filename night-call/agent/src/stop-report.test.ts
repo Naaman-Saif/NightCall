@@ -21,7 +21,7 @@ const impact = (errorShare: number | null, crashes: [number, number] | null): Im
 const answer = (text: string) => ({ questionId: 'q-impact', text, suppliedAt: '2026-09-13T17:07:10Z' });
 
 const facts = (overrides: Partial<StopFacts>): StopFacts => ({
-  ledger: ledgerWith(impact(0, [2, 2])), answer: answer('Tolerable'), reason: 'answer_recorded', asked: true, causes: 0, mostLikely: null, skipped: [], fallbacks: [], ...overrides,
+  ledger: ledgerWith(impact(0, [2, 2])), answer: answer('Tolerable'), reason: 'answer_recorded', asked: true, causes: 0, mostLikely: null, mostLikelyReproduced: false, proofLines: [], skipped: [], fallbacks: [], ...overrides,
 });
 
 test('with no causes the summary says what was read, the answer, and that no cause stands out', () => {

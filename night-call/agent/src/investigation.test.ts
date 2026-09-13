@@ -34,11 +34,11 @@ test('checked causes are posted and the independently supported one is marked su
   const run = stubInvestigation('Tolerable');
   await investigate(run.parts);
   assert.deepEqual(eventsOf(run, 'hypothesis_proposed').map((event) => event.payload.hypothesisId), ['h-1', 'h-2']);
-  const supported = eventsOf(run, 'hypothesis_status_changed');
+  const supported = eventsOf(run, 'hypothesis_status_changed').filter((event) => event.payload.status === 'supported');
   assert.deepEqual(supported.map((event) => [event.payload.hypothesisId, event.payload.status]), [['h-1', 'supported']]);
   assert.match(String(supported[0].payload.reason), /independent readings of memory, crashes, deploy history/);
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;
-  assert.match(brief.summary, /Possible causes: 2\. Most likely: The recommendation cache grows until memory reaches the 500 MiB limit and the service runs out of memory \(not yet reproduced\)\. Not yet reproduced in a test copy\.$/);
+  assert.match(brief.summary, /Possible causes: 2\. Most likely: The recommendation cache grows until memory reaches the 500 MiB limit and the service runs out of memory \(reproduced in a test copy\)\. Reproduced in a test copy: the failure matched every recorded check and the review accepted it\./);
   assert.match(brief.unknowns[0], /^Most likely possible cause: .* Supported by ev-memory-1, ev-oom-events-1, ev-deploy-history-1\. Would be confirmed by:/);
   assert.match(String(lastPayload(run, 'investigation_stopped').summary), /Possible causes: 2\. Most likely: The recommendation cache grows/);
 });
@@ -49,13 +49,14 @@ test('a failed reader and a failed cause step are skipped and recorded, and the 
   assert.ok(run.steps.includes('read deploy-history'));
   assert.match((lastPayload(run, 'brief_updated') as BriefPayload).summary, /No cause stands out yet\. Not yet reproduced in a test copy\.$/);
   const stop = lastPayload(run, 'investigation_stopped');
-  assert.match(String(stop.summary), /Skipped: reading logs \(NightCall refused the call\); comparing possible causes \(the model or network kept failing\)\.$/);
+  const skipped = 'reading logs \\(NightCall refused the call\\); comparing possible causes \\(the model or network kept failing\\); reproducing the failure \\(no possible cause to test\\); proposing the mitigation \\(no reproduction was accepted\\)';
+  assert.match(String(stop.summary), new RegExp(`Skipped: ${skipped}\\.$`));
   assert.equal(stop.reason, 'no_answer');
 });
 
 test('when the run time limit is reached the remaining steps are skipped and the stop is still posted', async () => {
   const run = stubInvestigation('Rush it');
-  run.parts.run = { skipped: [], fallbacks: [], deadline: 0, now: () => 1 };
+  run.parts.run = { skipped: [], fallbacks: [], openedAt: 0, deadline: 0, now: () => 1 };
   await investigate(run.parts);
   const stop = String(lastPayload(run, 'investigation_stopped').summary);
   assert.match(stop, /Did not ask about customer impact\./);
@@ -73,5 +74,5 @@ test("the question quotes measured values, and I don't know leaves impact unconf
   assert.equal(decision.urgency, 'rush');
   const brief = lastPayload(run, 'brief_updated') as BriefPayload;
   assert.equal(brief.unknowns[0], UNCONFIRMED_IMPACT);
-  assert.equal(brief.nextStep, 'Treated as urgent. This run stops here: nothing was reproduced, mitigated or verified.');
+  assert.equal(brief.nextStep, 'Treated as urgent. The mitigation is verified; no pull request is open yet.');
 });

@@ -3,11 +3,19 @@ import { readingFacts, type Brief, type EvidenceLedger, type KnownFact } from '.
 import { capitalized, crashStatement, failureStatement } from './impact-facts.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import type { ProgressEvent } from './progress.js';
-import { causesLine, NOT_REPRODUCED, withoutEndMark } from './report-lines.js';
-import { pathSentence, UNCONFIRMED_IMPACT, type UrgencyDecision } from './urgency.js';
+import { causeReproduced, outcomeSentence, proofSentences, type ProofRecord } from './proof-record.js';
+import { causesLine, withoutEndMark } from './report-lines.js';
+import { choiceSentence, UNCONFIRMED_IMPACT, type UrgencyDecision } from './urgency.js';
 import { cleanBrief } from './write-tools.js';
 
-export type ReportFacts = { answer: Answer | null; decision: UrgencyDecision; causes: CheckedCause[]; mostLikely: CheckedCause | null; findings: KnownFact[] };
+export type ReportFacts = {
+  answer: Answer | null;
+  decision: UrgencyDecision;
+  causes: CheckedCause[];
+  mostLikely: CheckedCause | null;
+  findings: KnownFact[];
+  proof: ProofRecord;
+};
 
 export const EVIDENCE_BRIEF_SUMMARY = 'Summary from the evidence readings; analysis still running.';
 
@@ -30,13 +38,18 @@ function causeUnknown(cause: CheckedCause, mostLikely: CheckedCause | null): str
   return `${label}: ${withoutEndMark(cause.claim)}. ${evidence} Would be confirmed by: ${withoutEndMark(cause.confirmWith)}.`;
 }
 
+function causesSummary(facts: ReportFacts): string {
+  const mostLikelyReproduced = facts.mostLikely !== null && causeReproduced(facts.proof, facts.mostLikely.hypothesisId);
+  return causesLine({ count: facts.causes.length, mostLikely: facts.mostLikely?.claim ?? null, mostLikelyReproduced });
+}
+
 export function causeBriefOf(ledger: EvidenceLedger, facts: ReportFacts): Brief {
   const answer = facts.answer ? `Answer about customer impact: "${facts.answer.text}".` : 'No answer about customer impact arrived.';
-  const causes = causesLine({ count: facts.causes.length, mostLikely: facts.mostLikely?.claim ?? null });
-  const summary = [whatHappened(ledger), answer, causes, NOT_REPRODUCED].join(' ');
+  const summary = [whatHappened(ledger), answer, causesSummary(facts), ...proofSentences(facts.proof)].join(' ');
   const unconfirmed = facts.decision.impactConfirmed ? [] : [UNCONFIRMED_IMPACT];
   const unknowns = [...unconfirmed, ...facts.causes.map((cause) => causeUnknown(cause, facts.mostLikely))];
-  return { summary, knownFacts: [...readingFacts(ledger), ...facts.findings], unknowns, nextStep: pathSentence(facts.decision) };
+  const nextStep = `${choiceSentence(facts.decision)} ${outcomeSentence(facts.proof)}`;
+  return { summary, knownFacts: [...readingFacts(ledger), ...facts.findings], unknowns, nextStep };
 }
 
 export async function postCauseBrief(context: { api: IncidentApi; ledger: EvidenceLedger }, facts: ReportFacts): Promise<void> {

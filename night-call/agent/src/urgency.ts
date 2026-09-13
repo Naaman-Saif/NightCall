@@ -30,9 +30,6 @@ export async function decideUrgency(answer: Answer | null, classify: Classify): 
   return { ...(await classify(answer.text)), impactConfirmed: true };
 }
 
-export const STOPS_HERE = 'This run stops here: nothing was reproduced, mitigated or verified.';
-
-export function pathSentence(decision: UrgencyDecision): string {
-  const choice = decision.urgency === 'tolerable' ? 'Treated as tolerable for now.' : 'Treated as urgent.';
-  return `${choice} ${STOPS_HERE}`;
+export function choiceSentence(decision: UrgencyDecision): string {
+  return decision.urgency === 'tolerable' ? 'Treated as tolerable for now.' : 'Treated as urgent.';
 }

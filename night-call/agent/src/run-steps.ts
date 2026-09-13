@@ -2,24 +2,38 @@ import type { EvidenceLedger } from './evidence-ledger.js';
 import type { Answer, IncidentApi } from './incident-api.js';
 import type { Lead } from './lead-steps.js';
 import { logProgress } from './progress.js';
+import type { ProofRecord } from './proof-record.js';
+import { refusalWords } from './proof-replies.js';
+import type { ProofApi } from './proof-types.js';
 import { describeError, isRetryable } from './retry.js';
 import { ToolAnswerError } from './tool-client.js';
 
-export const RUN_LIMIT_MS = 12 * 60_000;
+export const BUDGET_MS = 30 * 60_000;
 
-export type RunState = { skipped: string[]; fallbacks: string[]; deadline: number; now: () => number };
+export type RunState = { skipped: string[]; fallbacks: string[]; openedAt: number; deadline: number; now: () => number };
+export type RunTiming = { now?: () => number; openedAt?: number; deadline?: number };
 export type StepPlan<Result> = { nowDoing: string; skipLabel: string; work: () => Promise<Result> };
 
 export type RunContext = {
   api: IncidentApi;
   ledger: EvidenceLedger;
   lead: Lead;
+  proof: ProofApi;
+  record: ProofRecord;
   run: RunState;
   waitForAnswer?: (api: IncidentApi) => Promise<Answer | null>;
 };
 
-export function newRun(now: () => number = Date.now): RunState {
-  return { skipped: [], fallbacks: [], deadline: now() + RUN_LIMIT_MS, now };
+export class NotReady extends Error {}
+
+export function newRun(timing: RunTiming = {}): RunState {
+  const now = timing.now ?? Date.now;
+  const openedAt = timing.openedAt ?? now();
+  return { skipped: [], fallbacks: [], openedAt, deadline: timing.deadline ?? openedAt + BUDGET_MS, now };
+}
+
+export function minutesElapsed(run: RunState): number {
+  return (run.now() - run.openedAt) / 60_000;
 }
 
 export function timeLeftMs(run: RunState): number {
@@ -39,7 +53,9 @@ export async function postStatus(context: RunContext, status: { status: string; 
 }
 
 function failureWords(error: unknown): string {
-  if (error instanceof ToolAnswerError) return error.status === 404 ? 'not available on this server yet' : 'NightCall refused the call';
+  if (error instanceof NotReady) return error.message;
+  if (error instanceof ToolAnswerError && error.status === 404) return 'not available on this server yet';
+  if (error instanceof ToolAnswerError) return refusalWords(error) ?? 'NightCall refused the call';
   if (/abort|timeout/i.test(describeError(error))) return 'it ran out of time';
   return isRetryable(error) ? 'the model or network kept failing' : 'it failed';
 }
