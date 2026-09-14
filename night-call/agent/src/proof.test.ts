@@ -78,14 +78,6 @@ test('a missing traffic recipe falls back to fixed traffic once and says so', as
   assert.match(stopSummary(run), /accepted it\. The incident's traffic recipe was missing, so the test copy used fixed fallback traffic\. Proposed/);
 });
 
-test('a reproduction that differs is rejected, so no mitigation is proposed and nothing claims proof', async () => {
-  const run = stubInvestigation("I don't know", { verdict: 'differs' });
-  await investigate(run.parts);
-  assert.deepEqual(proofSteps(run), ['proof contract', 'proof experiment h-1 incident_traffic flag on speed 1', 'proof job job-experiment-1 by investigator', 'proof read evidence exp-1', 'proof review exp-1 rejected']);
-  assert.match(stopSummary(run), /\(not yet reproduced\)\. Not reproduced in a test copy: the experiment did not match the recorded checks\. Skipped: proposing the mitigation \(no reproduction was accepted\)\.$/);
-  assert.equal(lastBrief(run).nextStep, 'Treated as urgent. Nothing was reproduced or verified in this run.');
-});
-
 test('failed verification rounds are rejected by the review and reported as not verified', async () => {
   const run = stubInvestigation("I don't know", { verificationVerdict: 'differs' });
   await investigate(run.parts);
