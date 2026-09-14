@@ -20,6 +20,22 @@ The incident is the Astronomy Shop (the OpenTelemetry Demo) recommendation servi
 | 05:38:45 | Pull request [#3](https://github.com/Naaman-Saif/opentelemetry-demo/pull/3) opened on the shop fork: one line, `defaultVariant` from `on` to `off`. |
 | 05:38:52 | Investigation stopped. Total 16 minutes 52 seconds. |
 
+### INC-019: the same incident on AgentCore, with the Kimi-K3 reviewer
+
+A later check run on 2026-09-14, with the agents on AgentCore Runtime (version 5) and the reviewer model in place:
+
+| Time (UTC) | What happened |
+|---|---|
+| 07:03:23 | Started by hand, with `night-call` warmed up for 13 minutes. |
+| next | Read 9 signals, including 5 out-of-memory kills in 10 minutes and 1003 requests captured from traces. |
+| next | Two possible causes: the flag, and a memory leak (memory climbing from 42 MiB to 239 MiB before each kill). The leak cause was the one tested. |
+| 07:04:00 to 07:06:07 | Reproduction in a sealed copy: 109 requests, 4 failed, 1 out-of-memory kill, first failure at request 106. |
+| 07:06:18 | Kimi-K3 accepted the reproduction after about 11 seconds, with 3 reasons quoting observed values. |
+| 07:06:25 to 07:19:55 | 3 of 3 rounds passed at 2x speed: each 200 healthy requests, 0 failures, 0 restarts, peak memory 9.2 to 9.8 percent of the limit. |
+| about 15 s later | Kimi-K3 approved the verification run. |
+| 07:20:11 | Pull request #5 published (closed afterwards to keep the fork clean for recording). |
+| 07:20:27 | Stopped. Total 17 minutes 4 seconds. |
+
 ## How it works
 
 1. **An incident opens.** A developer presses "Start investigation" on the operator page (`POST /op/api/investigations`), or Alertmanager posts to `/alerts`. Opening writes the first event, captures a traffic recipe from the last 20 minutes of frontend traces in Jaeger, and invokes the agents.
@@ -77,7 +93,7 @@ Checks: `npm run build`, `npm run lint` and `npm test` in `night-call/` and `nig
 - **The tool API is reached through a temporary Cloudflare quick tunnel.** Its address changes on every restart and it has no uptime guarantee.
 - **One incident type.** The demo handles the recommendation cache out-of-memory incident and fixes it by choosing an existing flag variant. It does not write code fixes.
 - **Automatic alarms do not start investigations by default.** `NIGHT_CALL_INVOKE_AGENTS_ON_ALERT` is `false`; runs start from the button. The Alertmanager rules exist, and alerts for the recommendation service are silenced while the manual flow is the focus.
-- **The Kimi-K3 reviewer was added 2026-09-14** and is not yet confirmed deployed. Before it, the reproduction and verification reviews were code rules only; the rule that refuses approval of a failed check or missing observation applies either way.
+- **The Kimi-K3 reviewer was added 2026-09-14,** after INC-015; it is deployed and ran in INC-019. Before it, the reproduction and verification reviews were code rules only; the rule that refuses approval of a failed check or missing observation applies either way.
 - **A sandbox result is not a production fix.** The page and the pull request say "3/3 verification cycles passed under the recorded conditions". NightCall does not deploy the change.
 - **Traffic fallbacks.** If no traces are found, the recipe falls back to the Prometheus request rate, then to a fixed 400 requests at 200 ms. The page says which source was used.
 - **A cause can be tested without being supported.** If no cause is backed by two independent readings, NightCall still tests the first cause the model proposed. The page calls it a possible cause, not a supported one.

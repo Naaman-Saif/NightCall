@@ -35,7 +35,7 @@ flowchart LR
 | Experiments | `src/experiments/` | Check catalogue, reproduction and verification jobs (one at a time), the sandbox worker child process, check evaluation, production identity before and after, the 30-minute deadline. |
 | Sandbox copy | `src/sandbox-copy/` | Renders a sealed compose copy (`nc-sandbox`), checks isolation rules, replays traffic, observes memory, CPU and restarts, cleans up. |
 | Publication | `src/publication/` | Refuses without an approved 3 of 3 run, builds the one-line flag diff, opens the pull request on the `nightcall-demo` branch, retry on failure. |
-| Agents | `agent/` | The fixed investigation order, lead model calls, cause rules, the question and urgency decision, reproduction, mitigation and verification steps, the Kimi-K3 reviews of the reproduction and the verification run (added 2026-09-14), and the final report. |
+| Agents | `agent/` | The fixed investigation order, lead model calls, cause rules, the question and urgency decision, reproduction, mitigation and verification steps, the Kimi-K3 reviews of the reproduction and the verification run (added 2026-09-14, first used in INC-019), and the final report. |
 | Page | `web/` | Vite and React. Charts of what happened first, then the story: readings, question, possible causes, reproduction, fix, verification, pull request. |
 
 ## One run, from the button to the pull request
