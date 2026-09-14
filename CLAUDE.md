@@ -55,7 +55,7 @@ Zero comments. At most 20 lines per function, 2 parameters, 2 indent levels, 5 m
 
 ## The box
 
-Everything runs on the Hetzner box `ssh-big.shipic.dev` (x86_64) inside the shop's compose project `prod`.
+Everything runs on the Hetzner box (`<box-host>`, x86_64) inside the shop's compose project `prod`.
 - Repo clone `/root/code/NightCall` (symlink `/root/code/night-call`); the box builds only from merged `main`.
 - The compose file actually used is the copy at `/root/code/astronomy-shop/compose.nightcall.yaml`; copy the overlay there before deploying. Deploy one service without touching the shop, from `/root/code/astronomy-shop`:
   `docker compose --env-file .env --env-file .env.override -p prod -f compose.yaml -f compose.full.yaml -f compose.observability.yaml -f compose.box-override.yaml -f compose.nightcall.yaml up -d --build --no-deps night-call` (or `status`).

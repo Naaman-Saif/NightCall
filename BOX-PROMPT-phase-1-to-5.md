@@ -1,4 +1,4 @@
-# Paste this into the claude-big session once NightCall is pushed
+# Paste this into the box session once NightCall is pushed
 
 You are on the Night Call demo box. The astronomy shop is already running as compose project `prod` with your `compose.box-override.yaml`. Your job: get Night Call running next to it and drive one incident end to end. Write everything to /root/code/NOTES-box.md as you go, under a new heading "Phase 1 to 5". Never touch ssh, cloudflared, ufw or systemd units. Never edit files under /root/code/astronomy-shop except to add the overlay files named below; upstream files stay untouched.
 
