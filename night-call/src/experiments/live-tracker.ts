@@ -30,6 +30,8 @@ export class LiveTracker {
   }
 
   mark(stage: LiveStage, detail: string | null = null): void {
+    const last = this.progress.stages.at(-1);
+    if (last?.stage === stage && last.detail === detail) return;
     const at = new Date().toISOString();
     const stages = [...this.progress.stages, { stage, at, detail }];
     this.progress = { ...this.progress, stage, stageAt: at, stages: stages.length > MAX_STAGES ? [stages[0], ...stages.slice(-(MAX_STAGES - 1))] : stages };
