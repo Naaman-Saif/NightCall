@@ -16,7 +16,8 @@ export function OperatorQuestion({ question, context, submitAnswer }: OperatorQu
     <article className="question-card" data-answered={Boolean(answer)} data-question={question.id}>
       <QuestionText question={question} />
       {answer && <AcceptedAnswer questionId={question.id} text={answer.text} />}
-      {acceptsAnotherAnswer(answer) && (
+      {question.status === 'no_answer' && <p className="meta">No answer. The run finished without one.</p>}
+      {question.status !== 'no_answer' && acceptsAnotherAnswer(answer) && (
         <AnswerComposer key={answer?.suppliedAt ?? 'first'} questionId={question.id} submitAnswer={submitAnswer} />
       )}
     </article>
@@ -31,7 +32,7 @@ export function PublicQuestion({ question, context }: QuestionProps) {
       {answer ? (
         <PublicAnswer questionId={question.id} text={answer.text} />
       ) : (
-        <p className="meta">Waiting for the operator to answer.</p>
+        <p className="meta">{question.status === 'no_answer' ? 'No answer. The run finished without one.' : 'Waiting for the operator to answer.'}</p>
       )}
     </article>
   );

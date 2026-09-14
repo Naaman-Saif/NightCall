@@ -34,7 +34,7 @@ export type Hypothesis = {
 
 export type Question = {
   id: string; text: string; whyItMatters: string; meanwhile: string; blocks: 'none' | 'mitigation';
-  askedAt: string; answer: Answer | null;
+  askedAt: string; answer: Answer | null; status?: 'waiting' | 'answered' | 'no_answer';
 };
 
 export type SuppliedContext = { questionId: string | null; text: string; suppliedAt: string };
@@ -69,7 +69,7 @@ export type InvestigationProgress = 'not_started' | 'running' | 'stopped' | 'sta
 
 export type RunStatus = 'not_started' | 'running' | 'stopped' | 'stalled' | 'interrupted';
 export type RunStep = { text: string; value: string | null; evidenceId: string | null; questionId?: string | null };
-export type CauseStatus = 'proposed' | 'supported' | 'contradicted';
+export type CauseStatus = 'proposed' | 'supported' | 'contradicted' | 'reproduced' | 'verified';
 export type CauseLine = { text: string; evidenceId: string | null };
 export type RunCause = {
   id: string; claim: string; status: CauseStatus; supporting: CauseLine[]; contradicting: CauseLine[]; confirmBy: string | null;
