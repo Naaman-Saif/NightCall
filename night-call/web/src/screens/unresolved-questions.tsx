@@ -14,7 +14,7 @@ export function UnresolvedQuestions({ snapshot, isOperator, submitAnswer }: Unre
         {questions.length === 0 && <p className="muted">No questions for the operator yet.</p>}
         {questions.map((question) =>
           isOperator ? (
-            <OperatorQuestion key={question.id} question={question} context={context} submitAnswer={submitAnswer} />
+            <OperatorQuestion key={question.id} question={question} context={context} submitAnswer={submitAnswer} isActive={snapshot.incident.lifecycle === 'active'} />
           ) : (
             <PublicQuestion key={question.id} question={question} context={context} />
           ),
