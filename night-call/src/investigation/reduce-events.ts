@@ -8,6 +8,7 @@ import { reduceHypotheses } from './reduce-hypotheses';
 import { reduceIncident } from './reduce-incident';
 import { reduceInvestigation } from './reduce-investigation';
 import { reduceMitigation } from './reduce-mitigation';
+import { reduceProofStatus } from './reduce-proof-status';
 import { reducePublication } from './reduce-publication';
 import { reduceQuestions } from './reduce-questions';
 import { reduceRoles } from './reduce-roles';
@@ -28,6 +29,7 @@ const areaReducers: Reducer[] = [
   reduceExperiments,
   reduceMitigation,
   reduceVerification,
+  reduceProofStatus,
   reducePublication,
 ];
 

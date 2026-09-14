@@ -1,3 +1,4 @@
+import { countWords } from '../investigation/count-words';
 import type { ContractCheck } from './contract-catalogue';
 import type { Evaluation } from './evaluate-checks';
 import type { TrafficSource } from './traffic-plan';
@@ -30,6 +31,6 @@ export function outcomeSummary(plan: ExperimentPlan, finished: { outcome: RoundO
   const { summary, oomEvents } = finished.outcome;
   const first = summary.firstFailureRequest === null ? 'no failure' : `first failure at request ${summary.firstFailureRequest}`;
   const passed = finished.evaluation.checks.filter((check) => check.passed).length;
-  const counts = `${summary.count} requests sent, ${summary.errors} failed, ${oomEvents.length} out-of-memory kills, ${first}`;
+  const counts = `${countWords(summary.count, 'request')} sent, ${summary.errors} failed, ${countWords(oomEvents.length, 'out-of-memory kill')}, ${first}`;
   return `${startSummary(plan)}. ${counts}. Verdict ${finished.evaluation.verdict}: ${passed} of ${finished.evaluation.checks.length} checks passed.`;
 }

@@ -1,3 +1,4 @@
+import { countWords } from './count-words';
 import type { IncidentEvent } from './event-types';
 import { payloadOf } from './payload-schemas';
 import type { RunStep } from './run-report-types';
@@ -17,7 +18,7 @@ export function reproductionStep(snapshot: Snapshot, event: IncidentEvent): RunS
   const { experimentId, accepted } = payloadOf(event, 'experiment_reviewed');
   const experiment = snapshot.experiments.find((item) => item.id === experimentId);
   if (!accepted || experiment?.kind !== 'reproduction' || experiment.verdict !== 'matches') return null;
-  const counts = `${observed(experiment.checks, 'fault.oom_kills')} out-of-memory kills, ${observed(experiment.checks, 'fault.http_failures')} failed requests`;
+  const counts = `${countWords(observed(experiment.checks, 'fault.oom_kills'), 'out-of-memory kill')}, ${countWords(observed(experiment.checks, 'fault.http_failures'), 'failed request')}`;
   return step('Reproduced the crash in a test copy', `With ${trafficWords(experiment.trafficSource)}${speedWords(experiment.recipe.speed)}: ${counts}`);
 }
 
