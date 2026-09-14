@@ -36,4 +36,5 @@ export type ProofApi = {
   startVerification(ids: { mitigationId: string; contractId: string }): Promise<Started>;
   reviewVerification(review: Review): Promise<void>;
   readPublication(): Promise<PublicationFacts | null>;
+  readExperimentEvidence(experimentId: string): Promise<string>;
 };

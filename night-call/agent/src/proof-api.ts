@@ -1,3 +1,4 @@
+import { evidenceTextOf } from './experiment-evidence.js';
 import { experimentStartedOf, jobResultOf, publicationOf, refusalCode, refusalOf, requireText, startedOf } from './proof-replies.js';
 import type { ContractCheck, ProofApi } from './proof-types.js';
 import { toolClientFor, type ToolClient } from './tool-client.js';
@@ -29,5 +30,6 @@ export function proofApiFor(incidentId: string, clients: Clients = { investigato
     startVerification: async (ids) => startedOf(await verifier.post(path('verifications'), ids)),
     reviewVerification: async (review) => void (await verifier.post(path('verifications', review.id, 'review'), { approved: review.accepted, reasons: review.reasons })),
     readPublication: async () => publicationOf(await verifier.get(path('case'))),
+    readExperimentEvidence: async (experimentId) => evidenceTextOf(await verifier.get(path('experiments', experimentId, 'evidence'))),
   };
 }

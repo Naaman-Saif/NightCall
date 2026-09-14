@@ -3,6 +3,7 @@ import { incidentApiFor, type IncidentApi } from './incident-api.js';
 import { investigate } from './investigation.js';
 import type { IncidentFacts } from './lead-prompts.js';
 import { leadFor } from './lead-steps.js';
+import { modelReviewer } from './model-reviewer.js';
 import { logProgress } from './progress.js';
 import { proofApiFor } from './proof-api.js';
 import { newRun, type RunTiming } from './run-steps.js';
@@ -42,7 +43,7 @@ export async function runInvestigation(incidentId: string): Promise<void> {
   const snapshot = await caseOrEmpty(api);
   seedEvidenceIds(ledger, snapshot);
   const incident = incidentOf(snapshot);
-  const parts = { api, ledger, lead: leadFor(factsOf(incident)), proof: proofApiFor(incidentId), run: newRun(timingOf(incident)) };
+  const parts = { api, ledger, lead: leadFor(factsOf(incident)), proof: proofApiFor(incidentId), reviewer: modelReviewer(), run: newRun(timingOf(incident)) };
   const decision = await investigate(parts);
   logProgress({ incidentId, mode: 'investigate', finished: true, ...decision, evidence: [...ledger.ids], hypotheses: ledger.hypotheses });
 }

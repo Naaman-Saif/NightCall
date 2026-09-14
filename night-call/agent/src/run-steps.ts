@@ -6,6 +6,7 @@ import type { ProofRecord } from './proof-record.js';
 import { refusalWords } from './proof-replies.js';
 import type { ProofApi } from './proof-types.js';
 import { describeError, isRetryable } from './retry.js';
+import type { Reviewer } from './review-types.js';
 import { ToolAnswerError } from './tool-client.js';
 
 export const BUDGET_MS = 30 * 60_000;
@@ -20,6 +21,7 @@ export type RunContext = {
   lead: Lead;
   proof: ProofApi;
   record: ProofRecord;
+  reviewer: Reviewer;
   run: RunState;
   waitForAnswer?: (api: IncidentApi) => Promise<Answer | null>;
 };

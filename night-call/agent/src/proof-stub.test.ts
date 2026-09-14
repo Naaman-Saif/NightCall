@@ -82,5 +82,6 @@ export function stubProof(recorded: Steps, options: ProofOptions): ProofApi {
     startVerification: async () => (step('proof verification'), { id: 'run-1', jobId: 'job-verification-1' }),
     reviewVerification: async (review) => void step(`proof verification review ${review.accepted ? 'approved' : 'rejected'}`),
     readPublication: publicationRead(recorded, options),
+    readExperimentEvidence: async (experimentId) => (step(`proof read evidence ${experimentId}`), 'Requests sent: 240\nOut-of-memory events: 3'),
   };
 }

@@ -5,9 +5,12 @@ import type { InvestigationParts } from './investigation.js';
 import type { Lead } from './lead-steps.js';
 import type { ProgressEvent } from './progress.js';
 import { stubProof, type ProofOptions } from './proof-stub.test.js';
+import type { Reviewer } from './review-types.js';
 import { ToolAnswerError } from './tool-client.js';
 
 export type Recorded = { steps: string[]; events: ProgressEvent[] };
+
+export const ACCEPTING_REVIEWER: Reviewer = { review: async () => ({ accepted: true, reasons: ['The run matched the recorded checks.'] }) };
 export type StubOptions = ProofOptions & { causes?: Cause[]; errorShare?: number | null; failingReaders?: string[]; proposeFails?: boolean; fallbackOn?: string[] };
 
 export const GOOD_CAUSES: Cause[] = [
@@ -78,6 +81,6 @@ export function stubInvestigation(answerText: string | null, options: StubOption
     return answerText === null ? null : { questionId: 'q-impact', text: answerText, suppliedAt: '2026-09-13T20:00:00Z' };
   };
   const proof = stubProof(recorded, options);
-  const parts: InvestigationParts = { api: stubApi(recorded, options), ledger: newLedger(), lead: stubLead(recorded, options), proof, waitForAnswer };
+  const parts: InvestigationParts = { api: stubApi(recorded, options), ledger: newLedger(), lead: stubLead(recorded, options), proof, reviewer: ACCEPTING_REVIEWER, waitForAnswer };
   return { ...recorded, parts };
 }
