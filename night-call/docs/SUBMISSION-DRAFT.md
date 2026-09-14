@@ -37,6 +37,14 @@ In our real run INC-015, the Astronomy Shop's recommendation service was crashin
 
 The core design choice: agents choose, code acts. Role tokens, check catalogues, verdicts, the 3 of 3 rule, identity checks and the 30-minute budget are code, not prompt instructions.
 
+## AWS usage
+
+- **Amazon Bedrock AgentCore Runtime** (us-west-1) hosts the Strands agents as one container, invoked asynchronously per incident.
+- **Amazon ECR** stores the agent image.
+- **IAM** execution role for the runtime: image pull, logs, and workload access tokens.
+- **Amazon CloudWatch Logs** receives the agents' progress logs, including seconds and tokens per model call.
+- **Amazon Bedrock models** were blocked on our account (Error 002), so the models run on Featherless. Switching to Bedrock is a settings change.
+
 ## Challenges we ran into
 
 - **Bedrock models were blocked on our AWS account** (Error 002), and the AgentCore agent quota was 0 in most regions. We moved model calls to Featherless, kept the model a setting, and found a region (us-west-1) where the runtime could be created.
