@@ -7,6 +7,7 @@ import { useNow } from '../format/use-now';
 import { Badge, Banner, DemoBadge, EmptyState } from '../kit';
 import { ManualTag } from './manual-tag';
 import { StartInvestigation } from './start-investigation';
+import { IncidentWelcome } from '../brand/incident-welcome';
 
 type ListProps = { showSample: boolean; isOperator: boolean };
 
@@ -24,10 +25,7 @@ export function IncidentListScreen({ showSample, isOperator }: ListProps) {
   const linkPrefix = isOperator ? '/op/incidents/' : '/incidents/';
   return (
     <div className="page">
-      <div>
-        <h1 className="page-title">Incidents</h1>
-        <p className="muted">NightCall opens an incident when monitoring fires and investigates for up to 30 minutes.</p>
-      </div>
+      <IncidentWelcome />
       {isOperator && <StartInvestigation />}
       {loadFailed && <Banner tone="critical" title="The incident list could not be loaded">Try again in a moment.</Banner>}
       {items?.length === 0 && <EmptyState compact icon="moon" title="No incidents yet" />}
