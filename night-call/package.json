@@ -11,11 +11,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint src --max-warnings 0",
     "test": "jest",
-    "smoke:bedrock": "tsx scripts/smoke-bedrock.ts",
-    "overlay": "tsx scripts/make-overlay.ts",
-    "signature": "tsx scripts/signature.ts",
-    "deploy-bot": "tsx scripts/deploy-bot.ts",
-    "smoke:models": "tsx scripts/smoke-models.ts"
+    "overlay": "tsx scripts/make-overlay.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-agentcore": "^3.1131.0",

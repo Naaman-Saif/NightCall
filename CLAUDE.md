@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NightCall investigates a production incident in the Astronomy Shop demo (OpenTelemetry Demo), proves a fix in a sealed copy of the shop, and opens a one-line pull request, all shown on a live, evidence-backed incident page. The flagship incident is the recommendation service running out of memory when the `recommendationCacheFailure` flag is on.
 
-Current docs: `night-call/README.md`, `night-call/ARCHITECTURE.md`, `night-call/docs/SUBMISSION-DRAFT.md`, `night-call/docs/RECORDING-CHECKLIST.md`, `night-call/docs/BUILDER-AWS-POST.md`. Product intent: `night-call/docs/design/NIGHTCALL-DESIGN-BRIEF.md`. History only: `night-call/PLAN.md`, `night-call/BRIEF.md` and `night-call/docs/phases/` (they still say AgentCore runs in eu-central-1; it runs in us-west-1). Trust the code over them.
+Current docs: `night-call/README.md` and `night-call/ARCHITECTURE.md`. Trust the code over them.
 
 ## Repository layout
 
@@ -83,9 +83,9 @@ flowchart LR
 - Proof: symptom checks are recorded before any experiment and never change; one job at a time; reproduction replays the incident's real traffic at speed 1; mitigation and verification rounds replay at speed 2 until at least 200 requests; the reviewer may reject a passing run only by quoting an observed value and can never approve a failed check or a null observation; verified needs 3 of 3 on the same contract and mitigation; the pull request opens only after approval and inside the budget (`NIGHT_CALL_BUDGET_MINUTES`, default 30, enforced by the deadline watch).
 - Sandbox writes go only to `nc-sandbox`, on an internal network with no ports, with memory limits verified against production. Production identity (flag hash, image, source checksum) is compared before and after every round.
 
-## Coding rules (from BRIEF.md, enforced by lint)
+## Coding rules (enforced by lint)
 
-Zero comments. At most 20 lines per function, 2 parameters, 2 indent levels, 5 members per class, 100 lines per file. Plain names a non-engineer can read, predicates in positive form. No em dashes anywhere, including docs. One thing per file. The vendored design system in `web/src/design-system/` is exempt.
+Zero comments. At most 20 lines per function, 2 parameters, 2 indent levels, 5 members per class, 100 lines per file. Plain names a non-engineer can read, predicates in positive form. No em dashes anywhere, including docs. One thing per file. The caps apply to code being written; third-party files, including the vendored design system in `web/src/design-system/`, are exempt. Ask before building any throwaway harness.
 
 ## Settings that change behaviour
 

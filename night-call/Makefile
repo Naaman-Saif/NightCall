@@ -11,9 +11,6 @@ install:
 check:
 	npm run lint && npm test && npm run build
 
-smoke:
-	npm run smoke:bedrock
-
 overlay:
 	npm run overlay -- $(SHOP)
 
@@ -23,24 +20,9 @@ prod-up:
 prod-logs:
 	cd $(SHOP) && $(COMPOSE_PROD) logs -f night-call
 
-signature:
-	npm run signature -- prod
-
-break-payment:
-	npm run deploy-bot -- $(SHOP) paymentFailure 100%
-
-heal-payment:
-	npm run deploy-bot -- $(SHOP) paymentFailure off
-
-break-ad:
-	npm run deploy-bot -- $(SHOP) adHighCpu on
-
-heal-ad:
-	npm run deploy-bot -- $(SHOP) adHighCpu off
-
 deploy:
 	$(REQUIRE_BOX)
 	git push
 	ssh $(BOX) 'cd $(BOX_PATH) && git pull && cd $(SHOP) && $(COMPOSE_PROD) up -d --build night-call'
 
-.PHONY: install check smoke overlay prod-up prod-logs signature break-payment heal-payment break-ad heal-ad deploy
+.PHONY: install check overlay prod-up prod-logs deploy
