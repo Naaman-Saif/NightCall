@@ -1,15 +1,20 @@
 import { Agent } from '@strands-agents/sdk';
 import { z } from 'zod';
 
-import { buildModel, readRoleSetting } from './model.js';
+import { buildModel, readRoleSetting, reasoningFor, type RoleSetting } from './model.js';
 import { logProgress } from './progress.js';
 import { describeError } from './retry.js';
 import { REVIEWER_SYSTEM_PROMPT, reviewPrompt } from './review-prompt.js';
 import type { ModelReview, Reviewer } from './review-types.js';
 
-export const REVIEW_TIMEOUT_MS = 90_000;
+export const REVIEW_TIMEOUT_MS = 120_000;
 export const REVIEW_ATTEMPTS = 2;
+export const REVIEW_MAX_TOKENS = 1200;
 const REVIEW_TURN_LIMIT = 3;
+
+export function reviewSetting(env: NodeJS.ProcessEnv = process.env): RoleSetting {
+  return { ...readRoleSetting('VERIFIER', env), role: 'REVIEW', reasoning: reasoningFor('REVIEW', env), maxTokens: REVIEW_MAX_TOKENS };
+}
 
 const reviewShape = z.object({ decision: z.enum(['accept', 'reject']), reasons: z.array(z.string().min(1).max(300)).min(1).max(4) });
 
@@ -17,7 +22,7 @@ export type AskModel = (prompt: string, signal: AbortSignal) => Promise<ModelRev
 type AskPlan = { ask: AskModel; prompt: string; timeoutMs: number };
 
 async function askVerifierModel(prompt: string, signal: AbortSignal): Promise<ModelReview> {
-  const setting = readRoleSetting('VERIFIER');
+  const setting = reviewSetting();
   const agent = new Agent({ model: await buildModel(setting), tools: [], printer: false, systemPrompt: REVIEWER_SYSTEM_PROMPT, retryStrategy: null, structuredOutputSchema: reviewShape });
   const startedAt = Date.now();
   const result = await agent.invoke(prompt, { cancelSignal: signal, limits: { turns: REVIEW_TURN_LIMIT } });

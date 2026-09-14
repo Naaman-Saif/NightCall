@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { SYMPTOM_CONTRACT } from './experiment-steps.js';
-import { reviewerWith } from './model-reviewer.js';
+import { featherlessParams } from './model.js';
+import { REVIEW_TIMEOUT_MS, reviewerWith, reviewSetting } from './model-reviewer.js';
 import type { CheckResult } from './proof-types.js';
 import { CODE_RULES_PREFIX, reviewedDecision } from './review-guard.js';
 import { experimentDecision } from './review-rules.js';
@@ -51,6 +52,15 @@ test('a failed check is a reject even when the reviewer accepts', async () => {
   const checks = [PASSING[0], { name: 'fault.http_failures', passed: false, observed: 0 }];
   const decision = await decide({ checks, answer: { accepted: true, reasons: ['The run looks like the incident.'] } });
   assert.deepEqual(decision, { accepted: false, reasons: ['fault.http_failures failed with 0'] });
+});
+
+test('reviews use the verifier model with low reasoning, 1200 completion tokens and a 120 s timeout, and reasoning can be set', () => {
+  const env = { NIGHT_CALL_VERIFIER_MODEL: 'featherless:moonshotai/Kimi-K3' };
+  const setting = reviewSetting(env);
+  assert.deepEqual([setting.modelId, setting.reasoning, setting.maxTokens], ['moonshotai/Kimi-K3', 'low', 1200]);
+  assert.deepEqual(featherlessParams(setting), { parallel_tool_calls: false, max_tokens: 1200, reasoning_effort: 'low' });
+  assert.deepEqual(featherlessParams(reviewSetting({ ...env, NIGHT_CALL_REVIEW_REASONING: 'none' })), { parallel_tool_calls: false, max_tokens: 1200 });
+  assert.equal(REVIEW_TIMEOUT_MS, 120_000);
 });
 
 test('a review that times out on both attempts falls back to the code rules and says so first', async () => {
