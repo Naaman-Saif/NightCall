@@ -7,7 +7,7 @@ For the demo video. What to say is in [SUBMISSION-DRAFT.md](SUBMISSION-DRAFT.md)
 1. The crash flag is on: `docker exec night-call node dist/scripts/set-shop-flag.js on`
 2. `night-call` has been up for at least 10 minutes, so the report shows real crash counts.
 3. No NightCall pull request is open on the fork.
-4. The SSH forward is running, and http://127.0.0.1:8001/op/incidents loads.
+4. https://nightcall.shipic.dev/op/incidents loads after the Cloudflare login. The public view without login is https://nightcall.shipic.dev/incidents. If the address is down, the SSH forward still works: http://127.0.0.1:8001/op/incidents.
 
 ## During recording
 
