@@ -5,6 +5,7 @@ import type { ExperimentRecord } from './proof-record.js';
 import { refusalCode } from './proof-replies.js';
 import type { ContractCheck, ExperimentRequest, ExperimentStarted } from './proof-types.js';
 import { describeError } from './retry.js';
+import { reviewedDecision } from './review-guard.js';
 import { experimentDecision } from './review-rules.js';
 import { runStep, type RunContext } from './run-steps.js';
 
@@ -57,11 +58,26 @@ async function experimentFor(context: RunContext, test: { cause: CheckedCause; c
   return { experimentId: started.id, hypothesisId: cause.hypothesisId, ...outcome };
 }
 
-async function reviewExperiment(context: RunContext, record: ExperimentRecord): Promise<void> {
-  const decision = experimentDecision(record);
-  const work = () => context.proof.reviewExperiment({ id: record.experimentId, ...decision });
-  const posted = await runStep(context, { nowDoing: 'Reviewing the experiment against the recorded checks', skipLabel: 'reviewing the experiment', work });
-  record.accepted = decision.accepted && posted !== null;
+async function evidenceFor(context: RunContext, experimentId: string): Promise<string> {
+  try {
+    return await context.proof.readExperimentEvidence(experimentId);
+  } catch (error) {
+    logProgress({ experimentEvidenceUnread: describeError(error) });
+    return 'The experiment evidence could not be read.';
+  }
+}
+
+async function reviewExperiment(context: RunContext, review: { record: ExperimentRecord; cause: CheckedCause }): Promise<void> {
+  const { record } = review;
+  const work = async () => {
+    const evidence = await evidenceFor(context, record.experimentId);
+    const request = { kind: 'reproduction' as const, cause: review.cause.claim, contract: SYMPTOM_CONTRACT, checks: record.checks, verdict: record.verdict, evidence };
+    const decision = await reviewedDecision(context.reviewer, { ...request, code: experimentDecision(record) });
+    await context.proof.reviewExperiment({ id: record.experimentId, ...decision });
+    return decision;
+  };
+  const decision = await runStep(context, { nowDoing: 'Reviewing the experiment against the recorded checks', skipLabel: 'reviewing the experiment', work });
+  record.accepted = decision?.accepted === true;
 }
 
 export async function testCause(context: RunContext, plan: { cause: CheckedCause; labels: ExperimentLabels }): Promise<void> {
@@ -69,5 +85,5 @@ export async function testCause(context: RunContext, plan: { cause: CheckedCause
   const record = await runStep(context, { nowDoing: plan.labels.nowDoing, skipLabel: plan.labels.skipLabel, work });
   if (record === null) return;
   context.record.experiments.push(record);
-  await reviewExperiment(context, record);
+  await reviewExperiment(context, { record, cause: plan.cause });
 }

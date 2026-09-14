@@ -5,6 +5,7 @@ import type { Cause } from './cause-rules.js';
 import { findCauses } from './causes.js';
 import { addFlagOffReading, FLAG_CAUSE, FLAG_OFF, FLAG_OFF_CAUSE, FLAG_OFF_SENTENCE, inc014Ledger, LEAK_CAUSE, RESTART_CAUSE } from './inc014-fixture.test.js';
 import type { IncidentApi } from './incident-api.js';
+import { ACCEPTING_REVIEWER } from './investigation-stubs.test.js';
 import type { Lead } from './lead-steps.js';
 import type { ProgressEvent } from './progress.js';
 import { newProofRecord } from './proof-record.js';
@@ -32,7 +33,7 @@ function apiFor(posting: Posting): IncidentApi {
 function contextFor(causes: Cause[], posting: Posting): { context: RunContext; steps: string[] } {
   const recorded = { steps: [] as string[] };
   const lead: Lead = { proposeCauses: async () => causes, classify: async () => ({ urgency: 'rush', reason: 'Treated as urgent.' }) };
-  const context: RunContext = { api: apiFor(posting), ledger: inc014Ledger(), lead, proof: stubProof(recorded, {}), record: newProofRecord(), run: newRun() };
+  const context: RunContext = { api: apiFor(posting), ledger: inc014Ledger(), lead, proof: stubProof(recorded, {}), record: newProofRecord(), reviewer: ACCEPTING_REVIEWER, run: newRun() };
   return { context, steps: recorded.steps };
 }
 

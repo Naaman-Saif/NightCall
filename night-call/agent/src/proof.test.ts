@@ -11,7 +11,7 @@ type Run = ReturnType<typeof stubInvestigation>;
 const proofSteps = (run: Run) => run.steps.filter((step) => step.startsWith('proof'));
 const stopSummary = (run: Run) => String(run.events.at(-1)?.payload.summary);
 const lastBrief = (run: Run) => run.events.filter((event) => event.type === 'brief_updated').at(-1)?.payload as { summary: string; nextStep: string };
-const REPRODUCE_H1 = ['proof contract', 'proof experiment h-1 incident_traffic flag on speed 1', 'proof job job-experiment-1 by investigator', 'proof review exp-1 accepted'];
+const REPRODUCE_H1 = ['proof contract', 'proof experiment h-1 incident_traffic flag on speed 1', 'proof job job-experiment-1 by investigator', 'proof read evidence exp-1', 'proof review exp-1 accepted'];
 const MITIGATE_AND_VERIFY = ['proof mitigation off restart true', 'proof verification', 'proof job job-verification-1 by verifier', 'proof verification review approved', 'proof read publication'];
 
 test('urgent: checks, reproduction with the incident traffic, review, straight to mitigation and verification, then the pull request', async () => {
@@ -59,7 +59,7 @@ test('a pull request still opening at minute 24 is recorded as skipped and never
 test('tolerable with time left: one extra experiment on the next cause before mitigation', async () => {
   const run = stubInvestigation('Tolerable');
   await investigate(run.parts);
-  const extra = ['proof experiment h-2 incident_traffic flag on speed 1', 'proof job job-experiment-2 by investigator', 'proof review exp-2 accepted'];
+  const extra = ['proof experiment h-2 incident_traffic flag on speed 1', 'proof job job-experiment-2 by investigator', 'proof read evidence exp-2', 'proof review exp-2 accepted'];
   assert.deepEqual(proofSteps(run), [...REPRODUCE_H1, ...extra, ...MITIGATE_AND_VERIFY]);
 });
 
@@ -81,7 +81,7 @@ test('a missing traffic recipe falls back to fixed traffic once and says so', as
 test('a reproduction that differs is rejected, so no mitigation is proposed and nothing claims proof', async () => {
   const run = stubInvestigation("I don't know", { verdict: 'differs' });
   await investigate(run.parts);
-  assert.deepEqual(proofSteps(run), ['proof contract', 'proof experiment h-1 incident_traffic flag on speed 1', 'proof job job-experiment-1 by investigator', 'proof review exp-1 rejected']);
+  assert.deepEqual(proofSteps(run), ['proof contract', 'proof experiment h-1 incident_traffic flag on speed 1', 'proof job job-experiment-1 by investigator', 'proof read evidence exp-1', 'proof review exp-1 rejected']);
   assert.match(stopSummary(run), /\(not yet reproduced\)\. Not reproduced in a test copy: the experiment did not match the recorded checks\. Skipped: proposing the mitigation \(no reproduction was accepted\)\.$/);
   assert.equal(lastBrief(run).nextStep, 'Treated as urgent. Nothing was reproduced or verified in this run.');
 });
