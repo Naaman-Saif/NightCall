@@ -34,8 +34,8 @@ Web (`night-call/web/`):
 ## How a run works
 
 1. An incident opens from `POST /op/api/investigations` (manual "Start investigation", labelled "Manually triggered") or `POST /alerts` (Alertmanager). Opening writes `alert_received`, captures a traffic recipe from the minutes before, and invokes the agents.
-2. `src/runtime/runtime-invoker.ts` calls the agents: an HTTP URL in `NIGHT_CALL_AGENT_RUNTIME_ARN` targets the `nightcall-agents` container; a real ARN targets AgentCore (blocked: the AWS account has an AgentCore agent quota of 0 and no Bedrock model access).
-3. `agent/src/investigation.ts` runs a fixed order in code: read failure rate and crashes, ask the one customer-impact question, read memory, CPU, logs, traces, deploy history and live flag state, propose possible causes, wait for the answer, write the report, post `investigation_stopped`. Models come from Featherless (OpenAI-compatible) per role setting `provider:modelId`.
+2. `src/runtime/runtime-invoker.ts` calls the agents: an HTTP URL in `NIGHT_CALL_AGENT_RUNTIME_ARN` targets the `nightcall-agents` container; a real ARN targets the AgentCore runtime in `us-west-1` (the agent quota was 0 in other regions; set `NIGHT_CALL_BEDROCK_REGION` to match). Bedrock model access is still blocked on the account, so models run on Featherless.
+3. `agent/src/investigation.ts` runs a fixed order in code: read failure rate and crashes, ask the one customer-impact question, read memory, CPU, logs, traces, deploy history and live flag state, propose possible causes, wait for the answer, write the report, post `investigation_stopped`. Models come from Featherless (OpenAI-compatible) per role setting `provider:modelId`: the lead is GLM-5.3 (Kimi-K3 fallback), and Kimi-K3 reviews the reproduction and the verification run and writes the reasons. Code refuses any approval of a failed check or null observation, so the reviewer can reject but never approve a failure.
 4. Every read is a server route under `/tool/incidents/:id/prod/*` that records an `evidence_recorded` event with exact source links. The model only reads what code fetched.
 5. Every change is an event appended to `state/incidents/<id>/events.jsonl`; `src/investigation/` rebuilds `snapshot.json` (including `runReport` and `headline`) after each append and streams events to the page.
 6. The page (`/incidents/:id` public, `/op/incidents/:id` operator) reads the snapshot and the event stream.
@@ -55,7 +55,7 @@ Zero comments. At most 20 lines per function, 2 parameters, 2 indent levels, 5 m
 
 ## The box
 
-Everything runs on the Hetzner box `ssh-big.shipic.dev` (x86_64) inside the shop's compose project `prod`.
+Everything runs on the Hetzner box (`<box-host>`, x86_64) inside the shop's compose project `prod`.
 - Repo clone `/root/code/NightCall` (symlink `/root/code/night-call`); the box builds only from merged `main`.
 - The compose file actually used is the copy at `/root/code/astronomy-shop/compose.nightcall.yaml`; copy the overlay there before deploying. Deploy one service without touching the shop, from `/root/code/astronomy-shop`:
   `docker compose --env-file .env --env-file .env.override -p prod -f compose.yaml -f compose.full.yaml -f compose.observability.yaml -f compose.box-override.yaml -f compose.nightcall.yaml up -d --build --no-deps night-call` (or `status`).

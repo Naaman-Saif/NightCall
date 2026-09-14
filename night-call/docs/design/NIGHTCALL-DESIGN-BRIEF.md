@@ -351,7 +351,7 @@ NightCall already has a TypeScript/NestJS backend, Strands agents using Bedrock,
 
 The current implementation forms one triage hypothesis, replays a flag diff, tries a small remediation vocabulary, and files a GitHub issue. Its status page lists incidents and completed issue links. It does not implement the three-role investigation experience, human questions, workload-history experiments, the proposed public API, three-cycle proof, or fix PR publication.
 
-The application and observability stack run on the provisioned `claude-big` box. NightCall itself was stopped at last inspection because model and GitHub configuration were missing. The founder has confirmed AWS account/access readiness, but provisioning those settings is still execution work.
+The application and observability stack run on the provisioned box. NightCall itself was stopped at last inspection because model and GitHub configuration were missing. The founder has confirmed AWS account/access readiness, but provisioning those settings is still execution work.
 
 Reuse the existing stack where appropriate. The design should expose the agreed product behavior without pretending unfinished capabilities already exist. Sentry, Slack, Discord, arbitrary code repair, and general-purpose application onboarding are outside the first build.
 

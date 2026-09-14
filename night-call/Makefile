@@ -1,8 +1,9 @@
 SHOP ?= /root/code/astronomy-shop
-BOX ?= root@ssh-big.shipic.dev
+BOX ?=
 BOX_PATH ?= /root/code/night-call
 OVERRIDE = $(shell test -f $(SHOP)/compose.box-override.yaml && echo -f compose.box-override.yaml)
 COMPOSE_PROD = docker compose --env-file .env --env-file .env.override -p prod -f compose.yaml -f compose.full.yaml -f compose.observability.yaml $(OVERRIDE) -f compose.nightcall.yaml
+REQUIRE_BOX = @test -n "$(BOX)" || { echo "Set BOX, for example BOX=root@your-box make $@"; exit 1; }
 
 install:
 	npm install
@@ -38,6 +39,7 @@ heal-ad:
 	npm run deploy-bot -- $(SHOP) adHighCpu off
 
 deploy:
+	$(REQUIRE_BOX)
 	git push
 	ssh $(BOX) 'cd $(BOX_PATH) && git pull && cd $(SHOP) && $(COMPOSE_PROD) up -d --build night-call'
 
