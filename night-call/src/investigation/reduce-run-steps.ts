@@ -34,7 +34,7 @@ function recordSignal(snapshot: Snapshot, event: IncidentEvent): Snapshot {
 function recordQuestion(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   const { questionId } = payloadOf(event, 'question_asked');
   const text = questionId === 'q-impact' ? 'Asked about customer impact' : 'Asked a question';
-  const step = { text, value: 'Waiting for an answer', evidenceId: null, questionId };
+  const step = { text, value: WAITING_FOR_ANSWER, evidenceId: null, questionId };
   return withSteps(snapshot, [...snapshot.runReport.did, step]);
 }
 
@@ -47,8 +47,16 @@ function recordAnswer(snapshot: Snapshot, event: IncidentEvent): Snapshot {
   return withSteps(snapshot, did.map((step) => (step.questionId === questionId ? { ...step, value } : step)));
 }
 
+const WAITING_FOR_ANSWER = 'Waiting for an answer';
+const NO_ANSWER = 'No answer';
+
 function withStep(snapshot: Snapshot, found: RunStep | null): Snapshot {
   return found ? withSteps(snapshot, [...snapshot.runReport.did, found]) : snapshot;
+}
+
+function closeWaitingQuestions(snapshot: Snapshot): Snapshot {
+  const did = snapshot.runReport.did.map((step) => (step.questionId !== null && step.value === WAITING_FOR_ANSWER ? { ...step, value: NO_ANSWER } : step));
+  return withSteps(snapshot, did);
 }
 
 export const reduceRunSteps = reducerFrom({
@@ -58,5 +66,7 @@ export const reduceRunSteps = reducerFrom({
   experiment_reviewed: (snapshot, event) => withStep(snapshot, reproductionStep(snapshot, event)),
   verification_reviewed: (snapshot, event) => withStep(snapshot, verificationStep(snapshot, event)),
   publication_changed: (snapshot, event) => withStep(snapshot, publicationStep(event)),
-  budget_exhausted: (snapshot) => withStep(snapshot, { text: 'Time budget used up', value: 'Tools closed, test copy removed, no pull request opened', evidenceId: null, questionId: null }),
+  budget_exhausted: (snapshot) => withStep(closeWaitingQuestions(snapshot), { text: 'Time budget used up', value: 'Tools closed, test copy removed, no pull request opened', evidenceId: null, questionId: null }),
+  investigation_stopped: closeWaitingQuestions,
+  investigation_finished: closeWaitingQuestions,
 });

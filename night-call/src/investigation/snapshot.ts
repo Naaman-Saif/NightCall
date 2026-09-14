@@ -14,7 +14,7 @@ import type {
 import type { RunReport } from './run-report-types';
 
 export type Lifecycle = 'active' | 'finished';
-export type Attention = 'none' | 'context_requested' | 'blocked';
+export type Attention = 'none' | 'context_requested' | 'blocked' | 'no_answer';
 export type Phase = 'briefing' | 'investigating' | 'reproducing' | 'mitigating' | 'verifying' | 'publishing' | 'handoff';
 export type CompletionReason = PayloadOf<'investigation_finished'>['reason'] | 'budget_exhausted';
 
@@ -41,6 +41,7 @@ export type Question = Omit<PayloadOf<'question_asked'>, 'questionId' | 'illustr
   id: string;
   askedAt: string;
   answer: Answer | null;
+  status: 'waiting' | 'answered' | 'no_answer';
 };
 export type ContextItem = { questionId: string | null; text: string; suppliedAt: string };
 type EvidencePayload = PayloadOf<'evidence_recorded'>;
@@ -54,7 +55,7 @@ export type InvestigationStop = Omit<PayloadOf<'investigation_stopped'>, 'illust
 export type Hypothesis = Omit<PayloadOf<'hypothesis_proposed'>, 'hypothesisId' | 'illustrative' | 'contradictions'> & {
   id: string;
   contradictions: NonNullable<PayloadOf<'hypothesis_proposed'>['contradictions']>;
-  status: PayloadOf<'hypothesis_status_changed'>['status'] | 'proposed';
+  status: PayloadOf<'hypothesis_status_changed'>['status'] | 'proposed' | 'reproduced' | 'verified';
   reason: string | null;
 };
 

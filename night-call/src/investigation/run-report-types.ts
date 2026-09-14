@@ -7,7 +7,7 @@ export type CauseEvidence = { text: string; evidenceId: string };
 export type RunCause = {
   id: string;
   claim: string;
-  status: 'proposed' | 'supported' | 'contradicted';
+  status: 'proposed' | 'supported' | 'contradicted' | 'reproduced' | 'verified';
   supporting: CauseEvidence[];
   contradicting: CauseEvidence[];
   confirmBy: string;

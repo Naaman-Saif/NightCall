@@ -7,6 +7,8 @@ const CAUSE_STATUS: Partial<Record<Hypothesis['status'], RunCause['status']>> = 
   inconclusive: 'proposed',
   supported: 'supported',
   contradicted: 'contradicted',
+  reproduced: 'reproduced',
+  verified: 'verified',
 };
 
 function citedEvidence(snapshot: Snapshot, evidenceIds: string[]): CauseEvidence[] {

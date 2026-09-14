@@ -1,3 +1,4 @@
+import { countWords } from '../investigation/count-words';
 import type { CrashCounts } from '../investigation/snapshot';
 import type { EventsBuffer } from '../recorder/events-buffer';
 import type { ProductionEvent } from '../recorder/series-sample';
@@ -26,6 +27,6 @@ export function readOomEvents(events: EventsBuffer, query: EventsReadQuery): Rea
   const summary = `${counts} for ${query.service} in the last ${query.minutes} minutes`;
   const exactSource = { kind: 'stored_excerpt' as const };
   const excerpt = excerptOf(found.map(lineOf));
-  const value = `${crashCounts.oom} out-of-memory kills, ${crashCounts.start} restarts in ${query.minutes} min`;
+  const value = `${countWords(crashCounts.oom, 'out-of-memory kill')}, ${countWords(crashCounts.start, 'restart')} in ${query.minutes} min`;
   return { kind: 'oom_events', source: `docker events: ${query.service}`, summary, excerpt, value, data: { events: found }, exactSource, crashCounts };
 }
