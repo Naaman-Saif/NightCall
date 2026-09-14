@@ -1,12 +1,19 @@
 import type { LiveRun, LiveStageEntry } from '../api/live-run';
 import { useLiveRun } from '../api/use-live-run';
-import { STAGE_NAME, describeLiveMemory, describeLiveProgress, describeLiveStep } from '../format/live-run-text';
+import { describeLiveMemory, describeLiveProgress, describeLiveStep } from '../format/live-run-text';
+import { collapseRepeatedStages, describeStageRow } from '../format/live-stage-text';
 import { formatTimeOfDay } from '../format/time';
 import { LiveRequestFeed } from './live-request-feed';
 
-export function LiveRunPanel({ livePath }: { livePath: string | null }) {
+type PanelProps = { livePath: string | null; service: string };
+type ViewProps = { live: LiveRun; service: string };
+
+export function LiveRunPanel({ livePath, service }: PanelProps) {
   const live = useLiveRun(livePath);
-  if (!live) return null;
+  return live ? <LiveRunView live={live} service={service} /> : null;
+}
+
+export function LiveRunView({ live, service }: ViewProps) {
   return (
     <section className="live-run" data-stage={live.stage} aria-live="polite">
       <p className="live-step">
@@ -18,7 +25,7 @@ export function LiveRunPanel({ livePath }: { livePath: string | null }) {
       <LiveProgress live={live} />
       <p className="meta live-memory">{describeLiveMemory(live)}</p>
       <LiveRequestFeed requests={live.lastRequests} />
-      <StageChecklist stages={live.stages} />
+      <StageChecklist stages={live.stages} service={service} />
     </section>
   );
 }
@@ -36,15 +43,14 @@ function LiveProgress({ live }: { live: LiveRun }) {
   );
 }
 
-function StageChecklist({ stages }: { stages: LiveStageEntry[] }) {
+function StageChecklist({ stages, service }: { stages: LiveStageEntry[]; service: string }) {
   if (stages.length === 0) return null;
   return (
     <ol className="live-stages">
-      {stages.map((entry, index) => (
+      {collapseRepeatedStages(stages).map((entry, index) => (
         <li key={`${index}-${entry.stage}`} data-stage={entry.stage}>
           <span className="live-stage-time">{formatTimeOfDay(entry.at)}</span>
-          <span>{STAGE_NAME[entry.stage] ?? entry.stage}</span>
-          {entry.detail && <span className="muted">{entry.detail}</span>}
+          <span>{describeStageRow({ entry, service })}</span>
         </li>
       ))}
     </ol>

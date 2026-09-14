@@ -3,17 +3,6 @@ import { speedSuffix } from './traffic-text';
 
 type StepText = (live: LiveRun) => string;
 
-export const STAGE_NAME: Record<LiveStage, string> = {
-  starting_copy: 'Starting the sealed copy',
-  copy_ready: 'Sealed copy ready',
-  replaying: 'Replaying requests',
-  restarting: 'Restarting the service',
-  fault_seen: 'Fault seen',
-  stopping_copy: 'Stopping the sealed copy',
-  cleaned: 'Sealed copy removed',
-  failed: 'Run failed',
-};
-
 function lastKillRequest(live: LiveRun): number | null {
   return live.oomKills.at(-1)?.atRequest ?? null;
 }

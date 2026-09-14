@@ -16,7 +16,7 @@ export function LiveRequestFeed({ requests }: { requests: LiveRequest[] }) {
         <li key={`${index}-${request.at}`} data-failed={isFailedRequest(request.status)}>
           <span>{formatTimeOfDay(request.at)}</span>
           <span className="live-feed-route">{request.route}</span>
-          <span>{request.productId ?? '-'}</span>
+          {request.productId ? <span>{request.productId}</span> : <span className="muted">no product</span>}
           <span className="live-feed-status">{describeRequestStatus(request.status)}</span>
           <span>{request.ms === null ? '-' : `${Math.round(request.ms)} ms`}</span>
         </li>
