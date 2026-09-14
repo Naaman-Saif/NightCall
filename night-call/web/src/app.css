@@ -48,6 +48,11 @@
 .source-links { display: inline-flex; flex-wrap: wrap; gap: var(--sp-2); margin-left: var(--sp-2); }
 .source-link { font: var(--type-meta-sm); color: var(--text-link); }
 .source-link[data-rank='secondary'] { color: var(--text-muted); }
+.pr-link {
+  justify-self: start; display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--line); border-radius: var(--radius-sm); font: var(--type-label); color: var(--text-link);
+}
+.pr-link:hover { background: var(--surface-raised); }
 .incident-headline { margin: 0; max-width: 80ch; font: var(--type-body); color: var(--text-title); }
 .investigation-progress { margin-bottom: var(--sp-3); }
 .run-report { display: grid; gap: var(--sp-4); max-width: 80ch; }

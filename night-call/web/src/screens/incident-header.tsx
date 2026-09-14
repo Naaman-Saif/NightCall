@@ -20,7 +20,8 @@ export function IncidentHeader({ incident, connection, latestSequence, runReport
         <Badge numeric uppercase>{incident.service}</Badge>
         <ManualTag alertName={incident.alertName} />
         {incident.illustrative && <DemoBadge />}
-        <ConnectionBadge connection={connection} latestSequence={latestSequence} lastUpdateAt={incident.lastActivityAt} />
+        <ConnectionBadge connection={connection} latestSequence={latestSequence} lastUpdateAt={incident.lastActivityAt}
+          isFinished={incident.lifecycle === 'finished'} />
       </div>
       <h1 className="incident-title">{incident.alertName}</h1>
       <IncidentFacts incident={incident} runReport={runReport} />
@@ -36,7 +37,7 @@ function IncidentFacts({ incident, runReport }: FactsProps) {
       <Fact label="Elapsed" value={describeElapsed(incident, now)} />
       <Fact label="Budget left" value={describeBudgetLeft(incident, now)} />
       <Fact label="Phase" value={runReport ? describeRunStatus(runReport) : describePhase(incident)} />
-      <Fact label="Attention" value={describeAttention(incident.attention)} />
+      <Fact label="Attention" value={describeAttention(incident)} />
     </dl>
   );
 }

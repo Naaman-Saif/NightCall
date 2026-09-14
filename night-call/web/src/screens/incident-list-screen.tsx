@@ -49,7 +49,7 @@ function IncidentRow({ item, linkPrefix }: { item: IncidentListItem; linkPrefix:
       </span>
       <ManualTag alertName={item.alertName} />
       {item.illustrative && <DemoBadge />}
-      {item.attention !== 'none' && <Badge tone="accent">{describeAttention(item.attention)}</Badge>}
+      {item.attention !== 'none' && <Badge tone="accent">{describeAttention(item)}</Badge>}
       <span className="meta">{describePhase(item)}</span>
       <span className="meta">started {formatAgo(item.startedAt, now)}</span>
     </a>
