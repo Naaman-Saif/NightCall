@@ -13,13 +13,6 @@
 .incident-welcome-copy .muted { margin-top: var(--sp-2); }
 .top-bar .wordmark { display: inline-flex; align-items: center; gap: var(--sp-2); letter-spacing: var(--track-tight); }
 .brand-moon { width: 24px; height: 24px; color: var(--accent); }
-.mascot-motion-control {
-  margin-left: auto; padding: var(--sp-2); border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm); background: transparent; color: var(--text-muted);
-  font: var(--type-meta-sm); cursor: pointer;
-}
-.mascot-motion-control:hover { background: var(--surface-raised); color: var(--text-title); }
-.mascot-motion-control:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @keyframes goose-blink {
   0%, 43%, 47%, 100% { background-position: 0 0; }
   45% { background-position: 100% 0; }
