@@ -5,6 +5,7 @@ import { EmptyState } from '../kit';
 import { DetailsToggle } from './details-toggle';
 import { IncidentDetails, hasOpenQuestion, type IncidentLayoutProps } from './incident-details';
 import { IncidentHeader } from './incident-header';
+import { PullRequestLink } from './pull-request-link';
 import { RunReportSummary } from './run-report';
 import { UnresolvedQuestions } from './unresolved-questions';
 
@@ -25,6 +26,7 @@ function IncidentLayout(props: IncidentLayoutProps) {
     <div className="page">
       <IncidentHeader incident={snapshot.incident} connection={view.connection} latestSequence={view.events.at(-1)?.sequence ?? 0} runReport={report} />
       {snapshot.headline && <p className="incident-headline">{snapshot.headline}</p>}
+      <PullRequestLink publication={snapshot.publication} />
       {report ? <ClearReport {...props} report={report} /> : <IncidentDetails {...props} includeQuestions />}
     </div>
   );

@@ -7,7 +7,7 @@ export type * from './contract-events';
 export { EVENT_TYPES } from './contract-events';
 
 export type Phase = 'briefing' | 'investigating' | 'reproducing' | 'mitigating' | 'verifying' | 'publishing' | 'handoff';
-export type Attention = 'none' | 'context_requested' | 'blocked';
+export type Attention = 'none' | 'context_requested' | 'blocked' | 'no_answer';
 export type Reproduction = 'untested' | 'testing' | 'confirmed' | 'not_reproduced' | 'inconclusive';
 export type Lifecycle = 'active' | 'finished';
 
