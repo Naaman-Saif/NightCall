@@ -2,16 +2,15 @@ import type { Model } from '@strands-agents/sdk';
 
 import { fetchWithMessageRole } from './message-role-stream.js';
 
-export type RoleSetting = { role: string; provider: string; modelId: string; reasoning: string };
+export type RoleSetting = { role: string; provider: string; modelId: string; reasoning: string; maxTokens?: number };
 
 export const DEFAULT_REASONING = 'high';
 export const FEATHERLESS_MAX_COMPLETION_TOKENS = 32_768;
 const NO_REASONING = 'none';
-const MEDIUM_BY_DEFAULT = new Set(['VERIFIER', 'LEAD_FALLBACK']);
+const ROLE_DEFAULTS: Record<string, string> = { VERIFIER: 'medium', LEAD_FALLBACK: 'medium', REVIEW: 'low' };
 
 export function reasoningFor(role: string, env: NodeJS.ProcessEnv = process.env): string {
-  const roleDefault = MEDIUM_BY_DEFAULT.has(role) ? 'medium' : DEFAULT_REASONING;
-  return env[`NIGHT_CALL_${role}_REASONING`]?.trim() || roleDefault;
+  return env[`NIGHT_CALL_${role}_REASONING`]?.trim() || ROLE_DEFAULTS[role] || DEFAULT_REASONING;
 }
 
 export function parseRoleSetting(role: string, value: string): RoleSetting {
@@ -25,7 +24,7 @@ export function readRoleSetting(role: string, env: NodeJS.ProcessEnv = process.e
 
 export function featherlessParams(setting: RoleSetting): Record<string, unknown> {
   const reasoning = setting.reasoning === NO_REASONING ? {} : { reasoning_effort: setting.reasoning };
-  return { parallel_tool_calls: false, max_tokens: FEATHERLESS_MAX_COMPLETION_TOKENS, ...reasoning };
+  return { parallel_tool_calls: false, max_tokens: setting.maxTokens ?? FEATHERLESS_MAX_COMPLETION_TOKENS, ...reasoning };
 }
 
 async function buildFeatherlessModel(setting: RoleSetting): Promise<Model> {
