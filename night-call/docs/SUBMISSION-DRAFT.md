@@ -28,7 +28,7 @@ In our real run INC-015, the Astronomy Shop's recommendation service was crashin
 ## How we built it
 
 - **Agents:** TypeScript Strands Agents SDK, hosted on Amazon Bedrock AgentCore Runtime (us-west-1), with the same image as a container fallback on our box.
-- **Models:** Featherless through its OpenAI-compatible API: GLM-5.3 for the lead, Kimi-K3 as its fallback. Each role's model is a setting, so Bedrock models drop in by configuration.
+- **Models:** Featherless through its OpenAI-compatible API: GLM-5.3 for the lead, and Kimi-K3, a different model family, as the reviewer of the reproduction and the verification run. The reviewer writes its reasons, but code refuses any approval of a failed check or a missing observation, so it can reject but never approve a failure. Each role's model is a setting, so Bedrock models drop in by configuration.
 - **Service:** NestJS. Every change is an event in an append-only log with zod-checked payloads; a reducer rebuilds the incident snapshot and streams it to the page.
 - **Evidence:** server routes read Prometheus, Jaeger and Docker and record each reading with exact source links. The model only sees what code fetched.
 - **Sandbox:** a sealed Docker Compose copy of the OpenTelemetry Demo on an internal network with no ports, run from a child process so a stuck experiment can be stopped without taking the service down.
@@ -63,7 +63,7 @@ The core design choice: agents choose, code acts. Role tokens, check catalogues,
 ## What's next
 
 - Turn on automatic alarms starting investigations, and a permanent tunnel or private link for the tool API.
-- Bedrock models once account access is enabled, and a second model family as an independent reviewer.
+- Bedrock models once account access is enabled.
 - More incident types beyond one flag, including code-level mitigations tested the same way.
 - Slack and Discord for the question, on the same incident.
 - Onboarding for any Docker Compose application, not only the demo shop.
@@ -87,7 +87,7 @@ TypeScript, Node.js, Strands Agents SDK, Amazon Bedrock AgentCore Runtime, Amazo
 | 0:45 to 1:10 | Readings appear with source links; open one link into Prometheus or Jaeger | "It reads 9 signals. Every number links to the query it came from: 1.65 percent frontend failures, 4 out-of-memory restarts, 355 of 500 MiB." |
 | 1:10 to 1:25 | The impact question on the page | "It asks one question: is the impact tolerable? No answer means urgent, and the report says so." |
 | 1:25 to 1:45 | Possible causes, the flag marked most likely, deploy commit afa6f51 | "The model proposes causes, but code decides what counts: a cause is supported only with two independent readings." |
-| 1:45 to 2:10 | Reproduction panel: live request feed, memory chart, OOM kill | "It rebuilds the crash in a sealed copy, replaying 1032 requests captured from traces. 101 requests in, one out-of-memory kill. Checks were recorded before the run." |
+| 1:45 to 2:10 | Reproduction panel: live request feed, memory chart, OOM kill | "It rebuilds the crash in a sealed copy, replaying 1032 requests captured from traces. 101 requests in, one out-of-memory kill. Checks were recorded before the run, and a second model reviews the result, but code will not let it approve a failed check." |
 | 2:10 to 2:35 | Verification: three rounds ticking to 3 of 3 | "Fix: flag off and restart. Three fresh copies, each with the fault then the fix. 200 healthy requests each, zero failures. Production identity checked before and after every round." |
 | 2:35 to 2:50 | Open PR #3, the one-line diff and the evidence body | "Only then does it open a one-line pull request. A human decides to merge. 16 minutes 52 seconds, start to PR." |
 | 2:50 to 3:00 | README limits section, closing card | "One incident type today, Bedrock models blocked on our account so models run on Featherless. Next: automatic alarms and more incident types." |

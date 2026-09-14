@@ -27,7 +27,7 @@ The incident is the Astronomy Shop (the OpenTelemetry Demo) recommendation servi
 3. **Every reading is fetched by the server,** not by the model. Each read is a route under `/tool/incidents/:id/prod/*` that records an `evidence_recorded` event with the exact query and a link to Prometheus, Jaeger or GitHub. The model only sees what code fetched.
 4. **The lead model proposes causes** from a block of those readings, each citing reading ids. Code then checks every cause (citations exist, numbers match the readings, a mechanism is stated) and drops the ones that fail.
 5. **Experiments run in a sealed copy of the shop,** Docker Compose project `nc-sandbox`, started by a child process of the service. The copy has an internal network, no published ports, copied config and memory limits checked against production. It replays the captured traffic.
-6. **Checks decide, not opinions.** The checks are picked from a fixed catalogue and recorded before the experiment starts. The investigator and verifier steps read the results and accept or reject by rule.
+6. **Checks decide, and a second model reviews.** The checks are picked from a fixed catalogue and recorded before the experiment starts. A reviewer model from a different family (Kimi-K3) reviews the reproduction and the verification run against those checks and writes its reasons. Code refuses any approval of a failed check or a missing observation, so the reviewer can reject but never approve a failure.
 7. **After 3 of 3 verification rounds pass,** the service opens a pull request on the demo branch of the shop fork. The body is built from the event log: the question and answer, the reproduction checks, each round, the verifier's reasons, caveats, and what is not fixed.
 8. **The page shows it live.** Every change is an event appended to `state/incidents/<id>/events.jsonl`; the service rebuilds `snapshot.json` after each append and streams events to the page. `/incidents/:id` is read only; `/op/incidents/:id` can answer the question.
 
@@ -40,6 +40,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the diagrams.
 - **Every number is a cited reading.** Missing is written "not measured", zero is zero. The question quotes the measured failure rate; if it was not measured, the question is not built from a guess.
 - **"Supported" needs two independent readings.** A cause is only marked most likely when readings from at least two different readers back it, nothing contradicts it, and no other cause ties it.
 - **Checks are recorded before the run** and come from a fixed catalogue with bounded values (for example at least 1 out-of-memory kill in the fault stage, exactly 0 failures and at least 200 healthy requests in the fix stage). A second set of checks is refused.
+- **The reviewer can reject but never approve a failure.** An approval is refused if any recorded check failed or has no observation.
 - **No "verified" without 3 of 3.** The verifier cannot approve until rounds 1 to 3 of the same run have all passed. The pull request is refused without an approved 3 of 3 run.
 - **The pull request is one line.** The diff builder refuses any change that touches more than one line of the flag file.
 - **Production identity is checked before and after every round:** the flag file's SHA-256, the running recommendation image, and a checksum of its source. If anything changed, the round fails and the investigation stops as an infrastructure failure.
@@ -50,8 +51,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the diagrams.
 ## Models and hosting
 
 - **Agents:** TypeScript Strands Agents SDK, hosted on Amazon Bedrock AgentCore Runtime in `us-west-1`. The same image also runs as a plain container (`nightcall-agents`) on the box as a fallback; the service picks the target from `NIGHT_CALL_AGENT_RUNTIME_ARN` (an ARN for AgentCore, an HTTP address for the container).
-- **Models:** Featherless, through its OpenAI-compatible API. The lead uses `zai-org/GLM-5.3`, with `moonshotai/Kimi-K3` as the fallback after two failed attempts. Each role's model is a setting (`provider:modelId`), so Bedrock models can be switched in by configuration once the account allows them.
-- **What uses a model:** only the lead, to propose possible causes from the readings and to classify a free-text answer to the question. The investigator and verifier steps, the checks, verdicts, 3 of 3 rule, identity checks and publication are plain code.
+- **Models:** Featherless, through its OpenAI-compatible API. The lead uses `zai-org/GLM-5.3`, with `moonshotai/Kimi-K3` as the fallback after two failed attempts. The reviewer uses `moonshotai/Kimi-K3`, a different model family from the lead. Each role's model is a setting (`provider:modelId`), so Bedrock models can be switched in by configuration once the account allows them.
+- **What uses a model:** the lead proposes possible causes from the readings and classifies a free-text answer to the question. The reviewer reviews the reproduction and the verification run and writes the reasons. The checks, verdicts, the refusal to approve a failure, the 3 of 3 rule, identity checks and publication are plain code.
 - **Everything else** runs on one Hetzner box: the shop in Docker Compose project `prod`, Prometheus, Jaeger, the NightCall service (NestJS), and Caddy serving the page on port 8001 and the tool API on port 8002. Both ports bind to 127.0.0.1; the agents reach 8002 through a Cloudflare quick tunnel.
 
 ## Running it
@@ -59,7 +60,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the diagrams.
 You need the OpenTelemetry Demo running under Docker Compose, a Featherless API key, a GitHub token for a fork of the demo, and Docker on the same host.
 
 1. Clone the shop and apply the overlay from `astronomy-shop-overlay/` (Alertmanager, alert rules, the NightCall and status containers). Upstream files are not edited.
-2. Copy `night-call/.env.example` to `night-call/.env` and fill in the settings: the three role tokens (`NIGHT_CALL_TOOL_TOKEN_LEAD`, `_INVESTIGATOR`, `_VERIFIER`), `NIGHT_CALL_OPERATOR_SECRET`, `NIGHT_CALL_AGENT_RUNTIME_ARN`, `NIGHT_CALL_ASTRONOMY_SHOP_PATH`, `NIGHT_CALL_FLAGD_CONFIG_PATH`, `NIGHT_CALL_RUNS_PATH`, `GITHUB_TOKEN` and `NIGHT_CALL_GITHUB_REPOSITORY`. Never commit this file.
+2. Copy `night-call/.env.example` to `night-call/.env` and fill in the settings: the three role tokens (`NIGHT_CALL_TOOL_TOKEN_LEAD`, `_INVESTIGATOR`, `_VERIFIER`), `NIGHT_CALL_OPERATOR_SECRET`, `NIGHT_CALL_AGENT_RUNTIME_ARN`, `NIGHT_CALL_ASTRONOMY_SHOP_PATH`, `NIGHT_CALL_FLAGD_CONFIG_PATH`, `NIGHT_CALL_RUNS_PATH`, `GITHUB_TOKEN` and `NIGHT_CALL_GITHUB_REPOSITORY`. When the agents run on AgentCore, also set `NIGHT_CALL_BEDROCK_REGION` to the runtime's region (`us-west-1`); the service otherwise defaults to `eu-central-1`. Never commit this file.
 3. From the shop folder, start only the NightCall containers without touching the shop:
    `docker compose -p prod -f compose.yaml -f compose.full.yaml -f compose.observability.yaml -f compose.nightcall.yaml up -d --build --no-deps night-call night-call-status`
 4. Run the agents: either `docker build -t nightcall-agents night-call/agent` and run it on the shop network with `FEATHERLESS_API_KEY`, `FEATHERLESS_BASE_URL`, `NIGHT_CALL_LEAD_MODEL`, the role tokens and `TOOL_API_URL`, or deploy to AgentCore with `npm run deploy` in `night-call/agent`.
@@ -70,14 +71,14 @@ Checks: `npm run build`, `npm run lint` and `npm test` in `night-call/` and `nig
 ## Limits and honest gaps
 
 - **Bedrock models are blocked on our AWS account** ("Error 002: Access to Bedrock models is not allowed for this account"), so all model calls go to Featherless. AgentCore still hosts the agents.
-- **The AgentCore agent quota was 0 in most regions** we tried, so the runtime lives in `us-west-1`. The deploy script and a settings default in the repo still name `eu-central-1`.
+- **The AgentCore agent quota was 0 in most regions** we tried, so the runtime lives in `us-west-1`.
 - **The tool API is reached through a temporary Cloudflare quick tunnel.** Its address changes on every restart and it has no uptime guarantee.
 - **One incident type.** The demo handles the recommendation cache out-of-memory incident and fixes it by choosing an existing flag variant. It does not write code fixes.
 - **Automatic alarms do not start investigations by default.** `NIGHT_CALL_INVOKE_AGENTS_ON_ALERT` is `false`; runs start from the button. The Alertmanager rules exist, and alerts for the recommendation service are silenced while the manual flow is the focus.
-- **Only one model is involved.** The verifier is a set of code rules, not a second model.
+- **The Kimi-K3 reviewer was added 2026-09-14** and is not yet confirmed deployed. Before it, the reproduction and verification reviews were code rules only; the rule that refuses approval of a failed check or missing observation applies either way.
 - **A sandbox result is not a production fix.** The page and the pull request say "3/3 verification cycles passed under the recorded conditions". NightCall does not deploy the change.
 - **Traffic fallbacks.** If no traces are found, the recipe falls back to the Prometheus request rate, then to a fixed 400 requests at 200 ms. The page says which source was used.
-- **If no cause reaches two independent readings,** nothing is marked most likely and the first proposed cause is still tested in the copy, so the page shows it as a possible cause, not a supported one.
+- **A cause can be tested without being supported.** If no cause is backed by two independent readings, NightCall still tests the first cause the model proposed. The page calls it a possible cause, not a supported one.
 - **The "tolerable" path** (one extra experiment before the fix) is built but was not exercised in INC-015, because the question went unanswered.
 - **Jaeger keeps traces in memory for about 20 minutes,** so the traffic recipe needs the investigation to start soon after the failures.
 

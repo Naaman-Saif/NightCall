@@ -1,6 +1,6 @@
 # Architecture
 
-The rule: agents choose, code acts. Agents read through server routes and write through a small set of role-checked events. Every Docker write, every experiment, every verdict, the 3 of 3 rule, the deadline and the pull request are plain code in the NightCall service.
+The rule: agents choose, code acts. Agents read through server routes and write through a small set of role-checked events. Every Docker write, every experiment, every check verdict, the 3 of 3 rule, the deadline and the pull request are plain code in the NightCall service. The reviewer model writes the reasons for accepting or rejecting, but code refuses any approval of a failed check or a missing observation.
 
 ## Components and who talks to whom
 
@@ -12,7 +12,7 @@ flowchart LR
     agents["Agents on AgentCore us-west-1<br/>fallback: nightcall-agents container on the box"] -->|"role tokens over HTTPS"| tunnel["Cloudflare quick tunnel"]
     tunnel -->|":8002 /tool/* only"| caddy
     nest -->|"invoke a run"| agents
-    agents -->|"lead model calls"| models["Featherless<br/>GLM-5.3, Kimi-K3 fallback"]
+    agents -->|"lead and reviewer model calls"| models["Featherless<br/>GLM-5.3 lead, Kimi-K3 reviewer"]
     nest --> log[("events.jsonl<br/>then snapshot.json")]
     log -->|"event stream"| caddy
     nest -->|"failure rate, span metrics"| prom["Prometheus"]
@@ -35,7 +35,7 @@ flowchart LR
 | Experiments | `src/experiments/` | Check catalogue, reproduction and verification jobs (one at a time), the sandbox worker child process, check evaluation, production identity before and after, the 30-minute deadline. |
 | Sandbox copy | `src/sandbox-copy/` | Renders a sealed compose copy (`nc-sandbox`), checks isolation rules, replays traffic, observes memory, CPU and restarts, cleans up. |
 | Publication | `src/publication/` | Refuses without an approved 3 of 3 run, builds the one-line flag diff, opens the pull request on the `nightcall-demo` branch, retry on failure. |
-| Agents | `agent/` | The fixed investigation order, lead model calls, cause rules, the question and urgency decision, reproduction, mitigation and verification steps, and the final report. |
+| Agents | `agent/` | The fixed investigation order, lead model calls, cause rules, the question and urgency decision, reproduction, mitigation and verification steps, the Kimi-K3 reviews of the reproduction and the verification run (added 2026-09-14), and the final report. |
 | Page | `web/` | Vite and React. Charts of what happened first, then the story: readings, question, possible causes, reproduction, fix, verification, pull request. |
 
 ## One run, from the button to the pull request
@@ -47,6 +47,7 @@ sequenceDiagram
     participant Svc as NightCall service
     participant Agents as Agents
     participant Lead as Lead model
+    participant Reviewer as Reviewer model
     participant Copy as Sealed shop copy
     participant GH as GitHub fork
     Dev->>Page: Start investigation
@@ -63,14 +64,18 @@ sequenceDiagram
     Agents->>Svc: record checks, start reproduction
     Svc->>Copy: replay incident traffic at 1x with the flag on
     Copy-->>Svc: OOM kill, failed request, identity unchanged
-    Agents->>Svc: verifier accepts the reproduction
+    Agents->>Reviewer: reproduction checks and observations
+    Reviewer-->>Agents: accept or reject, with reasons
+    Agents->>Svc: review event (approval of a failed check is refused)
     Agents->>Svc: propose mitigation (flag off plus restart)
     Agents->>Svc: start verification
     loop 3 rounds, fresh copy each
         Svc->>Copy: fault stage, then fix stage at 2x
         Copy-->>Svc: round passed, identity unchanged
     end
-    Agents->>Svc: verifier approves 3 of 3
+    Agents->>Reviewer: the three rounds and their checks
+    Reviewer-->>Agents: approve or reject, with reasons
+    Agents->>Svc: verification review (refused unless 3 of 3 passed)
     Svc->>GH: branch, one-line flag change, pull request
     GH-->>Svc: PR number and link
     Agents->>Svc: report, investigation_stopped
