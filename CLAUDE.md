@@ -64,8 +64,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  Page["Page and /op (Caddy :8001)"] --> Service["NightCall service"]
-  Agents["Agents on AgentCore us-west-1"] -- "tool API :8002 via tunnel" --> Service
+  Browser["Browser"] -- "nightcall.shipic.dev, Access login on /op" --> Tunnel["Cloudflare named tunnel big"]
+  Agents["Agents on AgentCore us-west-1"] -- "nightcall.shipic.dev/tool/*" --> Tunnel
+  Tunnel -- "/tool/* to :8002, rest to :8001" --> Caddy["Caddy status"]
+  Caddy --> Service["NightCall service"]
   Service -- invoke --> Agents
   Agents --> Models["Featherless GLM-5.3, Kimi-K3"]
   Service --> Log["events.jsonl and snapshot"]

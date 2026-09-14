@@ -6,11 +6,13 @@ The rule: agents choose, code acts. Agents read through server routes and write 
 
 ```mermaid
 flowchart LR
-    human["Developer in a browser"] -->|"page :8001"| caddy["Caddy status container"]
+    human["Developer or judge in a browser"] -->|"https://nightcall.shipic.dev"| edge["Cloudflare<br/>Access login on /op"]
+    agents["Agents on AgentCore us-west-1<br/>fallback: nightcall-agents container on the box"] -->|"https://nightcall.shipic.dev/tool/*<br/>role tokens"| edge
+    edge -->|"named tunnel big"| tunnel["cloudflared on the box"]
+    tunnel -->|"/tool/* to :8002"| caddy["Caddy status container"]
+    tunnel -->|"everything else to :8001"| caddy
     caddy -->|"/api/* read only"| nest["NightCall service (NestJS)"]
     caddy -->|"/op/api/* adds operator header"| nest
-    agents["Agents on AgentCore us-west-1<br/>fallback: nightcall-agents container on the box"] -->|"role tokens over HTTPS"| tunnel["Cloudflare quick tunnel"]
-    tunnel -->|":8002 /tool/* only"| caddy
     nest -->|"invoke a run"| agents
     agents -->|"lead and reviewer model calls"| models["Featherless<br/>GLM-5.3 lead, Kimi-K3 reviewer"]
     nest --> log[("events.jsonl<br/>then snapshot.json")]
@@ -27,7 +29,7 @@ flowchart LR
 
 | Part | Where | What it owns |
 |---|---|---|
-| Caddy status container | `status/` | Serves the page on 8001, proxies `/api/*` and `/op/api/*` (adding the operator header), and exposes only `/tool/*` on 8002. Both ports bind to 127.0.0.1. |
+| Caddy status container | `status/` | Serves the page on 8001, proxies `/api/*` and `/op/api/*` (adding the operator header), and exposes only `/tool/*` on 8002. Both ports bind to 127.0.0.1; the box's named Cloudflare tunnel publishes them as `https://nightcall.shipic.dev` (`/tool/*` to 8002, everything else to 8001). |
 | NightCall service | `src/` | Incident opening, the event log and snapshot, evidence readers, the tool API, experiments and verification, the deadline watch, publication. |
 | Evidence readers | `src/production/`, `src/tool-api/` | Failure rate, memory, CPU, out-of-memory events, logs, traces, deploy history, live flag state, and the traffic recipe. Each records an `evidence_recorded` event with source links. |
 | Recorder | `src/recorder/` | Memory and CPU for shop containers every 10 seconds, last 30 minutes kept, plus a live Docker events subscription. |
@@ -84,9 +86,9 @@ sequenceDiagram
 
 ## Trust boundaries
 
-- **Public page:** read only. `/alerts` and `/tool/*` answer 404 on port 8001.
-- **Operator:** the operator header is added by Caddy on `/op/api/*` only; the service refuses operator writes without it.
-- **Agents:** reach only `/tool/*` on port 8002. The token decides the role. Lead may write the brief, causes, the question, role status and the stop event; investigator may change cause status; verifier may write the two review events. Everything else is written by the service.
+- **Public page:** `https://nightcall.shipic.dev/incidents`, read only. `/alerts` answers 404.
+- **Operator:** `https://nightcall.shipic.dev/op` is behind a Cloudflare Access login (owner email only). The operator header is added by Caddy on `/op/api/*` only; the service refuses operator writes without it.
+- **Agents:** reach only `/tool/*` (`https://nightcall.shipic.dev/tool/*`, routed to port 8002). The token decides the role. Lead may write the brief, causes, the question, role status and the stop event; investigator may change cause status; verifier may write the two review events. Everything else is written by the service.
 - **Sandbox:** Docker writes are refused unless the project is `nc-sandbox`. The copy runs on an internal network with no published ports, with memory limits checked against production.
 - **Production:** read only. Flag hash, image and source checksum are compared before and after every reproduction and every verification round.
 
