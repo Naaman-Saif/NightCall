@@ -31,6 +31,8 @@ test('the reviewer accepting a passing run is accepted with its reasons, and its
   const reasons = ['The run recorded 3 out-of-memory kills and 12 failed requests, the same failure as the incident.'];
   assert.deepEqual(await decide({ checks: PASSING, answer: { accepted: true, reasons }, asked }), { accepted: true, reasons });
   assert.match(asked.prompts[0], /- fault\.oom_kills: passed, observed 3/);
+  assert.match(asked.prompts[0], /- fault\.http_failures gte 1 requests/);
+  assert.doesNotMatch(asked.prompts[0], /mitigated\./);
   assert.match(asked.prompts[0], /Requests sent: 240/);
   assert.match(asked.prompts[0], /Cause: The cache flag makes memory climb/);
 });
