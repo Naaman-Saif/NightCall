@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NightCall investigates a production incident in the Astronomy Shop demo (OpenTelemetry Demo), proves a fix in a sealed copy of the shop, and opens a one-line pull request, all shown on a live, evidence-backed incident page. The flagship incident is the recommendation service running out of memory when the `recommendationCacheFailure` flag is on.
 
-Current docs: `night-call/README.md`, `night-call/ARCHITECTURE.md`, `night-call/docs/SUBMISSION-DRAFT.md`, `night-call/docs/RECORDING-CHECKLIST.md`, `night-call/docs/BUILDER-AWS-POST.md`. Product intent: `night-call/docs/design/NIGHTCALL-DESIGN-BRIEF.md`. History only: `night-call/PLAN.md`, `night-call/BRIEF.md` and `night-call/docs/phases/` (they still say AgentCore runs in eu-central-1; it runs in us-west-1). Trust the code over them.
+Current docs: `night-call/README.md` and `night-call/ARCHITECTURE.md`. Trust the code over them.
 
 ## Repository layout
 
@@ -19,14 +19,14 @@ Current docs: `night-call/README.md`, `night-call/ARCHITECTURE.md`, `night-call/
   - `publication/` opens the pull request after an approved 3 of 3 run, plus a retry route
   - `public-api/` read-only incidents, events, series, markers, evidence, live progress; `operator-api/` `/op/api`
 - `night-call/src/sandbox-copy/` builds and runs the sealed copy (compose project `nc-sandbox`).
-- Legacy, unregistered: `src/agents`, `src/evidence`, `src/pipeline`, `src/probes`, `src/report`, `src/sandbox` (only `sandbox-copy/sandbox-flag.ts` still imports it). Don't build on them.
+- Four helpers left from the earlier prototype are still used: `src/evidence/logs.ts` and `traces.ts` (by `production/read-logs.ts` and `read-traces.ts`), `src/evidence/config-diff.ts` (flag types) and `src/sandbox/flagd-file.ts` (by `sandbox-copy/sandbox-flag.ts`).
 - `night-call/agent/` separate ESM package: the Strands agents. Runs on AWS AgentCore, with the same image as a box container fallback. `agent/scripts/` holds the AgentCore deploy (`npm run deploy`).
 - `night-call/web/` Vite + React 18 incident page, built into the Caddy `status` image; `night-call/status/` Caddyfile and Dockerfile.
 - `astronomy-shop-overlay/` compose overlay, Prometheus rules, Alertmanager and collector extras added to the shop without editing upstream files.
 
 ## Commands
 
-Service (`night-call/`): `npm run build`, `npm run lint`, `npm test` (Jest, about 66 specs). One file: `npx jest src/investigation/investigation-stop.spec.ts`; by name: `npx jest -t "<part of the test name>"`.
+Service (`night-call/`): `npm run build`, `npm run lint`, `npm test` (Jest, about 60 specs). One file: `npx jest src/investigation/investigation-stop.spec.ts`; by name: `npx jest -t "<part of the test name>"`.
 
 Agents (`night-call/agent/`): `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` (node test runner, `src/*.test.ts`). One file: `node --import tsx --test src/review-rules.test.ts`. Deploy to AgentCore from the Mac: `npm run deploy` (profile `NIGHT_CALL_AWS_PROFILE`, region `NIGHT_CALL_AGENTCORE_REGION`, default us-west-1; Docker Desktop running; image tagged with the commit).
 
@@ -83,9 +83,9 @@ flowchart LR
 - Proof: symptom checks are recorded before any experiment and never change; one job at a time; reproduction replays the incident's real traffic at speed 1; mitigation and verification rounds replay at speed 2 until at least 200 requests; the reviewer may reject a passing run only by quoting an observed value and can never approve a failed check or a null observation; verified needs 3 of 3 on the same contract and mitigation; the pull request opens only after approval and inside the budget (`NIGHT_CALL_BUDGET_MINUTES`, default 30, enforced by the deadline watch).
 - Sandbox writes go only to `nc-sandbox`, on an internal network with no ports, with memory limits verified against production. Production identity (flag hash, image, source checksum) is compared before and after every round.
 
-## Coding rules (from BRIEF.md, enforced by lint)
+## Coding rules (enforced by lint)
 
-Zero comments. At most 20 lines per function, 2 parameters, 2 indent levels, 5 members per class, 100 lines per file. Plain names a non-engineer can read, predicates in positive form. No em dashes anywhere, including docs. One thing per file. The vendored design system in `web/src/design-system/` is exempt.
+Zero comments. At most 20 lines per function, 2 parameters, 2 indent levels, 5 members per class, 100 lines per file. Plain names a non-engineer can read, predicates in positive form. No em dashes anywhere, including docs. One thing per file. The caps apply to code being written; third-party files, including the vendored design system in `web/src/design-system/`, are exempt. Ask before building any throwaway harness.
 
 ## Settings that change behaviour
 
