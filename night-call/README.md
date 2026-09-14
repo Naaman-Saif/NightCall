@@ -66,6 +66,8 @@ You need the OpenTelemetry Demo running under Docker Compose, a Featherless API 
 4. Run the agents: either `docker build -t nightcall-agents night-call/agent` and run it on the shop network with `FEATHERLESS_API_KEY`, `FEATHERLESS_BASE_URL`, `NIGHT_CALL_LEAD_MODEL`, the role tokens and `TOOL_API_URL`, or deploy to AgentCore with `npm run deploy` in `night-call/agent`.
 5. Turn the fault on: `docker exec night-call node dist/scripts/set-shop-flag.js on`. Wait a few minutes for crashes, open `http://127.0.0.1:8001/op/`, and press "Start investigation". Turn it off afterwards with `off`.
 
+To deploy from your own machine with `make deploy` in `night-call/`, set `BOX` to your server's SSH address, for example `BOX=root@your-box make deploy`. There is no default, and the target stops with a message if `BOX` is not set.
+
 Checks: `npm run build`, `npm run lint` and `npm test` in `night-call/` and `night-call/agent/`; `npm run build`, `npm run lint` and `npm run typecheck` in `night-call/web/`.
 
 ## Limits and honest gaps
