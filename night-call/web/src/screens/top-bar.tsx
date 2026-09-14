@@ -1,5 +1,3 @@
-import { MascotMotionControl } from '../brand/mascot-motion';
-
 export function TopBar() {
   return (
     <header className="top-bar">
@@ -9,7 +7,6 @@ export function TopBar() {
         </svg>
         <span>nightcall</span>
       </a>
-      <MascotMotionControl />
     </header>
   );
 }
