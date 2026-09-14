@@ -27,6 +27,19 @@ describe('live progress', () => {
     expect(folded.progress.lastRequests.at(-1)).toEqual({ at: sample(16).at, route: '/api/recommendations', productId: 'OLJCESPC7Z', status: 200, ms: 40 });
   });
 
+  it('appends a stage only when it differs from the last one', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'nc-live-'));
+    const path = join(folder, 'live', 'experiment-exp-2.json');
+    const live = new LiveTracker({ path, speed: 1, trafficSource: 'traces' });
+    live.mark('replaying', 'fault');
+    live.follow({ runFolder: folder, name: 'exp-2', planned: 10, phase: 'fault' });
+    appendFileSync(join(folder, 'exp-2.jsonl'), `${JSON.stringify(sample(1))}\n`);
+    live.flush();
+    live.mark('replaying', 'fix');
+    live.close();
+    expect(readLive(path).stages.map((mark) => [mark.stage, mark.detail])).toEqual([['replaying', 'fault'], ['replaying', 'fix']]);
+  });
+
   it('follows a growing samples file and marks replaying and the fault once', () => {
     const folder = mkdtempSync(join(tmpdir(), 'nc-live-'));
     const file = join(folder, 'exp-1.jsonl');
