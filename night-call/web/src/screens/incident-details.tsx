@@ -42,7 +42,7 @@ export function IncidentDetails({ snapshot, view, isOperator, isSample, submitAn
 }
 
 export function hasOpenQuestion(snapshot: Snapshot): boolean {
-  return snapshot.questions.some((question) => !question.answer);
+  return snapshot.questions.some((question) => !question.answer && question.status !== 'no_answer');
 }
 
 function phoneLayoutFor(snapshot: Snapshot): 'question-first' | 'story-first' {

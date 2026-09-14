@@ -30,7 +30,7 @@ const ATTENTION_TEXT: Record<Attention, string> = {
 
 const MINUTE_MS = 60_000;
 
-type AttentionFacts = Pick<Incident, 'lifecycle' | 'attention'>;
+type AttentionFacts = Pick<Incident, 'attention'>;
 
 export function describePhase(facts: PhaseFacts): string {
   if (facts.lifecycle === 'active') return PHASE_TEXT[facts.phase] ?? facts.phase;
@@ -38,9 +38,7 @@ export function describePhase(facts: PhaseFacts): string {
   return `Finished, ${COMPLETION_TEXT[facts.completionReason]}`;
 }
 
-export function describeAttention({ lifecycle, attention }: AttentionFacts): string {
-  const isUnansweredAtFinish = lifecycle === 'finished' && attention !== 'none';
-  if (isUnansweredAtFinish) return ATTENTION_TEXT.no_answer;
+export function describeAttention({ attention }: AttentionFacts): string {
   return ATTENTION_TEXT[attention] ?? attention;
 }
 
