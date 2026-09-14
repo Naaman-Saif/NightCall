@@ -1,38 +1,90 @@
 # Architecture
 
-Read BRIEF.md for what the product is. This file says which module may call which.
+The rule: agents choose, code acts. Agents read through server routes and write through a small set of role-checked events. Every Docker write, every experiment, every verdict, the 3 of 3 rule, the deadline and the pull request are plain code in the NightCall service.
 
-## The one rule
+## Components and who talks to whom
 
-The model decides. Code acts. No agent ever touches a container, a file or the network directly. Agents get read-only tools and return structured output; everything that changes state runs in `sandbox/`, called by `pipeline/`.
+```mermaid
+flowchart LR
+    human["Developer in a browser"] -->|"page :8001"| caddy["Caddy status container"]
+    caddy -->|"/api/* read only"| nest["NightCall service (NestJS)"]
+    caddy -->|"/op/api/* adds operator header"| nest
+    agents["Agents on AgentCore us-west-1<br/>fallback: nightcall-agents container on the box"] -->|"role tokens over HTTPS"| tunnel["Cloudflare quick tunnel"]
+    tunnel -->|":8002 /tool/* only"| caddy
+    nest -->|"invoke a run"| agents
+    agents -->|"lead model calls"| models["Featherless<br/>GLM-5.3, Kimi-K3 fallback"]
+    nest --> log[("events.jsonl<br/>then snapshot.json")]
+    log -->|"event stream"| caddy
+    nest -->|"failure rate, span metrics"| prom["Prometheus"]
+    nest -->|"traces, traffic recipe"| jaeger["Jaeger"]
+    nest -->|"memory, CPU, OOM events, logs"| docker["Docker on the box"]
+    nest -->|"child process"| worker["Sandbox worker"]
+    worker -->|"compose project nc-sandbox"| sandbox["Sealed shop copy<br/>internal network, no ports"]
+    nest -->|"one-line pull request"| github["GitHub fork<br/>Naaman-Saif/opentelemetry-demo"]
+    alert["Alertmanager (off by default)"] -.->|"POST /alerts"| nest
+    docker --- shop["Production shop, compose project prod"]
+```
 
-## Modules
+| Part | Where | What it owns |
+|---|---|---|
+| Caddy status container | `status/` | Serves the page on 8001, proxies `/api/*` and `/op/api/*` (adding the operator header), and exposes only `/tool/*` on 8002. Both ports bind to 127.0.0.1. |
+| NightCall service | `src/` | Incident opening, the event log and snapshot, evidence readers, the tool API, experiments and verification, the deadline watch, publication. |
+| Evidence readers | `src/production/`, `src/tool-api/` | Failure rate, memory, CPU, out-of-memory events, logs, traces, deploy history, live flag state, and the traffic recipe. Each records an `evidence_recorded` event with source links. |
+| Recorder | `src/recorder/` | Memory and CPU for shop containers every 10 seconds, last 30 minutes kept, plus a live Docker events subscription. |
+| Incident state | `src/investigation/` | `events.jsonl` per incident, zod-checked payloads, per-role allow lists, a reducer that rebuilds `snapshot.json` (including the report and headline) after each append, and the event stream. |
+| Experiments | `src/experiments/` | Check catalogue, reproduction and verification jobs (one at a time), the sandbox worker child process, check evaluation, production identity before and after, the 30-minute deadline. |
+| Sandbox copy | `src/sandbox-copy/` | Renders a sealed compose copy (`nc-sandbox`), checks isolation rules, replays traffic, observes memory, CPU and restarts, cleans up. |
+| Publication | `src/publication/` | Refuses without an approved 3 of 3 run, builds the one-line flag diff, opens the pull request on the `nightcall-demo` branch, retry on failure. |
+| Agents | `agent/` | The fixed investigation order, lead model calls, cause rules, the question and urgency decision, reproduction, mitigation and verification steps, and the final report. |
+| Page | `web/` | Vite and React. Charts of what happened first, then the story: readings, question, possible causes, reproduction, fix, verification, pull request. |
 
-| Module | Owns | May call |
-| --- | --- | --- |
-| `config` | Settings, the action vocabulary, `projectAcceptsWrites` | nothing |
-| `incidents` | The `/alerts` endpoint, deduplication, the incident record | `config` |
-| `evidence` | Container logs, error spans, config diff. Read only. | `config` |
-| `probes` | HTTP, metric and container probes, and the failure signature they add up to | `config` |
-| `sandbox` | Clone, replay, verify, the actions, trials | `config`, `probes` |
-| `agents` | Triage, remediator, reporter, and the vocabulary gate | `config`, `evidence` |
-| `report` | Filing the GitHub issue | `config` |
-| `pipeline` | The order the above run in, the background worker, and the green snapshot watcher | everything |
+## One run, from the button to the pull request
 
-Nothing calls upward. `agents` never calls `sandbox`, `sandbox` never calls `agents`, and no module calls `pipeline`.
+```mermaid
+sequenceDiagram
+    actor Dev as Developer
+    participant Page as Incident page
+    participant Svc as NightCall service
+    participant Agents as Agents
+    participant Lead as Lead model
+    participant Copy as Sealed shop copy
+    participant GH as GitHub fork
+    Dev->>Page: Start investigation
+    Page->>Svc: POST /op/api/investigations
+    Svc->>Svc: alert_received, capture traffic recipe from traces
+    Svc->>Agents: invoke run (returns at once)
+    Agents->>Svc: read failure rate and crashes
+    Agents->>Svc: ask the customer impact question
+    Agents->>Svc: read memory, CPU, logs, traces, deploy history, flag state
+    Svc-->>Page: evidence_recorded events with source links
+    Agents->>Lead: readings block
+    Lead-->>Agents: possible causes with cited readings
+    Agents->>Agents: drop causes that fail the rules, pick most likely
+    Agents->>Svc: record checks, start reproduction
+    Svc->>Copy: replay incident traffic at 1x with the flag on
+    Copy-->>Svc: OOM kill, failed request, identity unchanged
+    Agents->>Svc: verifier accepts the reproduction
+    Agents->>Svc: propose mitigation (flag off plus restart)
+    Agents->>Svc: start verification
+    loop 3 rounds, fresh copy each
+        Svc->>Copy: fault stage, then fix stage at 2x
+        Copy-->>Svc: round passed, identity unchanged
+    end
+    Agents->>Svc: verifier approves 3 of 3
+    Svc->>GH: branch, one-line flag change, pull request
+    GH-->>Svc: PR number and link
+    Agents->>Svc: report, investigation_stopped
+    Svc-->>Page: finished, Open PR link
+```
 
-## Where the safety lives
+## Trust boundaries
 
-Two functions, both in `config`, and every unsafe path has to go through one of them.
+- **Public page:** read only. `/alerts` and `/tool/*` answer 404 on port 8001.
+- **Operator:** the operator header is added by Caddy on `/op/api/*` only; the service refuses operator writes without it.
+- **Agents:** reach only `/tool/*` on port 8002. The token decides the role. Lead may write the brief, causes, the question, role status and the stop event; investigator may change cause status; verifier may write the two review events. Everything else is written by the service.
+- **Sandbox:** Docker writes are refused unless the project is `nc-sandbox`. The copy runs on an internal network with no published ports, with memory limits checked against production.
+- **Production:** read only. Flag hash, image and source checksum are compared before and after every reproduction and every verification round.
 
-`projectAcceptsWrites(project)` returns true only for the sandbox project. Every mutating call in `sandbox/` takes a project name and asks this first, so the Phase 6 audit is a search for mutating calls that skip it rather than a search for the string `prod`.
+## Where the state lives
 
-`actionRunsWithoutAHuman(name)` is the autonomy rule. It returns false for `set_flag`, which is why a novel value is written into the issue and never applied. The remediator proposes each candidate through a `propose_candidate` tool call, and `installVocabularyGate` subscribes to the Strands `BeforeToolCallEvent` to cancel any call outside the agent's allowed tool set or outside the action vocabulary, so the check is enforced by the framework rather than by everyone remembering to call it.
-
-## Where Night Call runs
-
-As a container inside the astronomy-shop compose project, on the same network as the shop, with the Docker socket mounted and the repository mounted at the same absolute path as on the host. That is what lets it run `docker compose -p clone` for the sandbox and reach `prometheus`, `jaeger` and `frontend-proxy` by name. After the clone comes up, Night Call joins the `night-call-clone` network (which is `internal`, no egress) and addresses clone services by container name, `clone-prometheus` and so on.
-
-## Testing
-
-`probes` and `config` are pure enough to test without Docker, and they hold the logic most likely to be quietly wrong. `sandbox` needs a live stack and is covered by the end to end runs instead.
+`state/incidents/<id>/` holds `events.jsonl` (the single source of truth), `snapshot.json` (rebuilt from events), the traffic recipe, the memory and CPU series kept from before the incident opened, and the live progress files for each experiment and round. Restarting the service marks any active incident as interrupted rather than pretending it continued.
