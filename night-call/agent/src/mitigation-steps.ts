@@ -1,5 +1,5 @@
 import type { CheckedCause } from './cause-rules.js';
-import { acceptedReproductions } from './proof-record.js';
+import { acceptedReproductions, rejectedInReview } from './proof-record.js';
 import type { MitigationProposal } from './proof-types.js';
 import { withoutEndMark } from './report-lines.js';
 import { runStep, type RunContext } from './run-steps.js';
@@ -20,7 +20,7 @@ export function mitigationProposal(cause: CheckedCause | null): MitigationPropos
 export async function proposeMitigation(context: RunContext, causes: CheckedCause[]): Promise<void> {
   const reproduced = acceptedReproductions(context.record)[0];
   if (!reproduced) {
-    context.run.skipped.push(`${SKIP_LABEL} (no reproduction was accepted)`);
+    if (!rejectedInReview(context.record)) context.run.skipped.push(`${SKIP_LABEL} (no reproduction was accepted)`);
     return;
   }
   const cause = causes.find((candidate) => candidate.hypothesisId === reproduced.hypothesisId) ?? null;

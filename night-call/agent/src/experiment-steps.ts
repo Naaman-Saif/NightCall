@@ -54,7 +54,7 @@ async function experimentFor(context: RunContext, test: { cause: CheckedCause; c
   await markTesting(context, cause);
   const until = waitLimit(context.run, { capMinutes: test.capMinutes, estimatedMinutes: started.estimatedMinutes });
   const result = await waitForJobEnd(context, { jobId: started.jobId, poller: 'investigator', until });
-  const outcome = { verdict: result.verdict, checks: result.checks, recipeSource: started.recipeSource, accepted: false };
+  const outcome = { verdict: result.verdict, checks: result.checks, recipeSource: started.recipeSource, accepted: false, reviewReasons: [] };
   return { experimentId: started.id, hypothesisId: cause.hypothesisId, ...outcome };
 }
 
@@ -78,6 +78,7 @@ async function reviewExperiment(context: RunContext, review: { record: Experimen
   };
   const decision = await runStep(context, { nowDoing: 'Reviewing the experiment against the recorded checks', skipLabel: 'reviewing the experiment', work });
   record.accepted = decision?.accepted === true;
+  record.reviewReasons = decision?.reasons ?? [];
 }
 
 export async function testCause(context: RunContext, plan: { cause: CheckedCause; labels: ExperimentLabels }): Promise<void> {

@@ -1,5 +1,7 @@
+import { capitalized } from './impact-facts.js';
 import type { CheckResult, PublicationFacts, Verdict } from './proof-types.js';
 import { isTestIncident } from './publication-wait.js';
+import { withoutEndMark } from './report-lines.js';
 
 export type ExperimentRecord = {
   experimentId: string;
@@ -8,6 +10,7 @@ export type ExperimentRecord = {
   checks: CheckResult[];
   recipeSource: string;
   accepted: boolean;
+  reviewReasons: string[];
 };
 
 export type VerificationRecord = { verificationRunId: string; verdict: Verdict | null; approved: boolean };
@@ -44,14 +47,22 @@ export function causeReproduced(record: ProofRecord, hypothesisId: string): bool
   return acceptedReproductions(record).some((experiment) => experiment.hypothesisId === hypothesisId);
 }
 
+export function rejectedInReview(record: ProofRecord): ExperimentRecord | null {
+  if (acceptedReproductions(record).length > 0) return null;
+  return record.experiments.find((experiment) => !experiment.accepted && experiment.reviewReasons.length > 0) ?? null;
+}
+
 function reproductionSentence(record: ProofRecord): string {
   if (acceptedReproductions(record).length > 0) return 'Reproduced in a test copy: the failure matched every recorded check and the review accepted it.';
+  const rejected = rejectedInReview(record);
+  if (rejected) return `Reproduction rejected in review: ${capitalized(withoutEndMark(rejected.reviewReasons[0]))}. No fix was tested.`;
   const last = record.experiments.at(-1);
   if (!last) return 'Not yet reproduced in a test copy.';
   return `Not reproduced in a test copy: the experiment ${last.verdict ? VERDICT_WORDS[last.verdict] : 'reported no verdict'}.`;
 }
 
 function sourceSentences(record: ProofRecord): string[] {
+  if (rejectedInReview(record)) return [];
   const sources = new Set(record.experiments.map((experiment) => experiment.recipeSource));
   return [...sources].map((source) => SOURCE_SENTENCES[source] ?? '');
 }
