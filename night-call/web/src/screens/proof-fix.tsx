@@ -59,7 +59,7 @@ function RunningRound({ snapshot }: { snapshot: Snapshot }) {
   return (
     <div className="live-round" data-round={running.number}>
       <p className="eyebrow">Round {running.number} now</p>
-      <LiveRunPanel livePath={cycleLivePath(snapshot.incident.id, running.number)} />
+      <LiveRunPanel livePath={cycleLivePath(snapshot.incident.id, running.number)} service={snapshot.incident.service} />
     </div>
   );
 }
