@@ -19,14 +19,14 @@ Current docs: `night-call/README.md` and `night-call/ARCHITECTURE.md`. Trust the
   - `publication/` opens the pull request after an approved 3 of 3 run, plus a retry route
   - `public-api/` read-only incidents, events, series, markers, evidence, live progress; `operator-api/` `/op/api`
 - `night-call/src/sandbox-copy/` builds and runs the sealed copy (compose project `nc-sandbox`).
-- Legacy, unregistered: `src/agents`, `src/evidence`, `src/pipeline`, `src/probes`, `src/report`, `src/sandbox` (only `sandbox-copy/sandbox-flag.ts` still imports it). Don't build on them.
+- Four helpers left from the earlier prototype are still used: `src/evidence/logs.ts` and `traces.ts` (by `production/read-logs.ts` and `read-traces.ts`), `src/evidence/config-diff.ts` (flag types) and `src/sandbox/flagd-file.ts` (by `sandbox-copy/sandbox-flag.ts`).
 - `night-call/agent/` separate ESM package: the Strands agents. Runs on AWS AgentCore, with the same image as a box container fallback. `agent/scripts/` holds the AgentCore deploy (`npm run deploy`).
 - `night-call/web/` Vite + React 18 incident page, built into the Caddy `status` image; `night-call/status/` Caddyfile and Dockerfile.
 - `astronomy-shop-overlay/` compose overlay, Prometheus rules, Alertmanager and collector extras added to the shop without editing upstream files.
 
 ## Commands
 
-Service (`night-call/`): `npm run build`, `npm run lint`, `npm test` (Jest, about 66 specs). One file: `npx jest src/investigation/investigation-stop.spec.ts`; by name: `npx jest -t "<part of the test name>"`.
+Service (`night-call/`): `npm run build`, `npm run lint`, `npm test` (Jest, about 60 specs). One file: `npx jest src/investigation/investigation-stop.spec.ts`; by name: `npx jest -t "<part of the test name>"`.
 
 Agents (`night-call/agent/`): `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` (node test runner, `src/*.test.ts`). One file: `node --import tsx --test src/review-rules.test.ts`. Deploy to AgentCore from the Mac: `npm run deploy` (profile `NIGHT_CALL_AWS_PROFILE`, region `NIGHT_CALL_AGENTCORE_REGION`, default us-west-1; Docker Desktop running; image tagged with the commit).
 

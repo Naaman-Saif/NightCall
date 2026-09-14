@@ -103,6 +103,6 @@ Checks: `npm run build`, `npm run lint` and `npm test` in `night-call/` and `nig
 ## Pre-existing code
 
 - The shop is the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) (Astronomy Shop). NightCall adds an overlay and does not edit its files; the only change to the fork is the demo branch with the bad release and the pull requests NightCall opens.
-- NightCall's earlier prototype (a payment-failure pipeline with triage, remediator and reporter agents filing a GitHub issue, first committed 2026-09-11) predates the hackathon build and was replaced. Its modules (`src/pipeline`, `src/probes`, `src/report`, `src/agents`, `src/sandbox`) still compile but are not registered in the running application.
+- NightCall's earlier prototype (a payment-failure pipeline with triage, remediator and reporter agents filing a GitHub issue, first committed 2026-09-11) predates the hackathon build and was replaced. Its modules were removed; four small helpers it left in `src/evidence/` and `src/sandbox/` are still used by the running service.
 - A Python feasibility runner first confirmed the incident could be reproduced; it was ported to TypeScript in `src/sandbox-copy/` and removed from the repo.
 - `night-call/web/src/design-system/` is the vendored NightCall design system.
