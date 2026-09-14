@@ -15,8 +15,11 @@ const QUESTIONS = {
   verification: 'Question: did this verification run show that the mitigation stops the failure for the cause below?',
 };
 
+const CONTRACT_SIDE = { reproduction: 'fault.', verification: 'mitigated.' };
+
 export function reviewPrompt(request: ReviewRequest): string {
-  const contract = request.contract.map((check) => `- ${check.name} ${check.comparator} ${check.value} ${check.unit}`);
+  const relevant = request.contract.filter((check) => check.name.startsWith(CONTRACT_SIDE[request.kind]));
+  const contract = relevant.map((check) => `- ${check.name} ${check.comparator} ${check.value} ${check.unit}`);
   const checks = request.checks.map((check) => `- ${check.name}: ${check.passed ? 'passed' : 'failed'}, observed ${check.observed ?? 'no observation'}`);
   return [
     QUESTIONS[request.kind],
